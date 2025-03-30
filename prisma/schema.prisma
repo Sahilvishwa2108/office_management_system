@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  PARTNER
+  BUSINESS_EXECUTIVE
+  BUSINESS_CONSULTANT
+  PERMANENT_CLIENT
+  GUEST_CLIENT
+}
+
+model User {
+  id                    String         @id @default(uuid())
+  name                  String
+  email                 String         @unique
+  clerkId               String?        @unique
+  role                  UserRole       @default(BUSINESS_EXECUTIVE)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  
+  // Relations
+  assignedTasks         Task[]         @relation("AssignedTo")
+  createdTasks          Task[]         @relation("CreatedBy")
+  messages              Message[]
+  notificationsSent     Notification[] @relation("SentBy")
+  notificationsReceived Notification[] @relation("SentTo")
+  clientInfo            Client?
+}
+
+model Client {
+  id               String       @id @default(uuid())
+  userId           String       @unique
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName      String?
+  contactPerson    String?
+  phone            String?
+  address          String?
+  isGuest          Boolean      @default(false)
+  accessExpiry     DateTime?    // For guest clients
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model Task {
+  id               String       @id @default(uuid())
+  title            String
+  description      String?
+  priority         String       @default("MEDIUM") // HIGH, MEDIUM, LOW
+  status           String       @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+  dueDate          DateTime?
+  assignedToId     String
+  assignedTo       User         @relation("AssignedTo", fields: [assignedToId], references: [id])
+  createdById      String
+  createdBy        User         @relation("CreatedBy", fields: [createdById], references: [id])
+  attachments      Attachment[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model Attachment {
+  id               String       @id @default(uuid())
+  fileName         String
+  fileUrl          String
+  taskId           String?
+  task             Task?        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  messageId        String?
+  message          Message?     @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now())
+}
+
+model Message {
+  id               String       @id @default(uuid())
+  content          String
+  senderId         String
+  sender           User         @relation(fields: [senderId], references: [id])
+  attachments      Attachment[]
+  mentions         String[]     // Array of user IDs mentioned
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model Notification {
+  id               String       @id @default(uuid())
+  content          String
+  read             Boolean      @default(false)
+  type             String       // TASK_ASSIGNED, TASK_UPDATED, MENTION, etc.
+  senderId         String
+  sender           User         @relation("SentBy", fields: [senderId], references: [id])
+  recipientId      String
+  recipient        User         @relation("SentTo", fields: [recipientId], references: [id])
+  relatedTaskId    String?
+  createdAt        DateTime     @default(now())
+}
