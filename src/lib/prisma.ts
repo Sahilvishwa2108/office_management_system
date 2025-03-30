@@ -1,10 +1,22 @@
-import { PrismaClient } from '../../generated/prisma'
+import { PrismaClient } from '@prisma/client'
 
-// Use a global variable to prevent multiple instances during hot reloading in development
-const globalForPrisma = global as { prisma?: PrismaClient }
+// Define the global shape
+declare global {
+    // This prevents TypeScript from complaining about the global variable
+    var prisma: PrismaClient | undefined
+}
 
-// Create or use existing Prisma client instance
-export const prisma = globalForPrisma.prisma || new PrismaClient()
+// Configuration options for PrismaClient
+const prismaClientSingleton = () => {
+    return new PrismaClient({
+        log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    })
+}
 
-// Set the global variable in development to prevent multiple instances
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+// Use existing instance if available to prevent multiple instances during hot reloads in development
+export const prisma = globalThis.prisma ?? prismaClientSingleton()
+
+// Assign client to global object in non-production environments
+if (process.env.NODE_ENV !== 'production') {
+    globalThis.prisma = prisma
+}
