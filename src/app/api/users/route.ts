@@ -69,7 +69,6 @@ export async function POST(req: NextRequest) {
     // Create user
     const user = await prisma.user.create({
       data: {
-        id: uuidv4(),
         name,
         email,
         role: assignedRole,
@@ -89,6 +88,63 @@ export async function POST(req: NextRequest) {
     console.error("Error creating user:", error);
     return NextResponse.json(
       { error: "Failed to create user" },
+      { status: 500 }
+    );
+  }
+}
+
+// Get all users (with filtering based on role)
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    // Check if user is authenticated
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { role } = session.user;
+    const { searchParams } = new URL(req.url);
+    const roleFilter = searchParams.get("role");
+    
+    // Prepare filter based on user role
+    let where: any = {};
+    
+    // Apply role filter if provided
+    if (roleFilter) {
+      where.role = roleFilter;
+    }
+    
+    // Partners can only see junior employees
+    if (role === "PARTNER") {
+      where.role = {
+        in: ["BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"]
+      };
+    }
+
+    const users = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    return NextResponse.json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch users" },
       { status: 500 }
     );
   }

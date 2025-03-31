@@ -37,5 +37,12 @@ export async function sendPasswordSetupEmail(
     `
   };
 
-  await transporter.sendMail(mailOptions);
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Password setup email sent to ${email}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return { success: false, error };
+  }
 }

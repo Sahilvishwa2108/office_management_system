@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -17,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const passwordSchema = z
   .object({
@@ -57,26 +59,15 @@ export default function SetPasswordPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/auth/set-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-          password: data.password,
-        }),
+      const response = await axios.post("/api/auth/set-password", {
+        token,
+        password: data.password,
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to set password");
-      }
 
       toast.success("Password set successfully. You can now log in.");
       router.push("/login");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "An error occurred");
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to set password");
     } finally {
       setIsSubmitting(false);
     }
@@ -88,7 +79,7 @@ export default function SetPasswordPage() {
         <CardHeader>
           <h1 className="text-2xl font-bold">Set Your Password</h1>
           <p className="text-muted-foreground">
-            Please create a strong password for your account.
+            Please create a strong password for your account
           </p>
         </CardHeader>
         <CardContent>
@@ -127,7 +118,13 @@ export default function SetPasswordPage() {
                 className="w-full"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Setting Password..." : "Set Password"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Setting Password...
+                  </>
+                ) : (
+                  "Set Password"
+                )}
               </Button>
             </form>
           </Form>

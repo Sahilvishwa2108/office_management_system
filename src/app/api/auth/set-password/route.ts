@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,9 +18,9 @@ export async function POST(req: NextRequest) {
       where: {
         passwordResetToken: token,
         passwordResetTokenExpiry: {
-          gte: new Date()
-        }
-      }
+          gte: new Date(),
+        },
+      },
     });
 
     if (!user) {
@@ -32,14 +32,14 @@ export async function POST(req: NextRequest) {
 
     // Hash password and update user
     const hashedPassword = await hash(password, 12);
-    
+
     await prisma.user.update({
       where: { id: user.id },
       data: {
         password: hashedPassword,
         passwordResetToken: null,
-        passwordResetTokenExpiry: null
-      }
+        passwordResetTokenExpiry: null,
+      },
     });
 
     return NextResponse.json(

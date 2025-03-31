@@ -6,6 +6,7 @@ import { signIn } from "next-auth/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -18,6 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
+import Link from "next/link";
+import { Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -47,16 +50,17 @@ export default function LoginPage() {
 
       if (result?.error) {
         toast.error("Invalid email or password");
+        setIsSubmitting(false);
         return;
       }
 
+      // Get the session to determine role
+      const response = await axios.get("/api/auth/session");
+      const sessionData = response.data;
+      
       toast.success("Logged in successfully");
       
-      // Get the session after login to check the role
-      const session = await fetch("/api/auth/session");
-      const sessionData = await session.json();
-      
-      // Redirect based on role
+      // Redirect based on user role
       if (sessionData?.user?.role === "ADMIN") {
         router.push("/dashboard/admin");
       } else if (sessionData?.user?.role === "PARTNER") {
@@ -70,7 +74,6 @@ export default function LoginPage() {
       router.refresh();
     } catch (error) {
       toast.error("Failed to log in");
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -78,10 +81,10 @@ export default function LoginPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
+        <CardHeader className="text-center">
           <h1 className="text-2xl font-bold">Login</h1>
           <p className="text-muted-foreground">
-            Enter your credentials to access your account
+            Enter your credentials to access your dashboard
           </p>
         </CardHeader>
         <CardContent>
@@ -120,11 +123,22 @@ export default function LoginPage() {
                 className="w-full"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Logging in..." : "Log In"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...
+                  </>
+                ) : (
+                  "Log In"
+                )}
               </Button>
             </form>
           </Form>
         </CardContent>
+        <CardFooter className="flex justify-center">
+          <p className="text-sm text-muted-foreground">
+            Forgot password? Contact your administrator
+          </p>
+        </CardFooter>
       </Card>
     </div>
   );
