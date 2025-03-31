@@ -1,42 +1,40 @@
-// Use CommonJS syntax
-const { PrismaClient } = require('@prisma/client')
-const { v4: uuidv4 } = require('uuid')
+import { PrismaClient } from '@prisma/client'
+import { hash } from 'bcryptjs'
+import { v4 as uuidv4 } from 'uuid'
 
-const prismaClient = new PrismaClient()
+const prisma = new PrismaClient()
 
 async function main() {
-  try {
-    // Create the admin user
-    const adminUser = await prismaClient.user.create({
-      data: {
-        id: uuidv4(),
-        name: "Sahil Vishwakarma",
-        email: "sahilvishwa2108@gmail.com",
-        role: "ADMIN",
-        // Note: Leave clerkId as null for now since we'll create the Clerk user separately
-      },
-    })
-
-    console.log(`Created admin user: ${adminUser.name} with id: ${adminUser.id}`)
-    console.log('Please sign up on Clerk with email:', adminUser.email)
-    console.log('After signing up, update the user in Clerk with role "ADMIN" in their metadata')
-    console.log('Remember to update the clerkId in your database after creating the Clerk user')
-  } catch (error) {
-    // Check for duplicate error
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-      console.log('Admin user already exists in the database')
-    } else {
-      console.error('Error creating admin user:', error)
+  // Check if admin already exists
+  const adminExists = await prisma.user.findFirst({
+    where: {
+      role: 'ADMIN'
     }
+  })
+
+  if (!adminExists) {
+    // Create default admin account
+    const hashedPassword = await hash('Sahil@2002', 12) // Strong temporary password
+    
+    await prisma.user.create({
+      data: {
+        id: uuidv4(), // Use uuid package instead of crypto
+        name: 'Sahil Vishwakarma',
+        email: 'sahilvishwa2108@gmail.com',
+        password: hashedPassword,
+        role: 'ADMIN'
+      }
+    })
+    
+    console.log('Default admin account created')
   }
 }
 
 main()
-  .then(async () => {
-    await prismaClient.$disconnect()
-  })
-  .catch(async (e) => {
+  .catch(e => {
     console.error(e)
-    await prismaClient.$disconnect()
     process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
   })

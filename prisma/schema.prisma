@@ -23,21 +23,22 @@ enum UserRole {
 }
 
 model User {
-  id                    String         @id @default(uuid())
-  name                  String
-  email                 String         @unique
-  clerkId               String?        @unique
-  role                  UserRole       @default(BUSINESS_EXECUTIVE)
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
-  
+  id                      String         @id @default(uuid())
+  name                    String
+  email                   String         @unique
+  password                String?        // Added for authentication
+  passwordResetToken      String?        // Added for password setup flow
+  passwordResetTokenExpiry DateTime?     // Added for token expiration
+  role                    UserRole       @default(BUSINESS_EXECUTIVE)
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
   // Relations
-  assignedTasks         Task[]         @relation("AssignedTo")
-  createdTasks          Task[]         @relation("CreatedBy")
-  messages              Message[]
-  notificationsSent     Notification[] @relation("SentBy")
-  notificationsReceived Notification[] @relation("SentTo")
-  clientInfo            Client?
+  assignedTasks           Task[]         @relation("AssignedTo")
+  createdTasks            Task[]         @relation("CreatedBy")
+  messages                Message[]
+  notificationsSent       Notification[] @relation("SentBy")
+  notificationsReceived   Notification[] @relation("SentTo")
+  clientInfo              Client?
 }
 
 model Client {
