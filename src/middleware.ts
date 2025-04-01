@@ -22,12 +22,12 @@ const routePermissions = {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Skip middleware for public routes or API routes that handle their own auth
+  // Skip middleware for public routes and API routes to avoid infinite loops
   if (
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api/") ||
+    pathname.startsWith("/api") || // Skip ALL API routes to prevent loops
     pathname === "/login" ||
-    pathname === "/forgot-password" || // This line should be working
+    pathname === "/forgot-password" ||
     pathname === "/reset-password" ||
     pathname === "/set-password" ||
     pathname.includes("favicon")
@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  // Add this near the beginning of your middleware function
+  // Handle root redirect
   if (pathname === "/") {
     if (!token) {
       return NextResponse.redirect(new URL("/login", request.url));

@@ -1,0 +1,240 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../auth/[...nextauth]/route";
+
+// Get specific user
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } | Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    // Check if user is authenticated and has appropriate role
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { role } = session.user;
+
+    // Fix: Await the params object before accessing id
+    const { id: userId } = await Promise.resolve(params);
+
+    // Admins can view any user, partners can only view junior staff
+    if (role !== "ADMIN" && role !== "PARTNER") {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 }
+      );
+    }
+
+    // Get user data
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // Partners can only view junior staff (BUSINESS_EXECUTIVE or BUSINESS_CONSULTANT)
+    if (
+      role === "PARTNER" && 
+      user.role !== "BUSINESS_EXECUTIVE" && 
+      user.role !== "BUSINESS_CONSULTANT"
+    ) {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 }
+      );
+    }
+
+    // Return user data without sensitive information
+    return NextResponse.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+  } catch (error) {
+    console.error("Error getting user:", error);
+    return NextResponse.json(
+      { error: "Failed to get user" },
+      { status: 500 }
+    );
+  }
+}
+
+// Update user
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } | Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    // Check if user is authenticated and has appropriate role
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { role } = session.user;
+
+    // Fix: Await the params object before accessing id
+    const { id: userId } = await Promise.resolve(params);
+    
+    // Only admins and partners can update users
+    if (role !== "ADMIN" && role !== "PARTNER") {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 }
+      );
+    }
+
+    // Get request data
+    const { name, email, role: newRole } = await req.json();
+
+    // Get the user to update
+    const userToUpdate = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!userToUpdate) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // Partners can only update junior staff and can't change their role to ADMIN or PARTNER
+    if (role === "PARTNER") {
+      if (
+        userToUpdate.role !== "BUSINESS_EXECUTIVE" && 
+        userToUpdate.role !== "BUSINESS_CONSULTANT"
+      ) {
+        return NextResponse.json(
+          { error: "You can only update junior staff" },
+          { status: 403 }
+        );
+      }
+
+      if (
+        newRole === "ADMIN" || 
+        newRole === "PARTNER"
+      ) {
+        return NextResponse.json(
+          { error: "You cannot promote users to Admin or Partner roles" },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Check if email is already in use by another user
+    if (email !== userToUpdate.email) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingUser && existingUser.id !== userId) {
+        return NextResponse.json(
+          { error: "Email already in use" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name,
+        email,
+        role: newRole,
+      },
+    });
+
+    return NextResponse.json({
+      message: "User updated successfully",
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+      }
+    });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return NextResponse.json(
+      { error: "Failed to update user" },
+      { status: 500 }
+    );
+  }
+}
+
+// Delete user
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } | Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    // Check if user is authenticated and has appropriate role
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { role } = session.user;
+
+    // Fix: Await the params object before accessing id
+    const { id: userId } = await Promise.resolve(params);
+    
+    // Only admins can delete users
+    if (role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 }
+      );
+    }
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // Delete user
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return NextResponse.json(
+      { message: "User deleted successfully" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    return NextResponse.json(
+      { error: "Failed to delete user" },
+      { status: 500 }
+    );
+  }
+}

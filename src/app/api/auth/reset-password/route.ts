@@ -10,10 +10,7 @@ export async function POST(req: NextRequest) {
         
         // Check authentication
         if (!session || !session.user?.email) {
-            return NextResponse.json(
-                { error: "You must be signed in to perform this action" },
-                { status: 401 }
-            );
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         // Get request data
@@ -33,9 +30,18 @@ export async function POST(req: NextRequest) {
 
         // If not an admin resetting someone else's password, verify current password
         if (!userId || session.user.id === targetUserId) {
+            // Check if currentPassword is provided when required
+            if (!currentPassword) {
+                return NextResponse.json(
+                    { error: "Current password is required" },
+                    { status: 400 }
+                );
+            }
+            
+            // Make sure user.password is not null before comparing
             if (!user.password) {
                 return NextResponse.json(
-                    { error: "Password not set for this account" },
+                    { error: "User has no password set" },
                     { status: 400 }
                 );
             }

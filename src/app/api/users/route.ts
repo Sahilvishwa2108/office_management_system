@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
         name,
         email,
         role: assignedRole,
+        isActive: true, // Explicitly set this
         passwordResetToken: passwordToken,
         passwordResetTokenExpiry: tokenExpiry,
       },
@@ -132,6 +133,7 @@ export async function GET(req: NextRequest) {
         name: true,
         email: true,
         role: true,
+        isActive: true, // Include isActive field
         createdAt: true,
         updatedAt: true,
       },

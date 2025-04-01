@@ -4,13 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -20,29 +14,45 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserPlus, MoreVertical, Loader2, Search } from "lucide-react";
-import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import {
+  Search,
+  Plus,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Lock,
+  Eye,
+  Ban,
+  CheckCircle2,
+  Loader2,
+  FilterX,
+} from "lucide-react";
+import Link from "next/link";
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,8 +62,9 @@ export default function PartnerUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
-  
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+
   // Format the role for display
   const formatRole = (role: string) => {
     return role
@@ -61,147 +72,264 @@ export default function PartnerUsersPage() {
       .toLowerCase()
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
-  
-  // Load users - Partners can only see junior employees
+
+  // Load junior employees only
   const loadUsers = async () => {
     setLoading(true);
     try {
-      let url = "/api/users"; // The API will handle filtering based on partner role
-      if (roleFilter) {
-        url += `?role=${roleFilter}`;
-      }
-      const response = await axios.get(url);
-      setUsers(response.data);
+      // Add role parameter for filtering on the server side
+      const response = await axios.get("/api/users", {
+        params: {
+          role: roleFilter !== "all" ? roleFilter : undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+        },
+      });
+
+      // Filter for junior staff only on the client side as well
+      let filtered = response.data.filter(
+        (user: User) =>
+          user.role === "BUSINESS_EXECUTIVE" ||
+          user.role === "BUSINESS_CONSULTANT"
+      );
+
+      setUsers(filtered);
     } catch (error) {
-      console.error("Error loading users:", error);
       toast.error("Failed to load users");
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
-  
+
   // Initial load
   useEffect(() => {
     loadUsers();
-  }, [roleFilter]);
-  
+  }, [roleFilter, statusFilter]);
+
   // Filter users based on search term
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
+  // Toggle user status
+  const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
+    try {
+      await axios.patch(`/api/users/${userId}/status`, {
+        isActive: !currentStatus,
+      });
+
+      // Update the user in the list
+      setUsers(
+        users.map((user) => {
+          if (user.id === userId) {
+            return { ...user, isActive: !currentStatus };
+          }
+          return user;
+        })
+      );
+
+      toast.success(
+        `User ${currentStatus ? "blocked" : "activated"} successfully`
+      );
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.error || "Failed to update user status"
+      );
+    }
+  };
+
+  // Clear filters
+  const clearFilters = () => {
+    setRoleFilter("all");
+    setStatusFilter("all");
+    setSearchTerm("");
+  };
+
   return (
-    <div>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-2xl font-bold">Junior Staff Management</h1>
+    <div className="container mx-auto py-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Junior Staff</h1>
+          <p className="text-muted-foreground">Manage your team members</p>
+        </div>
+
         <Button asChild>
           <Link href="/dashboard/partner/users/create">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add New Staff Member
+            <Plus className="h-4 w-4 mr-2" /> Add New Staff
           </Link>
         </Button>
       </div>
-      
+
       <Card>
-        <CardHeader>
-          <CardTitle>Staff Members</CardTitle>
-          <CardDescription>
-            Manage junior staff members in your team
-          </CardDescription>
-          <div className="flex flex-col md:flex-row gap-4 mt-4">
+        <CardHeader className="pb-2">
+          <CardTitle>Staff List</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search staff members..."
+                placeholder="Search by name or email..."
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Select
-              value={roleFilter}
-              onValueChange={setRoleFilter}
-            >
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Junior Staff</SelectItem>
-                <SelectItem value="BUSINESS_EXECUTIVE">Business Executive</SelectItem>
-                <SelectItem value="BUSINESS_CONSULTANT">Business Consultant</SelectItem>
-              </SelectContent>
-            </Select>
+
+            <div className="flex gap-2">
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="BUSINESS_EXECUTIVE">
+                    Business Executive
+                  </SelectItem>
+                  <SelectItem value="BUSINESS_CONSULTANT">
+                    Business Consultant
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {(roleFilter || statusFilter || searchTerm) && (
+                <Button variant="outline" onClick={clearFilters} size="icon">
+                  <FilterX className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
-        </CardHeader>
-        <CardContent>
+
           {loading ? (
-            <div className="flex justify-center items-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex justify-center items-center h-40">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="text-center py-12 border rounded-md bg-background">
+              <h3 className="text-lg font-medium mb-2">No staff found</h3>
+              <p className="text-muted-foreground mb-6">
+                {searchTerm || roleFilter || statusFilter
+                  ? "No results match your search criteria. Try adjusting your filters."
+                  : "No junior staff have been added yet."}
+              </p>
+
+              {!searchTerm && !roleFilter && !statusFilter && (
+                <Button asChild>
+                  <Link href="/dashboard/partner/users/create">
+                    <Plus className="h-4 w-4 mr-2" /> Add New Staff
+                  </Link>
+                </Button>
+              )}
             </div>
           ) : (
-            <div className="border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="w-[80px]">Actions</TableHead>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{formatRole(user.role)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.isActive !== false ? (
+                        <Badge className="bg-green-500 hover:bg-green-600">
+                          Active
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive">Blocked</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(user.createdAt), "MMM d, yyyy")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/dashboard/partner/users/${user.id}`}>
+                              <Eye className="w-4 h-4 mr-2" />
+                              View Details
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={`/dashboard/partner/users/${user.id}/edit`}
+                            >
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={`/dashboard/partner/users/${user.id}/reset-password`}
+                            >
+                              <Lock className="w-4 h-4 mr-2" />
+                              Reset Password
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleToggleStatus(
+                                user.id,
+                                user.isActive !== false
+                              )
+                            }
+                          >
+                            {user.isActive !== false ? (
+                              <>
+                                <Ban className="w-4 h-4 mr-2" />
+                                Block User
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                Activate User
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{formatRole(user.role)}</TableCell>
-                        <TableCell>
-                          {format(new Date(user.createdAt), 'PPP')}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => router.push(`/dashboard/partner/users/${user.id}`)}
-                              >
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => router.push(`/dashboard/partner/users/${user.id}/tasks`)}
-                              >
-                                Manage Tasks
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  toast.info("Password reset email sent");
-                                }}
-                              >
-                                Reset Password
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                        No staff members found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

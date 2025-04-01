@@ -26,10 +26,12 @@ model User {
   id                      String         @id @default(uuid())
   name                    String
   email                   String         @unique
-  password                String?        // Added for authentication
-  passwordResetToken      String?        // Added for password setup flow
-  passwordResetTokenExpiry DateTime?     // Added for token expiration
+  phone                   String?        
+  password                String?        
+  passwordResetToken      String?        
+  passwordResetTokenExpiry DateTime?     
   role                    UserRole       @default(BUSINESS_EXECUTIVE)
+  isActive                Boolean        @default(true)  // Add this field
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
   // Relations

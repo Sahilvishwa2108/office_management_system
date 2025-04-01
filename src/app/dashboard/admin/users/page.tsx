@@ -24,6 +24,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,10 +35,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserPlus, MoreVertical, Loader2, Search } from "lucide-react";
+import { UserPlus, MoreVertical, Loader2, Search, Eye, Edit, Lock, Ban, CheckCircle2, Filter, FilterX } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 interface User {
   id: string;
@@ -45,6 +48,7 @@ interface User {
   role: string;
   createdAt: string;
   updatedAt: string;
+  isActive: boolean;
 }
 
 export default function UsersPage() {
@@ -53,7 +57,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  
+
   // Format the role for display
   const formatRole = (role: string) => {
     return role
@@ -61,7 +65,7 @@ export default function UsersPage() {
       .toLowerCase()
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
-  
+
   // Load users
   const loadUsers = async () => {
     setLoading(true);
@@ -79,18 +83,45 @@ export default function UsersPage() {
       setLoading(false);
     }
   };
-  
+
+  // Handle toggle status
+  const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
+    try {
+      await axios.patch(`/api/users/${userId}/status`, {
+        isActive: !currentStatus,
+      });
+
+      // Update the user in the list
+      setUsers(
+        users.map((user) => {
+          if (user.id === userId) {
+            return { ...user, isActive: !currentStatus };
+          }
+          return user;
+        })
+      );
+
+      toast.success(
+        `User ${currentStatus ? "blocked" : "activated"} successfully`
+      );
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.error || "Failed to update user status"
+      );
+    }
+  };
+
   // Initial load
   useEffect(() => {
     loadUsers();
   }, [roleFilter]);
-  
+
   // Filter users based on search term
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
   return (
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -102,7 +133,7 @@ export default function UsersPage() {
           </Link>
         </Button>
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>All Users</CardTitle>
@@ -151,6 +182,7 @@ export default function UsersPage() {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="w-[80px]">Actions</TableHead>
                   </TableRow>
@@ -163,6 +195,13 @@ export default function UsersPage() {
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{formatRole(user.role)}</TableCell>
                         <TableCell>
+                          {user.isActive !== false ? (
+                            <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
+                          ) : (
+                            <Badge variant="destructive">Blocked</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           {format(new Date(user.createdAt), 'PPP')}
                         </TableCell>
                         <TableCell>
@@ -174,17 +213,35 @@ export default function UsersPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => router.push(`/dashboard/admin/users/${user.id}`)}
-                              >
-                                View Details
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/dashboard/admin/users/${user.id}`}>
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  View Details
+                                </Link>
                               </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => router.push(`/dashboard/admin/users/${user.id}/edit`)}
-                              >
-                                Edit User
+                              <DropdownMenuItem asChild>
+                                <Link href={`/dashboard/admin/users/${user.id}/edit`}>
+                                  <Edit className="w-4 h-4 mr-2" />
+                                  Edit User
+                                </Link>
                               </DropdownMenuItem>
-                              {/* Additional actions like reset password, etc. */}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleToggleStatus(user.id, user.isActive !== false)}
+                              >
+                                {user.isActive !== false ? (
+                                  <>
+                                    <Ban className="w-4 h-4 mr-2" />
+                                    Block User
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                                    Activate User
+                                  </>
+                                )}
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -192,7 +249,7 @@ export default function UsersPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                         No users found
                       </TableCell>
                     </TableRow>
