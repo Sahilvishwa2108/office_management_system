@@ -27,7 +27,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -36,12 +35,7 @@ import {
   Search,
   Plus,
   MoreVertical,
-  Edit,
-  Trash2,
-  Lock,
   Eye,
-  Ban,
-  CheckCircle2,
   Loader2,
   FilterX,
 } from "lucide-react";
@@ -112,33 +106,6 @@ export default function PartnerUsersPage() {
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // Toggle user status
-  const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
-    try {
-      await axios.patch(`/api/users/${userId}/status`, {
-        isActive: !currentStatus,
-      });
-
-      // Update the user in the list
-      setUsers(
-        users.map((user) => {
-          if (user.id === userId) {
-            return { ...user, isActive: !currentStatus };
-          }
-          return user;
-        })
-      );
-
-      toast.success(
-        `User ${currentStatus ? "blocked" : "activated"} successfully`
-      );
-    } catch (error: any) {
-      toast.error(
-        error.response?.data?.error || "Failed to update user status"
-      );
-    }
-  };
 
   // Clear filters
   const clearFilters = () => {
@@ -285,43 +252,6 @@ export default function PartnerUsersPage() {
                               <Eye className="w-4 h-4 mr-2" />
                               View Details
                             </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link
-                              href={`/dashboard/partner/users/${user.id}/edit`}
-                            >
-                              <Edit className="w-4 h-4 mr-2" />
-                              Edit
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link
-                              href={`/dashboard/partner/users/${user.id}/reset-password`}
-                            >
-                              <Lock className="w-4 h-4 mr-2" />
-                              Reset Password
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleToggleStatus(
-                                user.id,
-                                user.isActive !== false
-                              )
-                            }
-                          >
-                            {user.isActive !== false ? (
-                              <>
-                                <Ban className="w-4 h-4 mr-2" />
-                                Block User
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle2 className="w-4 h-4 mr-2" />
-                                Activate User
-                              </>
-                            )}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

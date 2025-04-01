@@ -15,6 +15,14 @@ const routePermissions = {
   "/dashboard/partner": ["ADMIN", "PARTNER"],
   // Partner can only create junior employees
   "/dashboard/partner/users/create": ["ADMIN", "PARTNER"],
+  // Partner can view user details but not edit, reset password, or change status
+  "/dashboard/partner/users": ["ADMIN", "PARTNER"],
+  "/dashboard/partner/users/[id]": ["ADMIN", "PARTNER"], // Only view details
+  // Restrict these routes to ADMIN only
+  "/dashboard/partner/users/[id]/edit": ["ADMIN"],
+  "/dashboard/partner/users/[id]/reset-password": ["ADMIN"],
+  // Junior staff routes
+  "/dashboard/junior": ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"],
   // All authenticated users
   "/dashboard": ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"],
 };
@@ -41,28 +49,39 @@ export async function middleware(request: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  // Handle root redirect
-  if (pathname === "/") {
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    } else {
-      const userRole = token.role as string;
-      
-      if (userRole === "ADMIN") {
-        return NextResponse.redirect(new URL("/dashboard/admin", request.url));
-      } else if (userRole === "PARTNER") {
-        return NextResponse.redirect(new URL("/dashboard/partner", request.url)); 
-      } else if (userRole === "PERMANENT_CLIENT" || userRole === "GUEST_CLIENT") {
-        return NextResponse.redirect(new URL("/dashboard/client", request.url));
-      } else {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
-      }
-    }
-  }
-
   // Not signed in - redirect to login
   if (!token) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Check if user is blocked based on JWT token
+  // The isActive status is now stored in the token itself
+  if (token.isActive === false) {
+    return NextResponse.redirect(new URL("/login?blocked=true", request.url));
+  }
+
+  // Handle root redirect
+  if (pathname === "/") {
+    // User is not logged in - redirect to login
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    
+    // User is logged in - redirect based on role
+    const userRole = token.role as string;
+    
+    if (userRole === "ADMIN") {
+      return NextResponse.redirect(new URL("/dashboard/admin", request.url));
+    } else if (userRole === "PARTNER") {
+      return NextResponse.redirect(new URL("/dashboard/partner", request.url)); 
+    } else if (["PERMANENT_CLIENT", "GUEST_CLIENT"].includes(userRole)) {
+      return NextResponse.redirect(new URL("/dashboard/client", request.url));
+    } else if (["BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"].includes(userRole)) {
+      // Add this condition to redirect junior staff
+      return NextResponse.redirect(new URL("/dashboard/junior", request.url));
+    } else {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
 
   // Find matching route permission pattern
@@ -81,6 +100,10 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/dashboard/admin", request.url));
       } else if (userRole === "PARTNER") {
         return NextResponse.redirect(new URL("/dashboard/partner", request.url));
+      } else if (["BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"].includes(userRole)) {
+        return NextResponse.redirect(new URL("/dashboard/junior", request.url));
+      } else if (["PERMANENT_CLIENT", "GUEST_CLIENT"].includes(userRole)) {
+        return NextResponse.redirect(new URL("/dashboard/client", request.url));
       } else {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }

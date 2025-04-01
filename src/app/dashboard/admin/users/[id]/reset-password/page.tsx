@@ -1,5 +1,5 @@
 "use client";
-
+import React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,10 +33,14 @@ const adminResetPasswordSchema = z.object({
   path: ["confirmPassword"],
 });
 
-export default function AdminResetPasswordPage({ params }: { params: { id: string } }) {
+export default function AdminResetPasswordPage(props: { 
+  params: { id: string } | Promise<{ id: string }> 
+}) {
   const router = useRouter();
   const { data: session } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const params = props.params instanceof Promise ? React.use(props.params) : props.params;
   const userId = params.id;
 
   // Verify admin role

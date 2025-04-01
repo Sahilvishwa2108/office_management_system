@@ -1,9 +1,11 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
   },
@@ -13,7 +15,7 @@ export const authOptions: NextAuthOptions = {
   },
   providers: [
     CredentialsProvider({
-      name: "credentials",
+      name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
@@ -23,36 +25,32 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        try {
-          const user = await prisma.user.findUnique({
-            where: {
-              email: credentials.email,
-            },
-          });
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
 
-          if (!user || !user.password) {
-            return null;
-          }
-
-          const isPasswordValid = await compare(
-            credentials.password,
-            user.password
-          );
-
-          if (!isPasswordValid) {
-            return null;
-          }
-
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-          };
-        } catch (error) {
-          console.error("Authentication error:", error);
+        if (!user) {
           return null;
         }
+
+        // Check if user is blocked (inactive)
+        if (user.isActive === false) {
+          // Use a consistent error code pattern that NextAuth will preserve
+          throw new Error("AccountBlocked"); // Using camelCase is more reliable
+        }
+
+        const passwordMatches = await compare(credentials.password, user.password || "");
+
+        if (!passwordMatches) {
+          return null;
+        }
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        };
       },
     }),
   ],
@@ -65,9 +63,33 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
         };
       }
+      
+      // Add active status check on each token refresh
+      // This ensures even existing sessions are validated
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { isActive: true }
+        });
+        
+        if (user && user.isActive === false) {
+          // Return a token with a blocked flag
+          return { ...token, blocked: true };
+        }
+      } catch (error) {
+        console.error("Error checking user status during token refresh:", error);
+      }
+      
       return token;
     },
+    
     async session({ session, token }) {
+      // Check if token has the blocked flag
+      if (token.blocked) {
+        // Return a session with blocked flag that can be detected client-side
+        return { ...session, blocked: true };
+      }
+      
       return {
         ...session,
         user: {

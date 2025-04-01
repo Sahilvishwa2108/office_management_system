@@ -22,9 +22,6 @@ import {
   Calendar,
   Shield,
   Loader2,
-  Ban,
-  Lock,
-  Edit,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -49,7 +46,6 @@ export default function PartnerUserDetailsPage({
 }) {
   const [user, setUser] = useState<UserDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
 
   // Properly unwrap params using React.use()
   const unwrappedParams = React.use(params as any) as UserParams;
@@ -80,27 +76,6 @@ export default function PartnerUserDetailsPage({
 
     fetchUserDetails();
   }, [userId]);
-
-  // Handle user status toggle (block/unblock)
-  const handleToggleUserStatus = async () => {
-    if (!user) return;
-
-    setActionLoading(true);
-    const newStatus = !user.isActive;
-
-    try {
-      await axios.patch(`/api/users/${userId}/status`, { isActive: newStatus });
-      setUser({ ...user, isActive: newStatus });
-      toast.success(`User ${newStatus ? "activated" : "blocked"} successfully`);
-    } catch (error: any) {
-      toast.error(
-        error.response?.data?.error ||
-          `Failed to ${newStatus ? "activate" : "block"} user`
-      );
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   // Show loading state
   if (loading) {
@@ -155,33 +130,6 @@ export default function PartnerUserDetailsPage({
             </Link>
           </Button>
           <h1 className="text-2xl font-bold">User Details</h1>
-        </div>
-
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" asChild>
-            <Link href={`/dashboard/partner/users/${userId}/edit`}>
-              <Edit className="h-4 w-4 mr-2" /> Edit User
-            </Link>
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={handleToggleUserStatus}
-            disabled={actionLoading}
-          >
-            {actionLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Ban className="h-4 w-4 mr-2" />
-            )}
-            {user.isActive !== false ? "Block User" : "Unblock User"}
-          </Button>
-
-          <Button variant="outline" asChild>
-            <Link href={`/dashboard/partner/users/${userId}/reset-password`}>
-              <Lock className="h-4 w-4 mr-2" /> Reset Password
-            </Link>
-          </Button>
         </div>
       </div>
 

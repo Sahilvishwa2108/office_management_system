@@ -52,6 +52,14 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
+        // Check specifically for blocked account error
+        if (result.error === "AccountBlocked" || result.error.includes("blocked")) {
+          // Reset loading state before redirecting
+          setIsSubmitting(false);
+          router.push("/login?blocked=true");
+          return;
+        }
+
         toast.error("Invalid email or password");
         setIsSubmitting(false);
         return;
@@ -60,9 +68,9 @@ export default function LoginPage() {
       // Get the session to determine role
       const response = await axios.get("/api/auth/session");
       const sessionData = response.data;
-      
+
       toast.success("Logged in successfully");
-      
+
       // Redirect based on user role
       if (sessionData?.user?.role === "ADMIN") {
         router.push("/dashboard/admin");
@@ -70,10 +78,13 @@ export default function LoginPage() {
         router.push("/dashboard/partner");
       } else if (["PERMANENT_CLIENT", "GUEST_CLIENT"].includes(sessionData?.user?.role)) {
         router.push("/dashboard/client");
+      } else if (["BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"].includes(sessionData?.user?.role)) {
+        // Redirect junior staff to their specific dashboard
+        router.push("/dashboard/junior");
       } else {
         router.push("/dashboard");
       }
-      
+
       router.refresh();
     } catch (error) {
       toast.error("Failed to log in");
