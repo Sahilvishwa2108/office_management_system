@@ -107,6 +107,20 @@ export function Sidebar({
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
+  const isActiveNavItem = (itemHref: String) => {
+    // Exact match for the current path
+    if (pathname === itemHref) {
+      return true;
+    }
+
+    // Highlight child items only, not the parent
+    if (pathname.startsWith(`${itemHref}/`) && pathname !== itemHref) {
+      return false; // Prevent parent from being highlighted
+    }
+
+    return false;
+  };
+
   return (
     <div
       className="flex flex-col border-r bg-background relative transition-all duration-300"
@@ -162,7 +176,7 @@ export function Sidebar({
               title={item.title}
               href={item.href}
               icon={item.icon}
-              active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+              active={isActiveNavItem(item.href)} // Use refined logic
               collapsed={collapsed}
             />
           ))}

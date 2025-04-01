@@ -207,7 +207,7 @@ export default function DashboardLayout({
     <div className="flex h-screen">
       <Sidebar 
         navItems={navItems}
-        pathname={pathname}
+        pathname={pathname} // Pass the current pathname
         collapsed={collapsed} 
         setCollapsed={setCollapsed}
         userName={session?.user?.name || "User"}
