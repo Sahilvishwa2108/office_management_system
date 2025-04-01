@@ -52,7 +52,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
   
   // Format the role for display
   const formatRole = (role: string) => {
@@ -67,7 +67,7 @@ export default function UsersPage() {
     setLoading(true);
     try {
       let url = "/api/users";
-      if (roleFilter) {
+      if (roleFilter && roleFilter !== "all") {
         url += `?role=${roleFilter}`;
       }
       const response = await axios.get(url);
@@ -127,7 +127,7 @@ export default function UsersPage() {
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Roles</SelectItem>
+                <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="ADMIN">Admin</SelectItem>
                 <SelectItem value="PARTNER">Partner</SelectItem>
                 <SelectItem value="BUSINESS_EXECUTIVE">Business Executive</SelectItem>

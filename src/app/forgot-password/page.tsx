@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -19,72 +18,78 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import Link from "next/link";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
 });
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<z.infer<typeof forgotPasswordSchema>>({
+    resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
       email: "",
-      password: "",
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof loginSchema>) => {
+  const onSubmit = async (data: z.infer<typeof forgotPasswordSchema>) => {
     setIsSubmitting(true);
     try {
-      const result = await signIn("credentials", {
-        redirect: false,
+      await axios.post("/api/auth/forgot-password", {
         email: data.email,
-        password: data.password,
       });
-
-      if (result?.error) {
-        toast.error("Invalid email or password");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Get the session to determine role
-      const response = await axios.get("/api/auth/session");
-      const sessionData = response.data;
       
-      toast.success("Logged in successfully");
-      
-      // Redirect based on user role
-      if (sessionData?.user?.role === "ADMIN") {
-        router.push("/dashboard/admin");
-      } else if (sessionData?.user?.role === "PARTNER") {
-        router.push("/dashboard/partner");
-      } else if (["PERMANENT_CLIENT", "GUEST_CLIENT"].includes(sessionData?.user?.role)) {
-        router.push("/dashboard/client");
-      } else {
-        router.push("/dashboard");
-      }
-      
-      router.refresh();
+      setEmailSent(true);
+      toast.success("If your email exists in our system, you'll receive password reset instructions");
     } catch (error) {
-      toast.error("Failed to log in");
+      // Don't show specific errors to prevent email fishing
+      // Just show a generic success message even if the email doesn't exist
+      setEmailSent(true);
+      toast.success("If your email exists in our system, you'll receive password reset instructions");
+    } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (emailSent) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <h1 className="text-2xl font-bold">Check Your Email</h1>
+            <p className="text-muted-foreground">
+              We've sent password reset instructions to your email if it exists in our system.
+            </p>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="mb-4">
+              Please check your inbox and spam folder. The link in the email will be valid for 24 hours.
+            </p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => router.push("/login")}
+            >
+              Return to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <h1 className="text-2xl font-bold">Login</h1>
+          <h1 className="text-2xl font-bold">Reset Password</h1>
           <p className="text-muted-foreground">
-            Enter your credentials to access your dashboard
+            Enter your email address and we'll send you a link to reset your password
           </p>
         </CardHeader>
         <CardContent>
@@ -104,20 +109,6 @@ export default function LoginPage() {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <Button
                 type="submit"
                 className="w-full"
@@ -125,18 +116,18 @@ export default function LoginPage() {
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
                   </>
                 ) : (
-                  "Log In"
+                  "Send Reset Link"
                 )}
               </Button>
             </form>
           </Form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <Link href="/forgot-password" className="text-sm text-primary hover:underline">
-            Forgot password?
+          <Link href="/login" className="text-sm text-primary hover:underline">
+            Back to Login
           </Link>
         </CardFooter>
       </Card>

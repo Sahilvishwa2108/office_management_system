@@ -27,6 +27,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/") ||
     pathname === "/login" ||
+    pathname === "/forgot-password" || // This line should be working
+    pathname === "/reset-password" ||
     pathname === "/set-password" ||
     pathname.includes("favicon")
   ) {
