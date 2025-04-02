@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { BellIcon } from "lucide-react"; // Removed Search import
+import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -17,38 +18,47 @@ import { signOut } from "next-auth/react";
 import { format } from "date-fns";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { NotificationPanel } from "@/components/dashboard/notification-panel";
+import { useRouter } from "next/navigation";
+
+interface Notification {
+  id: string;
+  title: string;
+  description?: string;
+  type: "info" | "success" | "warning" | "error";
+  read: boolean;
+  timestamp: Date;
+}
 
 export function DashboardHeader() {
   const { data: session } = useSession();
-  
-  // Mock notifications for demo - would be fetched from API in real app
-  const mockNotifications = [
-    {
-      id: "1",
-      title: "Task assigned to you",
-      description: "Financial reporting task was assigned to you",
-      type: "info",
-      read: false,
-      timestamp: new Date(Date.now() - 3600000),
-    },
-    {
-      id: "2",
-      title: "Task completed",
-      description: "Client documentation task was completed",
-      type: "success",
-      read: false,
-      timestamp: new Date(Date.now() - 7200000),
-    },
-    {
-      id: "3", 
-      title: "Deadline approaching",
-      description: "Task due in 24 hours",
-      type: "warning",
-      read: true,
-      timestamp: new Date(Date.now() - 86400000),
-    }
-  ];
-  
+  const router = useRouter();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications');
+
+        if (!response.ok) {
+          throw new Error(`Error fetching notifications: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setNotifications(data.notifications);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to fetch notifications:', err);
+        setError('Failed to load notifications');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
   // Get user initials for avatar fallback
   const getInitials = (name?: string) => {
     return name
@@ -58,43 +68,81 @@ export function DashboardHeader() {
       .toUpperCase()
       .substring(0, 2) || 'U';
   };
-  
-  const handleMarkNotificationRead = (id: string) => {
-    console.log("Marking notification as read:", id);
-    // Implement notification read functionality
+
+  const handleMarkNotificationRead = async (id: string) => {
+    try {
+      const response = await fetch(`/api/notifications/${id}/read`, {
+        method: 'PUT'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error marking notification as read: ${response.status}`);
+      }
+
+      // Update local state
+      setNotifications(prev =>
+        prev.map(notification =>
+          notification.id === id
+            ? { ...notification, read: true }
+            : notification
+        )
+      );
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
   };
-  
-  const handleMarkAllNotificationsRead = () => {
-    console.log("Marking all notifications as read");
-    // Implement mark all as read functionality
+
+  const handleMarkAllNotificationsRead = async () => {
+    try {
+      const response = await fetch('/api/notifications/read-all', {
+        method: 'PUT'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error marking all notifications as read: ${response.status}`);
+      }
+
+      // Update local state
+      setNotifications(prev =>
+        prev.map(notification => ({ ...notification, read: true }))
+      );
+    } catch (err) {
+      console.error('Failed to mark all notifications as read:', err);
+    }
   };
-  
+
   const handleViewAllNotifications = () => {
-    console.log("Viewing all notifications");
-    // Navigate to notifications page
+    router.push('/dashboard/notifications');
   };
-  
+
   return (
-    <div className="hidden h-14 items-center border-b px-4 lg:flex justify-end">
+    <div className="hidden h-14 items-center justify-between border-b px-4 lg:flex">
+      {/* Empty div for spacing or future content */}
+      <div className="flex-1"></div>
+
       <div className="flex items-center gap-3">
         <div className="hidden md:flex items-center text-sm text-muted-foreground mr-2">
           <span>{format(new Date(), 'EEEE, MMMM d, yyyy')}</span>
         </div>
-        
+
         <ThemeToggle />
-        
-        <NotificationPanel 
-          notifications={mockNotifications}
+
+        <NotificationPanel
+          notifications={notifications}
+          loading={loading}
           onMarkAsRead={handleMarkNotificationRead}
           onMarkAllAsRead={handleMarkAllNotificationsRead}
           onViewAll={handleViewAllNotifications}
         />
-        
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
               <Avatar className="h-9 w-9">
-                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`} />
+                <AvatarImage
+                  src={session?.user?.image || `https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
+                  alt={session?.user?.name || "User"}
+                />
                 <AvatarFallback>{getInitials(session?.user?.name)}</AvatarFallback>
               </Avatar>
             </Button>
@@ -107,14 +155,14 @@ export function DashboardHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <a href="/dashboard/settings/profile">Profile</a>
+            <DropdownMenuItem onClick={() => router.push('/dashboard/settings/profile')}>
+              Profile
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <a href="/dashboard/settings">Settings</a>
+            <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
+              Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => signOut({ redirect: true, callbackUrl: "/login" })}
             >
               Log out

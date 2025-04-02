@@ -8,8 +8,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import {
   Table,
@@ -35,12 +33,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserPlus, MoreVertical, Loader2, Search, Eye, Edit, Lock, Ban, CheckCircle2, Filter, FilterX } from "lucide-react";
+import { UserPlus, MoreVertical, Loader2, Search, Eye, Edit, Lock, Ban, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { DashboardWrapper } from "@/components/dashboard/dashboard-wrapper";
 import { TaskProgress } from "@/components/dashboard/task-progress";
 
 interface User {
@@ -144,165 +141,160 @@ export default function UsersPage() {
   };
 
   return (
-    <DashboardWrapper>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">User Management</h1>
-            <p className="text-muted-foreground">Manage users and their access levels</p>
-          </div>
-          <Button asChild>
-            <Link href="/dashboard/admin/users/create">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add New User
-            </Link>
-          </Button>
+    <div className="space-y-6">
+      {/* Title Row with Button */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
+          <p className="text-muted-foreground">Manage users and their access levels</p>
         </div>
+        <Button asChild>
+          <Link href="/dashboard/admin/users/create">
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add New User
+          </Link>
+        </Button>
+      </div>
 
-        {/* New: Role distribution chart */}
-        {!loading && users.length > 0 && (
-          <Card className="p-4">
-            <div className="mb-2">
-              <h3 className="font-medium">User Role Distribution</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Overview of user distribution across different roles
-              </p>
-              <TaskProgress 
-                items={getRoleStats()} 
-                size="md"
+      {/* New: Role distribution chart */}
+      {!loading && users.length > 0 && (
+        <Card className="p-4">
+          <div className="mb-2">
+            <h3 className="font-medium">User Role Distribution</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Overview of user distribution across different roles
+            </p>
+            <TaskProgress 
+              items={getRoleStats()} 
+              size="md"
+            />
+          </div>
+        </Card>
+      )}
+
+      {/* Users list card with filters */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-          </Card>
-        )}
-
-        {/* Existing card with updated styling */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Users</CardTitle>
-            <CardDescription>
-              Manage users and their access levels
-            </CardDescription>
-            <div className="flex flex-col md:flex-row gap-4 mt-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search users..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Select
-                value={roleFilter}
-                onValueChange={setRoleFilter}
-              >
-                <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="PARTNER">Partner</SelectItem>
-                  <SelectItem value="BUSINESS_EXECUTIVE">Business Executive</SelectItem>
-                  <SelectItem value="BUSINESS_CONSULTANT">Business Consultant</SelectItem>
-                  <SelectItem value="PERMANENT_CLIENT">Permanent Client</SelectItem>
-                  <SelectItem value="GUEST_CLIENT">Guest Client</SelectItem>
-                </SelectContent>
-              </Select>
+            <Select
+              value={roleFilter}
+              onValueChange={setRoleFilter}
+            >
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Filter by role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="ADMIN">Admin</SelectItem>
+                <SelectItem value="PARTNER">Partner</SelectItem>
+                <SelectItem value="BUSINESS_EXECUTIVE">Business Executive</SelectItem>
+                <SelectItem value="BUSINESS_CONSULTANT">Business Consultant</SelectItem>
+                <SelectItem value="PERMANENT_CLIENT">Permanent Client</SelectItem>
+                <SelectItem value="GUEST_CLIENT">Guest Client</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center items-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <div className="border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="w-[80px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.length > 0 ? (
-                      filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>{formatRole(user.role)}</TableCell>
-                          <TableCell>
-                            {user.isActive !== false ? (
-                              <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
-                            ) : (
-                              <Badge variant="destructive">Blocked</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(user.createdAt), 'PPP')}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreVertical className="h-4 w-4" />
-                                  <span className="sr-only">Open menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/dashboard/admin/users/${user.id}`}>
-                                    <Eye className="w-4 h-4 mr-2" />
-                                    View Details
-                                  </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/dashboard/admin/users/${user.id}/edit`}>
-                                    <Edit className="w-4 h-4 mr-2" />
-                                    Edit User
-                                  </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => handleToggleStatus(user.id, user.isActive !== false)}
-                                >
-                                  {user.isActive !== false ? (
-                                    <>
-                                      <Ban className="w-4 h-4 mr-2" />
-                                      Block User
-                                    </>
-                                  ) : (
-                                    <>
-                                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                                      Activate User
-                                    </>
-                                  )}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                          No users found
+          ) : (
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="w-[80px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{formatRole(user.role)}</TableCell>
+                        <TableCell>
+                          {user.isActive !== false ? (
+                            <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
+                          ) : (
+                            <Badge variant="destructive">Blocked</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(user.createdAt), 'PPP')}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                                <span className="sr-only">Open menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/dashboard/admin/users/${user.id}`}>
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  View Details
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/dashboard/admin/users/${user.id}/edit`}>
+                                  <Edit className="w-4 h-4 mr-2" />
+                                  Edit User
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleToggleStatus(user.id, user.isActive !== false)}
+                              >
+                                {user.isActive !== false ? (
+                                  <>
+                                    <Ban className="w-4 h-4 mr-2" />
+                                    Block User
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                                    Activate User
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </DashboardWrapper>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                        No users found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

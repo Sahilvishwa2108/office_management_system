@@ -1,26 +1,23 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDown, ArrowUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
+import React from "react";
 
 interface StatsCardProps {
   title: string;
-  value: string | number;
-  icon: React.ReactNode;
-  change?: {
-    value: number;
-    trend: "positive" | "negative" | "neutral";
-  };
+  value: string;
   description?: string;
+  trend?: "up" | "down" | "neutral";
+  icon?: React.ReactNode;
 }
 
 export function StatsCard({ 
   title, 
   value, 
-  icon, 
-  change,
-  description
+  description, 
+  trend, 
+  icon 
 }: StatsCardProps) {
   return (
     <Card>
@@ -30,22 +27,18 @@ export function StatsCard({
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
-        {(description || change) && (
-          <div className="flex items-center text-xs text-muted-foreground mt-1">
-            {change && (
-              <div
-                className={cn(
-                  "mr-1 flex items-center",
-                  change.trend === "positive" && "text-emerald-500",
-                  change.trend === "negative" && "text-rose-500"
-                )}
-              >
-                {change.trend === "positive" && <ArrowUp className="mr-1 h-3 w-3" />}
-                {change.trend === "negative" && <ArrowDown className="mr-1 h-3 w-3" />}
-                {change.value}%
-              </div>
+        {description && (
+          <div className="flex items-center text-xs text-muted-foreground">
+            {trend && (
+              <>
+                {trend === "up" ? (
+                  <ArrowUpIcon className="mr-1 h-3 w-3 text-emerald-500" />
+                ) : trend === "down" ? (
+                  <ArrowDownIcon className="mr-1 h-3 w-3 text-red-500" />
+                ) : null}
+              </>
             )}
-            {description && <span>{description}</span>}
+            <p>{description}</p>
           </div>
         )}
       </CardContent>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -51,11 +51,15 @@ const editUserSchema = z.object({
   }),
 });
 
-export default function EditUserPage({ params }: { params: { id: string } }) {
+// Update the params type to reflect that it's a Promise in Next.js 15
+export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const userId = params.id;
+  
+  // Use React.use to properly unwrap the Promise
+  const resolvedParams = React.use(params);
+  const userId = resolvedParams.id;
 
   // Setup form with default values
   const form = useForm<z.infer<typeof editUserSchema>>({

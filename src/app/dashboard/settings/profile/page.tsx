@@ -32,6 +32,11 @@ export default function ProfilePage() {
   const { data: session, update } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [profile, setProfile] = useState({
+    name: "",
+    email: "",
+    phone: "",
+  });
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
@@ -47,12 +52,15 @@ export default function ProfilePage() {
     const loadUserProfile = async () => {
       try {
         const response = await axios.get("/api/users/profile");
-        
-        form.reset({
+
+        const userData = {
           name: response.data.name || "",
           email: response.data.email || "",
           phone: response.data.phone || "",
-        });
+        };
+
+        form.reset(userData);
+        setProfile(userData);
       } catch (error) {
         toast.error("Failed to load profile data");
       } finally {
@@ -68,18 +76,24 @@ export default function ProfilePage() {
     try {
       const updateData = {
         name: data.name,
-        phone: data.phone,
-        ...(session?.user?.role === "ADMIN" ? { email: data.email } : {})
+        phone: data.phone || "", // Ensure phone is a string, not undefined
+        ...(session?.user?.role === "ADMIN" ? { email: data.email } : {}),
       };
-      
+
       await axios.put("/api/users/profile", updateData);
-      
-      // Update session with new name and email if admin
-      await update({ 
+
+      await update({
         name: data.name,
-        ...(session?.user?.role === "ADMIN" ? { email: data.email } : {})
+        ...(session?.user?.role === "ADMIN" ? { email: data.email } : {}),
       });
-      
+
+      setProfile((prevProfile) => ({
+        ...prevProfile,
+        name: data.name,
+        phone: data.phone || "", // Fix the type issue here
+        ...(session?.user?.role === "ADMIN" ? { email: data.email || "" } : {}),
+      }));
+
       toast.success("Profile updated successfully");
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to update profile");
@@ -96,12 +110,11 @@ export default function ProfilePage() {
     );
   }
 
-  // Get user initials for avatar fallback
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
       .toUpperCase()
       .substring(0, 2);
   };
@@ -122,13 +135,17 @@ export default function ProfilePage() {
         <Card className="col-span-1">
           <CardContent className="pt-6 flex flex-col items-center">
             <Avatar className="h-24 w-24 mb-4">
-              <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`} />
-              <AvatarFallback>{session?.user?.name ? getInitials(session.user.name) : 'U'}</AvatarFallback>
+              <AvatarImage
+                src={`https://api.dicebear.com/7.x/initials/svg?seed=${profile.name}`}
+              />
+              <AvatarFallback>
+                {profile.name ? getInitials(profile.name) : "U"}
+              </AvatarFallback>
             </Avatar>
-            <h2 className="text-xl font-semibold">{session?.user?.name}</h2>
-            <p className="text-sm text-muted-foreground mb-2">{session?.user?.email}</p>
+            <h2 className="text-xl font-semibold">{profile.name}</h2>
+            <p className="text-sm text-muted-foreground mb-2">{profile.email}</p>
             <div className="text-sm text-muted-foreground px-3 py-1 bg-muted rounded-full">
-              {session?.user?.role?.replace('_', ' ')}
+              {session?.user?.role?.replace("_", " ")}
             </div>
           </CardContent>
         </Card>
@@ -136,7 +153,9 @@ export default function ProfilePage() {
         <Card className="col-span-2">
           <CardHeader>
             <h2 className="text-lg font-semibold">Personal Information</h2>
-            <p className="text-sm text-muted-foreground">Update your personal details</p>
+            <p className="text-sm text-muted-foreground">
+              Update your personal details
+            </p>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -162,11 +181,17 @@ export default function ProfilePage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input {...field} disabled={session?.user?.role !== "ADMIN"} />
+                        <Input
+                          {...field}
+                          disabled={session?.user?.role !== "ADMIN"}
+                        />
                       </FormControl>
                       <FormMessage />
                       {session?.user?.role !== "ADMIN" && (
-                        <p className="text-xs text-muted-foreground">Email cannot be changed. Contact your administrator for assistance.</p>
+                        <p className="text-xs text-muted-foreground">
+                          Email cannot be changed. Contact your administrator
+                          for assistance.
+                        </p>
                       )}
                     </FormItem>
                   )}
@@ -186,10 +211,7 @@ export default function ProfilePage() {
                   )}
                 />
 
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                >
+                <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...

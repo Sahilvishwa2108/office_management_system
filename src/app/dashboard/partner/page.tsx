@@ -1,293 +1,395 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import {
+  BarChart,
+  Users,
+  CheckCircle,
+  Clock,
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  Plus,
+} from "lucide-react";
+import { StaffCard } from "@/components/dashboard/staff-card";
+import { TaskCard } from "@/components/dashboard/task-card";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import { StatsCard } from "@/components/dashboard/stats-card";
-import { TaskSummary } from "@/components/dashboard/task-summary";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Users, ClipboardList, CheckCircle, AlertCircle, Clock 
-} from "lucide-react";
+import { PartnerActivity } from "@/components/dashboard/partner-activity";
 
-// Define types for the staff and task data
-interface StaffMember {
-  id: string;
-  name: string;
-  role: string;
-  avatar: string;
-}
-
-interface Task {
-  id: string;
-  title: string;
-  status: "in-progress" | "pending" | "completed" | "review";
-  priority: "low" | "medium" | "high";
-  dueDate: Date;
+interface PartnerDashboardData {
+  stats: {
+    totalStaff: number;
+    activeTasks: number;
+    pendingTasks: number;
+    completedTasks: number;
+    taskCompletionRate: number;
+    staffUtilization: number;
+  };
+  staff: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    image?: string;
+    activeTasks: number;
+    completedTasks: number;
+    status: "ACTIVE" | "INACTIVE" | "ON_LEAVE";
+  }>;
+  tasks: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    status: string;
+    priority: string;
+    dueDate?: string;
+    assignedTo?: {
+      id: string;
+      name: string;
+      image?: string;
+    };
+    progress?: number;
+  }>;
+  recentActivities: Array<{
+    id: string;
+    type: string;
+    user: {
+      name: string;
+      role: string;
+      avatar?: string;
+    };
+    action: string;
+    target: string;
+    timestamp: string;
+  }>;
 }
 
 export default function PartnerDashboard() {
-  const { data: session } = useSession();
+  const [dashboardData, setDashboardData] = useState<PartnerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [staffData, setStaffData] = useState<StaffMember[]>([]);
-  const [taskData, setTaskData] = useState<Task[]>([]);
-  
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setStaffData([
-        { id: '1', name: 'Jane Smith', role: 'BUSINESS_EXECUTIVE', avatar: '' },
-        { id: '2', name: 'Robert Johnson', role: 'BUSINESS_CONSULTANT', avatar: '' },
-        { id: '3', name: 'Emily Brown', role: 'BUSINESS_EXECUTIVE', avatar: '' },
-      ]);
-      
-      setTaskData([
-        { 
-          id: '1', 
-          title: 'Quarterly Report Review', 
-          status: 'in-progress', 
-          priority: 'high',
-          dueDate: new Date(Date.now() + 86400000) // Tomorrow
-        },
-        { 
-          id: '2', 
-          title: 'Client Meeting Preparation', 
-          status: 'pending', 
-          priority: 'medium',
-          dueDate: new Date(Date.now() + 2 * 86400000) // Day after tomorrow
-        },
-        { 
-          id: '3', 
-          title: 'Financial Statement Review', 
-          status: 'completed', 
-          priority: 'low',
-          dueDate: new Date(Date.now() - 86400000) // Yesterday
-        },
-        { 
-          id: '4', 
-          title: 'Team Assessment', 
-          status: 'review', 
-          priority: 'medium',
-          dueDate: new Date(Date.now() + 3 * 86400000)
-        },
-      ]);
-      
-      setLoading(false);
-    }, 1000);
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Make API call to fetch dashboard data
+        const response = await fetch("/api/partner/dashboard");
+
+        if (!response.ok) {
+          throw new Error(`Error fetching dashboard data: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setDashboardData(data);
+      } catch (err) {
+        console.error("Failed to fetch partner dashboard data:", err);
+        setError("Failed to load dashboard data. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
-  
-  // Get initials for avatar
-  const getInitials = (name: string): string => {
-    return name
-      ?.split(' ')
-      .map((part: string) => part[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2) || 'JS';
+
+  // Default empty data if still loading
+  const stats = dashboardData?.stats || {
+    totalStaff: 0,
+    activeTasks: 0,
+    pendingTasks: 0,
+    completedTasks: 0,
+    taskCompletionRate: 0,
+    staffUtilization: 0,
   };
-  
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Partner Dashboard</h1>
-        <p className="text-muted-foreground">
-          Welcome back, {session?.user?.name}! Here's an overview of your team and tasks.
-        </p>
+        <div className="flex items-center gap-2">
+          <Button asChild>
+            <Link href="/dashboard/partner/users/create">
+              <Plus className="mr-2 h-4 w-4" /> Add Staff
+            </Link>
+          </Button>
+        </div>
       </div>
-      
-      <Tabs defaultValue="overview" className="space-y-6">
+
+      <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="overview" className="space-y-6">
-          {/* Quick stats */}
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatsCard
-              title="Junior Staff"
-              value={loading ? "..." : staffData.length}
+              title="Total Staff"
+              value={loading ? "..." : stats.totalStaff.toString()}
+              description={`${stats.staffUtilization}% utilization`}
+              trend={
+                stats.staffUtilization > 80
+                  ? "up"
+                  : stats.staffUtilization < 50
+                  ? "down"
+                  : "neutral"
+              }
               icon={<Users className="h-4 w-4 text-muted-foreground" />}
-              description="Total team members"
             />
             <StatsCard
               title="Active Tasks"
-              value={loading ? "..." : taskData.filter(t => t.status !== 'completed').length}
-              icon={<ClipboardList className="h-4 w-4 text-muted-foreground" />}
-              description="Tasks in progress"
+              value={loading ? "..." : stats.activeTasks.toString()}
+              description={`${stats.pendingTasks} pending`}
+              icon={<Activity className="h-4 w-4 text-muted-foreground" />}
             />
             <StatsCard
-              title="Overdue Tasks"
-              value={loading ? "..." : taskData.filter(t => 
-                new Date(t.dueDate) < new Date() && t.status !== 'completed'
-              ).length}
-              icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
-              change={{ 
-                value: 2, 
-                trend: "negative" 
-              }}
-              description="Needs attention"
-            />
-            <StatsCard
-              title="Completed Tasks"
-              value={loading ? "..." : taskData.filter(t => t.status === 'completed').length}
+              title="Completion Rate"
+              value={loading ? "..." : `${stats.taskCompletionRate}%`}
+              description="Tasks completed on time"
+              trend={
+                stats.taskCompletionRate > 80
+                  ? "up"
+                  : stats.taskCompletionRate < 50
+                  ? "down"
+                  : "neutral"
+              }
               icon={<CheckCircle className="h-4 w-4 text-muted-foreground" />}
-              change={{ 
-                value: 25, 
-                trend: "positive" 
-              }}
-              description="Last 30 days"
+            />
+            <StatsCard
+              title="Tasks Completed"
+              value={loading ? "..." : stats.completedTasks.toString()}
+              description="In the last 30 days"
+              icon={<Clock className="h-4 w-4 text-muted-foreground" />}
             />
           </div>
-          
-          {/* Main content */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {/* Task summary */}
-            <div className="md:col-span-2">
-              <TaskSummary
-                title="Recent Tasks"
-                tasks={taskData}
-                viewAllLink="/dashboard/partner/tasks"
-                loading={loading}
-                limit={4}
-              />
-            </div>
-            
-            {/* Staff list */}
-            <div className="md:col-span-1">
-              <DashboardCard 
-                title="Junior Staff"
-                icon="users"
-                loading={loading}
-              >
-                <div className="space-y-4">
-                  {loading ? (
-                    <div className="space-y-2">
-                      {[...Array(3)].map((_, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-muted animate-pulse"></div>
-                          <div className="flex-1 space-y-1">
-                            <div className="h-4 w-24 bg-muted rounded animate-pulse"></div>
-                            <div className="h-3 w-16 bg-muted rounded animate-pulse"></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : staffData.length > 0 ? (
-                    <>
-                      {staffData.map((staff) => (
-                        <div key={staff.id} className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage 
-                              src={`https://api.dicebear.com/7.x/initials/svg?seed=${staff.name}`} 
-                            />
-                            <AvatarFallback>{getInitials(staff.name)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-medium leading-none">{staff.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {staff.role === 'BUSINESS_EXECUTIVE' ? 'Business Executive' : 'Business Consultant'}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      <div className="pt-2">
-                        <Link href="/dashboard/partner/users">
-                          <Button variant="outline" size="sm" className="w-full">
-                            View All Staff
-                          </Button>
-                        </Link>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-sm text-center text-muted-foreground py-3">
-                      No junior staff found.
-                    </p>
-                  )}
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <DashboardCard title="Recent Activity" className="col-span-4" loading={loading}>
+              {error ? (
+                <div className="flex flex-col items-center justify-center p-6 text-center">
+                  <p className="text-sm text-muted-foreground">{error}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => window.location.reload()}
+                  >
+                    Retry
+                  </Button>
                 </div>
-              </DashboardCard>
-            </div>
-          </div>
-          
-          {/* Quick actions */}
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-            <DashboardCard 
-              title="Staff Management"
-              variant="accent"
-              loading={loading}
-              size="sm"
-            >
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Create and manage junior staff</p>
-                <Link href="/dashboard/partner/users/create">
-                  <Button size="sm" className="w-full">Create Junior Staff</Button>
-                </Link>
-              </div>
+              ) : (
+                <PartnerActivity
+                  activities={dashboardData?.recentActivities || []}
+                  loading={loading}
+                />
+              )}
             </DashboardCard>
-            
-            <DashboardCard 
-              title="Task Management"
-              variant="accent"
-              loading={loading}
-              size="sm"
-            >
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Assign and manage tasks</p>
+
+            <Card className="col-span-3">
+              <CardHeader>
+                <CardTitle>Priority Tasks</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {loading ? (
+                  <div className="space-y-3">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="h-12 bg-muted rounded-md"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : error ? (
+                  <div className="flex flex-col items-center justify-center p-6 text-center">
+                    <AlertTriangle className="h-10 w-10 text-muted-foreground mb-2 opacity-20" />
+                    <p className="text-sm text-muted-foreground">{error}</p>
+                  </div>
+                ) : dashboardData?.tasks?.filter((t) => t.priority === "high").length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-6 text-center">
+                    <CheckCircle className="h-10 w-10 text-green-500 mb-2 opacity-50" />
+                    <p className="text-sm text-muted-foreground">No high priority tasks</p>
+                  </div>
+                ) : (
+                  dashboardData?.tasks
+                    ?.filter((task) => task.priority === "high")
+                    .slice(0, 3)
+                    .map((task) => (
+                      <Link key={task.id} href={`/dashboard/partner/tasks/${task.id}`}>
+                        <div className="border rounded-md p-3 hover:bg-muted/50 transition-colors">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium truncate">{task.title}</p>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {task.assignedTo?.name || "Unassigned"}
+                              </p>
+                            </div>
+                            <div
+                              className={`px-2 py-1 rounded-full text-xs ${
+                                task.status === "completed"
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                  : task.status === "in-progress"
+                                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                  : task.status === "review"
+                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                                  : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
+                              }`}
+                            >
+                              {task.status}
+                            </div>
+                          </div>
+                          {task.dueDate && (
+                            <div className="text-xs text-muted-foreground mt-2">
+                              Due {new Date(task.dueDate).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    ))
+                )}
                 <Link href="/dashboard/partner/tasks">
-                  <Button size="sm" className="w-full">Manage Tasks</Button>
+                  <Button variant="outline" className="w-full justify-between">
+                    View All Tasks
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
                 </Link>
-              </div>
-            </DashboardCard>
-            
-            <DashboardCard 
-              title="Team Chat"
-              variant="accent"
-              loading={loading}
-              size="sm"
-            >
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Communicate with your team</p>
-                <Link href="/dashboard/chat">
-                  <Button size="sm" className="w-full">Open Chat</Button>
-                </Link>
-              </div>
-            </DashboardCard>
-            
-            <DashboardCard 
-              title="Settings"
-              variant="accent"
-              loading={loading}
-              size="sm"
-            >
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Update your preferences</p>
-                <Link href="/dashboard/settings">
-                  <Button size="sm" className="w-full">Open Settings</Button>
-                </Link>
-              </div>
-            </DashboardCard>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
-        
-        <TabsContent value="team">
-          <DashboardCard title="Team Management">
-            <Link href="/dashboard/partner/users">
-              <Button>View Team Management</Button>
-            </Link>
-          </DashboardCard>
+        <TabsContent value="team" className="space-y-4">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {loading ? (
+              // Loading placeholders for staff cards
+              [...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse border rounded-lg p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-12 w-12 rounded-full bg-muted"></div>
+                    <div className="space-y-2">
+                      <div className="h-4 w-24 bg-muted rounded"></div>
+                      <div className="h-3 w-32 bg-muted rounded"></div>
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <div className="h-3 w-full bg-muted rounded"></div>
+                    <div className="h-3 w-2/3 bg-muted rounded"></div>
+                  </div>
+                </div>
+              ))
+            ) : error ? (
+              <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
+                <AlertTriangle className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
+                <p className="text-muted-foreground">{error}</p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => window.location.reload()}
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : dashboardData?.staff && dashboardData.staff.length > 0 ? (
+              dashboardData.staff.map((staff) => (
+                <StaffCard
+                  key={staff.id}
+                  id={staff.id}
+                  name={staff.name}
+                  email={staff.email}
+                  role={staff.role}
+                  imageSrc={staff.image}
+                  activeTasks={staff.activeTasks}
+                  completedTasks={staff.completedTasks}
+                  status={staff.status}
+                />
+              ))
+            ) : (
+              <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
+                <Users className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
+                <p className="text-muted-foreground">No staff members found</p>
+                <Button className="mt-4" asChild>
+                  <Link href="/dashboard/partner/users/create">
+                    <Plus className="mr-2 h-4 w-4" /> Add Staff Member
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </div>
+          {dashboardData?.staff && dashboardData.staff.length > 0 && (
+            <div className="flex justify-end">
+              <Button asChild variant="outline">
+                <Link href="/dashboard/partner/users">
+                  View All Staff Members
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          )}
         </TabsContent>
-        
-        <TabsContent value="tasks">
-          <DashboardCard title="Task Management">
-            <Link href="/dashboard/partner/tasks">
-              <Button>View Task Management</Button>
-            </Link>
-          </DashboardCard>
+        <TabsContent value="tasks" className="space-y-4">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {loading ? (
+              // Loading placeholders for task cards
+              [...Array(6)].map((_, i) => (
+                <div key={i} className="animate-pulse border rounded-lg p-4">
+                  <div className="space-y-2">
+                    <div className="h-4 w-2/3 bg-muted rounded"></div>
+                    <div className="h-3 w-full bg-muted rounded"></div>
+                    <div className="h-3 w-full bg-muted rounded"></div>
+                  </div>
+                  <div className="mt-4 flex justify-between">
+                    <div className="h-6 w-16 bg-muted rounded"></div>
+                    <div className="h-6 w-16 bg-muted rounded"></div>
+                  </div>
+                </div>
+              ))
+            ) : error ? (
+              <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
+                <AlertTriangle className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
+                <p className="text-muted-foreground">{error}</p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => window.location.reload()}
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : dashboardData?.tasks && dashboardData.tasks.length > 0 ? (
+              dashboardData.tasks.slice(0, 6).map((task) => (
+                <TaskCard
+                  key={task.id}
+                  id={task.id}
+                  title={task.title}
+                  description={task.description}
+                  status={task.status}
+                  priority={task.priority}
+                  dueDate={task.dueDate}
+                  assignee={task.assignedTo}
+                  progress={task.progress}
+                />
+              ))
+            ) : (
+              <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
+                <CheckCircle className="h-12 w-12 text-green-500 mb-2 opacity-50" />
+                <p className="text-sm text-muted-foreground">No tasks found</p>
+              </div>
+            )}
+          </div>
+          {dashboardData?.tasks && dashboardData.tasks.length > 0 && (
+            <div className="flex justify-end">
+              <Button asChild variant="outline">
+                <Link href="/dashboard/partner/tasks">
+                  View All Tasks
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

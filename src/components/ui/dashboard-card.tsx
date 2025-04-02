@@ -1,65 +1,57 @@
 "use client";
 
-import { cva, type VariantProps } from "class-variance-authority";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Icons } from "@/components/ui/icons";
+import { FileText, Briefcase, MessageSquare } from "lucide-react";
+import React from "react";
 
-const dashboardCardVariants = cva(
-  "transition-all duration-200 border overflow-hidden",
-  {
-    variants: {
-      variant: {
-        default: "bg-card",
-        accent: "bg-card border-primary/20",
-        muted: "bg-muted/50",
-        analytics: "bg-secondary/10",
-      },
-      size: {
-        default: "", 
-        sm: "max-w-sm",
-        lg: "p-1"
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
-  }
-);
-
-interface DashboardCardProps extends React.HTMLAttributes<HTMLDivElement>,
-  VariantProps<typeof dashboardCardVariants> {
+interface DashboardCardProps {
   title: string;
-  icon?: keyof typeof Icons;
+  icon?: "file" | "briefcase" | "message" | string;
   loading?: boolean;
+  children: React.ReactNode;
+  className?: string;
 }
 
 export function DashboardCard({
   title,
   icon,
-  children,
-  variant,
-  size,
-  className,
   loading = false,
-  ...props
+  children,
+  className,
 }: DashboardCardProps) {
-  const Icon = icon ? Icons[icon] : null;
-  
+  const getIcon = () => {
+    switch (icon) {
+      case "file":
+      case "fileText":
+        return <FileText className="h-4 w-4" />;
+      case "briefcase":
+        return <Briefcase className="h-4 w-4" />;
+      case "message":
+        return <MessageSquare className="h-4 w-4" />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <Card className={cn(dashboardCardVariants({ variant, size }), className)} {...props}>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          {Icon && <Icon className="h-5 w-5" />}
-          {loading ? <div className="h-4 w-32 animate-pulse rounded bg-muted"></div> : title}
+    <Card className={cn(className)}>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-base font-medium">
+          {icon ? (
+            <div className="flex items-center gap-2">
+              {getIcon()}
+              {title}
+            </div>
+          ) : (
+            title
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="space-y-2">
-            <div className="h-4 w-full animate-pulse rounded bg-muted"></div>
-            <div className="h-4 w-2/3 animate-pulse rounded bg-muted"></div>
+          <div className="flex items-center justify-center py-6">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           </div>
         ) : (
           children

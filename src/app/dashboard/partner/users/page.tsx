@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,7 +51,6 @@ interface User {
 }
 
 export default function PartnerUsersPage() {
-  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -115,10 +113,11 @@ export default function PartnerUsersPage() {
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+    <div className="space-y-6">
+      {/* Title Row with Button */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Junior Staff</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Junior Staff</h1>
           <p className="text-muted-foreground">Manage your team members</p>
         </div>
 
@@ -130,11 +129,8 @@ export default function PartnerUsersPage() {
       </div>
 
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle>Staff List</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-4 w-full">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -172,14 +168,15 @@ export default function PartnerUsersPage() {
                 </SelectContent>
               </Select>
 
-              {(roleFilter || statusFilter || searchTerm) && (
+              {(roleFilter !== "all" || statusFilter !== "all" || searchTerm) && (
                 <Button variant="outline" onClick={clearFilters} size="icon">
                   <FilterX className="h-4 w-4" />
                 </Button>
               )}
             </div>
           </div>
-
+        </CardHeader>
+        <CardContent>
           {loading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
@@ -188,12 +185,12 @@ export default function PartnerUsersPage() {
             <div className="text-center py-12 border rounded-md bg-background">
               <h3 className="text-lg font-medium mb-2">No staff found</h3>
               <p className="text-muted-foreground mb-6">
-                {searchTerm || roleFilter || statusFilter
+                {searchTerm || roleFilter !== "all" || statusFilter !== "all"
                   ? "No results match your search criteria. Try adjusting your filters."
                   : "No junior staff have been added yet."}
               </p>
 
-              {!searchTerm && !roleFilter && !statusFilter && (
+              {!searchTerm && roleFilter === "all" && statusFilter === "all" && (
                 <Button asChild>
                   <Link href="/dashboard/partner/users/create">
                     <Plus className="h-4 w-4 mr-2" /> Add New Staff

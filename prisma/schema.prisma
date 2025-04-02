@@ -35,12 +35,13 @@ model User {
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
   // Relations
-  assignedTasks           Task[]         @relation("AssignedTo")
-  createdTasks            Task[]         @relation("CreatedBy")
+  assignedTasks           Task[]         @relation("AssignedToUser")
+  createdTasks            Task[]         @relation("AssignedByUser")
   messages                Message[]
   notificationsSent       Notification[] @relation("SentBy")
   notificationsReceived   Notification[] @relation("SentTo")
   clientInfo              Client?
+  activities              Activity[]
 }
 
 model Client {
@@ -58,19 +59,22 @@ model Client {
 }
 
 model Task {
-  id               String       @id @default(uuid())
-  title            String
-  description      String?
-  priority         String       @default("MEDIUM") // HIGH, MEDIUM, LOW
-  status           String       @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
-  dueDate          DateTime?
-  assignedToId     String
-  assignedTo       User         @relation("AssignedTo", fields: [assignedToId], references: [id])
-  createdById      String
-  createdBy        User         @relation("CreatedBy", fields: [createdById], references: [id])
-  attachments      Attachment[]
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  id           String       @id @default(uuid())
+  title        String
+  description  String?
+  status       String       @default("pending") // "pending", "in-progress", "review", "completed"
+  priority     String       @default("medium")  // "low", "medium", "high"
+  dueDate      DateTime?
+  assignedById String
+  assignedBy   User         @relation("AssignedByUser", fields: [assignedById], references: [id])
+  assignedToId String?
+  assignedTo   User?        @relation("AssignedToUser", fields: [assignedToId], references: [id])
+  attachments  Attachment[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([assignedById])
+  @@index([assignedToId])
 }
 
 model Attachment {
@@ -96,14 +100,29 @@ model Message {
 }
 
 model Notification {
-  id               String       @id @default(uuid())
-  content          String
-  read             Boolean      @default(false)
-  type             String       // TASK_ASSIGNED, TASK_UPDATED, MENTION, etc.
-  senderId         String
-  sender           User         @relation("SentBy", fields: [senderId], references: [id])
-  recipientId      String
-  recipient        User         @relation("SentTo", fields: [recipientId], references: [id])
-  relatedTaskId    String?
-  createdAt        DateTime     @default(now())
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  type        String   // "info", "success", "warning", "error"
+  read        Boolean  @default(false)
+  userId      String
+  user        User     @relation("SentTo", fields: [userId], references: [id])
+  senderId    String?
+  sender      User?    @relation("SentBy", fields: [senderId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([senderId])
+}
+
+model Activity {
+  id        String   @id @default(uuid())
+  type      String   // "user", "document", "task", "login", etc.
+  action    String   // "created", "updated", "deleted", "completed", etc.
+  target    String   // The item that was acted upon
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }

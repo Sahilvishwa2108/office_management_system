@@ -137,7 +137,7 @@ export default function DashboardLayout({
     },
     // Communication
     {
-      title: "Messages",
+      title: "Team Chat",
       href: "/dashboard/chat",
       icon: <MessageSquare className="h-6 w-6" />,
       role: [
@@ -216,8 +216,15 @@ export default function DashboardLayout({
     return null;
   }
 
-  // Function to determine if a nav item is active
+  // Modified function to determine if a nav item is active (only one at a time)
   const isActiveNavItem = (itemHref: string) => {
+    // For dashboard root paths like /dashboard/admin, only highlight when exact match
+    if (itemHref.split("/").length === 3) {
+      // e.g., /dashboard/admin
+      return pathname === itemHref;
+    }
+
+    // For nested paths like /dashboard/admin/users, highlight when current or child routes
     return pathname === itemHref || pathname.startsWith(`${itemHref}/`);
   };
 
@@ -311,7 +318,9 @@ export default function DashboardLayout({
                   src={`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
                   alt={session?.user?.name}
                 />
-                <AvatarFallback>{getInitials(session?.user?.name)}</AvatarFallback>
+                <AvatarFallback>
+                  {getInitials(session?.user?.name)}
+                </AvatarFallback>
               </Avatar>
               {!sidebarCollapsed && (
                 <div className="flex flex-1 flex-col truncate">
@@ -421,8 +430,10 @@ export default function DashboardLayout({
                     href={item.href}
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 text-base transition-colors",
-                      pathname === item.href ||
-                        pathname.startsWith(`${item.href}/`)
+                      item.href.split("/").length === 3
+                        ? pathname === item.href
+                        : pathname === item.href ||
+                          pathname.startsWith(`${item.href}/`)
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-muted"
                     )}
@@ -440,7 +451,9 @@ export default function DashboardLayout({
                       src={`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
                       alt={session?.user?.name}
                     />
-                    <AvatarFallback>{getInitials(session?.user?.name)}</AvatarFallback>
+                    <AvatarFallback>
+                      {getInitials(session?.user?.name)}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-1 flex-col truncate">
                     <span className="truncate text-sm font-medium">

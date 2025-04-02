@@ -1,323 +1,200 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
-// Remove unused axios import
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DashboardCard } from "@/components/ui/dashboard-card";
-import { StatsCard } from "@/components/dashboard/stats-card";
-import {
-  Users,
-  ClipboardList,
-  Briefcase,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Calendar,
-  FileText,
-} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { format } from "date-fns";
+import { 
+  BarChart, 
+  Users as UsersIcon, 
+  UserCheck, 
+  Briefcase, 
+  Activity, 
+  ArrowRight,
+  Plus
+} from "lucide-react";
+import { OverviewStats } from "@/components/dashboard/overview-stats";
+import { RecentActivity } from "@/components/dashboard/recent-activity";
+import { DashboardCard } from "@/components/ui/dashboard-card";
 
-// Define ActivityItem interface to type the activity data
-interface ActivityItem {
-  id: number;
-  type: "user" | "task" | "client" | "document" | "message";
-  action: string;
-  timestamp: Date;
-}
-
-// Define overall stats interface
-interface DashboardStats {
-  totalUsers: number;
-  activeUsers: number;
-  totalClients: number;
-  pendingTasks: number;
-  completedTasks: number;
-  recentActivity: ActivityItem[];
-  loading: boolean;
+interface DashboardData {
+  stats: {
+    totalUsers: number;
+    activeUsers: number;
+    totalClients: number;
+    totalTasks: number;
+  };
+  recentActivities: Array<{
+    id: string;
+    type: string;
+    user: {
+      name: string;
+      role: string;
+      avatar?: string;
+    };
+    action: string;
+    target: string;
+    timestamp: string;
+  }>;
 }
 
 export default function AdminDashboard() {
-  const { data: session } = useSession();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalUsers: 0,
-    activeUsers: 0,
-    totalClients: 0,
-    pendingTasks: 0,
-    completedTasks: 0,
-    recentActivity: [],
-    loading: true,
-  });
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        setTimeout(() => {
-          setStats({
-            totalUsers: 24,
-            activeUsers: 18,
-            totalClients: 12,
-            pendingTasks: 8,
-            completedTasks: 16,
-            recentActivity: [
-              {
-                id: 1,
-                type: "user", // Now properly typed
-                action: "User John Doe was added",
-                timestamp: new Date(),
-              },
-              {
-                id: 2,
-                type: "task", // Now properly typed
-                action: "Task 'Financial Report' was completed",
-                timestamp: new Date(Date.now() - 3600000),
-              },
-              {
-                id: 3,
-                type: "client", // Now properly typed
-                action: "Client ABC Corp was updated",
-                timestamp: new Date(Date.now() - 7200000),
-              },
-            ],
-            loading: false,
-          });
-        }, 1000);
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        setStats((prev) => ({ ...prev, loading: false }));
+        setLoading(true);
+        setError(null);
+
+        // Make API call to fetch dashboard data
+        const response = await fetch('/api/admin/dashboard');
+        
+        if (!response.ok) {
+          throw new Error(`Error fetching dashboard data: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setDashboardData(data);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+        setError('Failed to load dashboard data. Please try again later.');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchDashboardData();
   }, []);
 
+  // Calculate stats for display
+  const stats = dashboardData?.stats || {
+    totalUsers: 0,
+    activeUsers: 0,
+    totalClients: 0,
+    totalTasks: 0
+  };
+
+  // Calculate percentage of active users
+  const activeUserPercentage = stats.totalUsers > 0 
+    ? Math.round((stats.activeUsers / stats.totalUsers) * 100) 
+    : 0;
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground">
-          Welcome back, {session?.user?.name}! Here's an overview of your
-          system.
-        </p>
+        <div className="flex items-center gap-2">
+          <Button asChild>
+            <Link href="/dashboard/admin/users/create">
+              <Plus className="mr-2 h-4 w-4" /> Add User
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-            <StatsCard
-              title="Total Users"
-              value={stats.loading ? "..." : stats.totalUsers}
-              icon={<Users className="h-4 w-4 text-muted-foreground" />}
-              change={{ value: 12, trend: "positive" }}
-              description="vs. last month"
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <OverviewStats 
+              title="Total Users" 
+              value={loading ? "..." : stats.totalUsers.toString()} 
+              description={`${activeUserPercentage}% active`}
+              icon={<UsersIcon className="h-4 w-4 text-muted-foreground" />} 
             />
-            <StatsCard
-              title="Active Clients"
-              value={stats.loading ? "..." : stats.totalClients}
-              icon={<Briefcase className="h-4 w-4 text-muted-foreground" />}
-              change={{ value: 4, trend: "positive" }}
-              description="vs. last month"
+            <OverviewStats 
+              title="Active Users" 
+              value={loading ? "..." : stats.activeUsers.toString()} 
+              icon={<UserCheck className="h-4 w-4 text-muted-foreground" />} 
             />
-            <StatsCard
-              title="Pending Tasks"
-              value={stats.loading ? "..." : stats.pendingTasks}
-              icon={<Clock className="h-4 w-4 text-muted-foreground" />}
-              change={{ value: 2, trend: "negative" }}
-              description="vs. last week"
+            <OverviewStats 
+              title="Total Clients" 
+              value={loading ? "..." : stats.totalClients.toString()} 
+              icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} 
             />
-            <StatsCard
-              title="Completed Tasks"
-              value={stats.loading ? "..." : stats.completedTasks}
-              icon={<CheckCircle className="h-4 w-4 text-muted-foreground" />}
-              change={{ value: 8, trend: "positive" }}
-              description="vs. last week"
+            <OverviewStats 
+              title="Active Tasks" 
+              value={loading ? "..." : stats.totalTasks.toString()} 
+              icon={<Activity className="h-4 w-4 text-muted-foreground" />} 
             />
           </div>
-
-          <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-            <DashboardCard
-              title="Quick Actions"
-              loading={stats.loading}
-              variant="accent"
-              className="lg:col-span-1"
-            >
-              <div className="flex flex-col gap-2">
-                <Link href="/dashboard/admin/users/create">
-                  <Button className="w-full justify-start">
-                    <Users className="mr-2 h-4 w-4" />
-                    Create New User
+          
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <DashboardCard title="Recent Activity" className="col-span-4" loading={loading}>
+              {error ? (
+                <div className="flex flex-col items-center justify-center p-6 text-center">
+                  <p className="text-sm text-muted-foreground">{error}</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-4"
+                    onClick={() => window.location.reload()}
+                  >
+                    Retry
                   </Button>
-                </Link>
-                <Link href="/dashboard/admin/tasks/create">
-                  <Button className="w-full justify-start" variant="outline">
-                    <ClipboardList className="mr-2 h-4 w-4" />
-                    Create New Task
-                  </Button>
-                </Link>
-                <Link href="/dashboard/admin/clients/create">
-                  <Button className="w-full justify-start" variant="outline">
-                    <Briefcase className="mr-2 h-4 w-4" />
-                    Add New Client
-                  </Button>
-                </Link>
-                <Link href="/dashboard/admin/documents/upload">
-                  <Button className="w-full justify-start" variant="outline">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Upload Document
-                  </Button>
-                </Link>
-              </div>
-            </DashboardCard>
-
-            <DashboardCard
-              title="Recent Activity"
-              loading={stats.loading}
-              className="lg:col-span-1"
-            >
-              {!stats.loading && stats.recentActivity.length > 0 ? (
-                <div className="space-y-4">
-                  {stats.recentActivity.map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="flex justify-between items-start pb-2 border-b last:border-0"
-                    >
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">{activity.action}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(activity.timestamp), "MMM d, h:mm a")}
-                        </p>
-                      </div>
-                      {activity.type === "user" && (
-                        <Users className="h-4 w-4 text-blue-500" />
-                      )}
-                      {activity.type === "task" && (
-                        <ClipboardList className="h-4 w-4 text-green-500" />
-                      )}
-                      {activity.type === "client" && (
-                        <Briefcase className="h-4 w-4 text-orange-500" />
-                      )}
-                    </div>
-                  ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  No recent activity to display.
-                </p>
+                <RecentActivity 
+                  activities={dashboardData?.recentActivities || []}
+                  loading={loading}
+                />
               )}
             </DashboardCard>
-
-            <DashboardCard
-              title="Upcoming Events"
-              loading={stats.loading}
-              className="lg:col-span-1"
-            >
-              <div className="space-y-4">
-                <div className="flex justify-between items-start pb-2 border-b">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Team Meeting</p>
-                    <p className="text-xs text-muted-foreground">
-                      Wednesday, 10:00 AM
-                    </p>
-                  </div>
-                  <Calendar className="h-4 w-4 text-blue-500" />
-                </div>
-                <div className="flex justify-between items-start pb-2 border-b">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Client Deadline</p>
-                    <p className="text-xs text-muted-foreground">
-                      Friday, 5:00 PM
-                    </p>
-                  </div>
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                </div>
-                <div className="flex justify-between items-start">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Monthly Reports</p>
-                    <p className="text-xs text-muted-foreground">
-                      End of month
-                    </p>
-                  </div>
-                  <FileText className="h-4 w-4 text-green-500" />
-                </div>
-              </div>
-            </DashboardCard>
-          </div>
-
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-            <DashboardCard
-              title="User Management"
-              icon="users"
-              loading={stats.loading}
-            >
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Manage all users across roles and permissions
-                </p>
+            
+            <Card className="col-span-3">
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-4">
                 <Link href="/dashboard/admin/users">
-                  <Button variant="secondary" className="w-full">
-                    View All Users
+                  <Button variant="outline" className="w-full justify-between">
+                    Manage Users
+                    <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
-              </div>
-            </DashboardCard>
-
-            <DashboardCard
-              title="Task Management"
-              icon="clipboardList"
-              loading={stats.loading}
-            >
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Assign and manage tasks for your team
-                </p>
-                <Link href="/dashboard/admin/tasks">
-                  <Button variant="secondary" className="w-full">
-                    View All Tasks
-                  </Button>
-                </Link>
-              </div>
-            </DashboardCard>
-
-            <DashboardCard
-              title="Client Management"
-              icon="briefcase"
-              loading={stats.loading}
-            >
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Manage client information and services
-                </p>
                 <Link href="/dashboard/admin/clients">
-                  <Button variant="secondary" className="w-full">
-                    View All Clients
+                  <Button variant="outline" className="w-full justify-between">
+                    Manage Clients
+                    <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
-              </div>
-            </DashboardCard>
+                <Link href="/dashboard/admin/tasks">
+                  <Button variant="outline" className="w-full justify-between">
+                    View All Tasks
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+                <Link href="/dashboard/admin/documents">
+                  <Button variant="outline" className="w-full justify-between">
+                    Document Repository
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
-
-        <TabsContent value="analytics">
-          <DashboardCard title="Analytics Dashboard" icon="pieChart">
-            <p className="text-muted-foreground">
-              Detailed analytics will be implemented in the next phase.
-            </p>
-          </DashboardCard>
-        </TabsContent>
-
-        <TabsContent value="reports">
-          <DashboardCard title="Reports Dashboard" icon="pieChart">
-            <p className="text-muted-foreground">
-              Report generation will be implemented in the next phase.
-            </p>
+        <TabsContent value="analytics" className="space-y-4">
+          <DashboardCard title="User Analytics" loading={loading}>
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              {loading ? (
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              ) : error ? (
+                <p>Failed to load analytics data.</p>
+              ) : (
+                <div className="text-center">
+                  <BarChart className="h-16 w-16 mx-auto text-muted-foreground opacity-50" />
+                  <p className="mt-2">Analytics will be available in the next update</p>
+                </div>
+              )}
+            </div>
           </DashboardCard>
         </TabsContent>
       </Tabs>

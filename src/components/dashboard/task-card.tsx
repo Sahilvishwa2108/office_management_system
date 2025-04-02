@@ -1,54 +1,24 @@
-"use client";
-
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  ChevronDown, 
-  ChevronUp, 
-  Clock, 
-  MoreVertical, 
-  Calendar,
-  MessageSquare,
-  Paperclip
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Progress } from "@/components/ui/progress";
 
 interface TaskCardProps {
   id: string;
   title: string;
   description?: string;
-  status: "not-started" | "in-progress" | "review" | "completed";
-  priority: "low" | "medium" | "high";
-  dueDate?: Date;
-  assignedTo?: {
+  status: string;
+  priority: string;
+  dueDate?: string;
+  assignee?: {
     id: string;
     name: string;
-    avatar?: string;
-    role?: string;
+    image?: string;
   };
-  assignedBy?: {
-    id: string;
-    name: string;
-    avatar?: string;
-    role?: string;
-  };
-  comments?: number;
-  attachments?: number;
-  onStatusChange?: (id: string, status: string) => void;
-  onView?: (id: string) => void;
-  onEdit?: (id: string) => void;
-  onDelete?: (id: string) => void;
-  className?: string;
+  progress?: number;
+  compact?: boolean; // New prop for compact view
 }
 
 export function TaskCard({
@@ -58,186 +28,170 @@ export function TaskCard({
   status,
   priority,
   dueDate,
-  assignedTo,
-  assignedBy,
-  comments = 0,
-  attachments = 0,
-  onStatusChange,
-  onView,
-  onEdit,
-  onDelete,
-  className,
+  assignee,
+  progress = 0,
+  compact = false // Default to full size
 }: TaskCardProps) {
-  const [expanded, setExpanded] = useState(false);
-  
-  // Status badge styling
-  const getStatusBadge = (status: string) => {
-    switch(status) {
-      case 'completed':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">Completed</Badge>;
-      case 'in-progress':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">In Progress</Badge>;
-      case 'review':
-        return <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">Review</Badge>;
+  // Get status display style
+  const getStatusStyle = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
+      case "in-progress":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
+      case "review":
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
+      case "pending":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300";
       default:
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100">Not Started</Badge>;
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300";
     }
   };
-  
-  // Priority badge styling
-  const getPriorityBadge = (priority: string) => {
-    switch(priority) {
-      case 'high':
-        return <Badge variant="destructive" size="sm">High</Badge>;
-      case 'medium':
-        return <Badge variant="default" size="sm" className="bg-amber-500">Medium</Badge>;
+
+  // Get priority display style
+  const getPriorityStyle = (priority: string) => {
+    switch (priority.toLowerCase()) {
+      case "high":
+        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
+      case "medium":
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
+      case "low":
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
       default:
-        return <Badge variant="secondary" size="sm" className="bg-green-500 text-white">Low</Badge>;
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300";
     }
   };
-  
+
+  // Format date for better readability
+  const formatDueDate = (dateString?: string) => {
+    if (!dateString) return "No due date";
+    
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+  };
+
+  // Check if task is overdue
+  const isOverdue = (dateString?: string) => {
+    if (!dateString) return false;
+    const dueDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return dueDate < today && status.toLowerCase() !== "completed";
+  };
+
   // Get initials for avatar fallback
   const getInitials = (name: string) => {
     return name
-      ?.split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2) || 'U';
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
   };
-  
-  // Check if task is overdue
-  const isOverdue = dueDate ? new Date(dueDate) < new Date() && status !== 'completed' : false;
-  
+
+  if (compact) {
+    return (
+      <Card className="overflow-hidden">
+        <CardHeader className="p-3 pb-0">
+          <div className="flex justify-between items-start">
+            <CardTitle className="text-sm line-clamp-1">{title}</CardTitle>
+            <Badge className={`${getPriorityStyle(priority)} text-xs`} variant="secondary">
+              {priority}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-3 pt-2">
+          <div className="space-y-2">
+            <div className="flex justify-between items-center text-xs">
+              <Badge className={getStatusStyle(status)} variant="secondary">
+                {status}
+              </Badge>
+              <span className={`text-xs ${isOverdue(dueDate) ? "text-red-500 font-medium" : "text-muted-foreground"}`}>
+                {formatDueDate(dueDate)}
+              </span>
+            </div>
+            
+            <div className="space-y-1">
+              <Progress value={progress} className="h-1" />
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="p-3 pt-0">
+          <Button asChild variant="ghost" size="sm" className="w-full h-8 text-xs">
+            <Link href={`/dashboard/junior/tasks/${id}`}>View</Link>
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
   return (
-    <Card className={cn("transition-all", className, {
-      "border-amber-500 dark:border-amber-600": priority === 'medium',
-      "border-red-500 dark:border-red-600": priority === 'high',
-      "border-green-500 dark:border-green-600": status === 'completed',
-      "border-red-500 dark:border-red-600": isOverdue,
-    })}>
+    <Card>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <div className="space-y-1">
-            <CardTitle className="text-xl">{title}</CardTitle>
-            {dueDate && (
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Calendar className="mr-1 h-3 w-3" />
-                <span className={cn({
-                  "text-red-500 dark:text-red-400 font-medium": isOverdue
-                })}>
-                  Due {format(new Date(dueDate), 'MMM d, yyyy')}
-                  {isOverdue && " (Overdue)"}
-                </span>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {getPriorityBadge(priority)}
-            {getStatusBadge(status)}
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                  <span className="sr-only">Menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {onView && (
-                  <DropdownMenuItem onClick={() => onView(id)}>
-                    View Details
-                  </DropdownMenuItem>
-                )}
-                {onStatusChange && status !== 'completed' && (
-                  <DropdownMenuItem onClick={() => onStatusChange(id, "completed")}>
-                    Mark as Completed
-                  </DropdownMenuItem>
-                )}
-                {onStatusChange && status === 'not-started' && (
-                  <DropdownMenuItem onClick={() => onStatusChange(id, "in-progress")}>
-                    Start Task
-                  </DropdownMenuItem>
-                )}
-                {onEdit && (
-                  <DropdownMenuItem onClick={() => onEdit(id)}>
-                    Edit Task
-                  </DropdownMenuItem>
-                )}
-                {onDelete && (
-                  <DropdownMenuItem 
-                    className="text-red-600 focus:text-red-600" 
-                    onClick={() => onDelete(id)}
-                  >
-                    Delete Task
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <CardTitle className="text-base line-clamp-1">{title}</CardTitle>
+          <Badge className={getPriorityStyle(priority)}>
+            {priority.charAt(0).toUpperCase() + priority.slice(1).toLowerCase()}
+          </Badge>
         </div>
       </CardHeader>
-      
-      <CardContent>
-        {expanded ? (
-          <p className="text-sm text-muted-foreground">
-            {description || "No description provided."}
-          </p>
-        ) : description ? (
-          <p className="text-sm text-muted-foreground truncate">
+      <CardContent className="pb-3">
+        {description && (
+          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
             {description}
           </p>
-        ) : null}
+        )}
         
-        <div className={cn("flex justify-between items-center", {
-          "mt-4": description
-        })}>
-          <div className="flex items-center gap-2 mt-3">
-            {assignedTo && (
-              <div className="flex items-center gap-2">
-                <Avatar className="h-6 w-6">
-                  <AvatarImage src={assignedTo.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${assignedTo.name}`} />
-                  <AvatarFallback>{getInitials(assignedTo.name)}</AvatarFallback>
-                </Avatar>
-                <div className="text-xs text-muted-foreground">
-                  <span className="block -mb-0.5">{assignedTo.name}</span>
-                  <span className="block text-[10px]">{assignedTo.role}</span>
-                </div>
-              </div>
-            )}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Status:</span>
+            <Badge className={getStatusStyle(status)}>
+              {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
+            </Badge>
           </div>
           
-          <div className="flex items-center gap-3">
-            {comments > 0 && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <MessageSquare className="h-3 w-3" />
-                <span>{comments}</span>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Due:</span>
+            <span className={`font-medium ${isOverdue(dueDate) ? "text-red-500" : ""}`}>
+              {formatDueDate(dueDate)}
+            </span>
+          </div>
+          
+          {assignee && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Assigned to:</span>
+              <div className="flex items-center gap-2">
+                <Avatar className="h-5 w-5">
+                  <AvatarImage
+                    src={assignee.image || `https://api.dicebear.com/7.x/initials/svg?seed=${assignee.name}`}
+                    alt={assignee.name}
+                  />
+                  <AvatarFallback className="text-xs">{getInitials(assignee.name)}</AvatarFallback>
+                </Avatar>
+                <span className="font-medium text-sm">{assignee.name}</span>
               </div>
-            )}
-            {attachments > 0 && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Paperclip className="h-3 w-3" />
-                <span>{attachments}</span>
-              </div>
-            )}
-            {description && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-6 w-6" 
-                onClick={() => setExpanded(!expanded)}
-              >
-                {expanded ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </Button>
-            )}
+            </div>
+          )}
+          
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Progress:</span>
+              <span className="font-medium">{progress}%</span>
+            </div>
+            <Progress value={progress} className="h-1.5" />
           </div>
         </div>
       </CardContent>
+      <CardFooter>
+        <Button asChild variant="outline" className="w-full">
+          <Link href={`/dashboard/junior/tasks/${id}`}>
+            View Details
+          </Link>
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
