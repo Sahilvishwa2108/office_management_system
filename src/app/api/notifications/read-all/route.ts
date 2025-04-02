@@ -15,11 +15,11 @@ export async function PUT(req: NextRequest) {
     // Mark all notifications as read
     await prisma.notification.updateMany({
       where: {
-        userId: session.user.id,
-        read: false
+        sentToId: session.user.id,
+        isRead: false
       },
       data: {
-        read: true
+        isRead: true
       }
     });
 

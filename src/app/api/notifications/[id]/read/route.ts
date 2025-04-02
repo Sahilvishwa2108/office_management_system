@@ -21,10 +21,10 @@ export async function PUT(
     await prisma.notification.updateMany({
       where: {
         id: id,
-        userId: session.user.id
+        sentToId: session.user.id
       },
       data: {
-        read: true
+        isRead: true
       }
     });
 

@@ -63,33 +63,31 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
         };
       }
-      
-      // Add active status check on each token refresh
-      // This ensures even existing sessions are validated
+
       try {
         const user = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { isActive: true }
+          select: { isActive: true },
         });
-        
-        if (user && user.isActive === false) {
-          // Return a token with a blocked flag
-          return { ...token, blocked: true };
+
+        if (!user || !user.isActive) {
+          throw new Error("User is inactive or not found");
         }
+
+        return token;
       } catch (error) {
         console.error("Error checking user status during token refresh:", error);
+        return token; // Return the token even if the query fails
       }
-      
-      return token;
     },
-    
+
     async session({ session, token }) {
       // Check if token has the blocked flag
       if (token.blocked) {
         // Return a session with blocked flag that can be detected client-side
         return { ...session, blocked: true };
       }
-      
+
       return {
         ...session,
         user: {

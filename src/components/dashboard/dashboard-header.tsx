@@ -79,7 +79,7 @@ export function DashboardHeader() {
         throw new Error(`Error marking notification as read: ${response.status}`);
       }
 
-      // Update local state
+      // Update local state using the isRead property
       setNotifications(prev =>
         prev.map(notification =>
           notification.id === id

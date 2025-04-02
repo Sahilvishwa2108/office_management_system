@@ -18,8 +18,7 @@ enum UserRole {
   PARTNER
   BUSINESS_EXECUTIVE
   BUSINESS_CONSULTANT
-  PERMANENT_CLIENT
-  GUEST_CLIENT
+  // Clients are not users of the platform
 }
 
 model User {
@@ -31,7 +30,7 @@ model User {
   passwordResetToken      String?        
   passwordResetTokenExpiry DateTime?     
   role                    UserRole       @default(BUSINESS_EXECUTIVE)
-  isActive                Boolean        @default(true)  // Add this field
+  isActive                Boolean        @default(true)
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
   // Relations
@@ -40,84 +39,107 @@ model User {
   messages                Message[]
   notificationsSent       Notification[] @relation("SentBy")
   notificationsReceived   Notification[] @relation("SentTo")
-  clientInfo              Client?
   activities              Activity[]
+  managedClients          Client[]       // Staff who manages clients
 }
 
 model Client {
-  id               String       @id @default(uuid())
-  userId           String       @unique
-  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyName      String?
-  contactPerson    String?
-  phone            String?
-  address          String?
-  isGuest          Boolean      @default(false)
-  accessExpiry     DateTime?    // For guest clients
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  id             String       @id @default(uuid())
+  contactPerson  String       // Name of the primary contact person
+  companyName    String?      // Optional company name
+  email          String?      // Optional email address
+  phone          String?      // Optional phone number
+  address        String?      // Optional address
+  notes          String?      // Optional notes field
+  isGuest        Boolean      @default(false) // Whether this is a temporary guest client
+  accessExpiry   DateTime?    // When guest client access expires
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  // Relations
+  managerId      String       // The staff member who manages this client
+  manager        User         @relation(fields: [managerId], references: [id])
+  tasks          Task[]       // Tasks associated with this client
+  attachments    Attachment[] // Attachments related to this client
+  
+  @@index([managerId])
+  @@index([contactPerson]) // Index for searching by contact person name
+  @@index([email])        // Index for searching by email
+  @@index([phone])        // Index for searching by phone
 }
 
 model Task {
-  id           String       @id @default(uuid())
+  id           String    @id @default(uuid())
   title        String
   description  String?
-  status       String       @default("pending") // "pending", "in-progress", "review", "completed"
-  priority     String       @default("medium")  // "low", "medium", "high"
+  status       String    @default("pending") // "pending", "in-progress", "review", "completed", "cancelled"
+  priority     String    @default("medium")  // "low", "medium", "high"
   dueDate      DateTime?
+  
+  // Relations
   assignedById String
-  assignedBy   User         @relation("AssignedByUser", fields: [assignedById], references: [id])
+  assignedBy   User      @relation("AssignedByUser", fields: [assignedById], references: [id])
   assignedToId String?
-  assignedTo   User?        @relation("AssignedToUser", fields: [assignedToId], references: [id])
-  attachments  Attachment[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  assignedTo   User?     @relation("AssignedToUser", fields: [assignedToId], references: [id])
+  
+  clientId     String?   // Tasks can optionally be associated with a client
+  client       Client?   @relation(fields: [clientId], references: [id])
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([assignedById])
   @@index([assignedToId])
+  @@index([clientId])
 }
 
 model Attachment {
-  id               String       @id @default(uuid())
-  fileName         String
-  fileUrl          String
-  taskId           String?
-  task             Task?        @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  messageId        String?
-  message          Message?     @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  createdAt        DateTime     @default(now())
+  id          String   @id @default(uuid())
+  filename    String
+  path        String
+  mimetype    String
+  size        Int
+  clientId    String?  // Optional relation to client
+  client      Client?  @relation(fields: [clientId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([clientId])
 }
 
 model Message {
-  id               String       @id @default(uuid())
-  content          String
-  senderId         String
-  sender           User         @relation(fields: [senderId], references: [id])
-  attachments      Attachment[]
-  mentions         String[]     // Array of user IDs mentioned
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  id         String   @id @default(uuid())
+  content    String
+  senderId   String
+  sender     User     @relation(fields: [senderId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@index([senderId])
 }
 
 model Notification {
   id          String   @id @default(uuid())
   title       String
-  description String?
-  type        String   // "info", "success", "warning", "error"
-  read        Boolean  @default(false)
-  userId      String
-  user        User     @relation("SentTo", fields: [userId], references: [id])
-  senderId    String?
-  sender      User?    @relation("SentBy", fields: [senderId], references: [id])
+  content     String?
+  isRead      Boolean  @default(false)
+  
+  // Who sent the notification
+  sentById    String
+  sentBy      User     @relation("SentBy", fields: [sentById], references: [id])
+  
+  // Who received the notification
+  sentToId    String
+  sentTo      User     @relation("SentTo", fields: [sentToId], references: [id])
+  
   createdAt   DateTime @default(now())
 
-  @@index([userId])
-  @@index([senderId])
+  @@index([sentById])
+  @@index([sentToId])
 }
 
 model Activity {
   id        String   @id @default(uuid())
-  type      String   // "user", "document", "task", "login", etc.
+  type      String   // "user", "client", "document", "task", etc.
   action    String   // "created", "updated", "deleted", "completed", etc.
   target    String   // The item that was acted upon
   userId    String

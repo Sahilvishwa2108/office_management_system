@@ -6,40 +6,54 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 // Get user profile
 export async function GET(req: NextRequest) {
   try {
+    // Verify user is authenticated
     const session = await getServerSession(authOptions);
     
-    // Check if user is authenticated
     if (!session || !session.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
+    
     const userId = session.user.id;
     
-    // Get the user
+    // Get the user with valid relations
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        clientInfo: true, // Include additional client info for client users
+        // Only include relations that exist in the schema
+        assignedTasks: true,
+        createdTasks: true,
+        managedClients: true,
+        notificationsReceived: {
+          where: {
+            isRead: false
+          },
+          orderBy: {
+            createdAt: 'desc'
+          },
+          take: 5
+        }
       }
     });
-
+    
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-
-    // Return user data excluding sensitive fields
-    return NextResponse.json({
+    
+    // Transform the user data as needed for the frontend
+    const userProfile = {
       id: user.id,
       name: user.name,
       email: user.email,
+      phone: user.phone,
       role: user.role,
-      phone: user.phone || "", 
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    });
+      isActive: user.isActive,
+      managedClients: user.managedClients,
+      assignedTasks: user.assignedTasks,
+      createdTasks: user.createdTasks,
+      unreadNotifications: user.notificationsReceived.length
+    };
+    
+    return NextResponse.json(userProfile);
   } catch (error) {
     console.error("Error fetching user profile:", error);
     return NextResponse.json(

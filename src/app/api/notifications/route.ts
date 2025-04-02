@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
-import { prisma } from "@/lib/prisma"; // Fixed import
+import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,10 +19,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ notifications: [] });
     }
 
-    // Fetch notifications for the user
+    // Fetch notifications for the user (use sentToId instead of userId)
     const notifications = await prisma.notification.findMany({
       where: {
-        userId: session.user.id
+        sentToId: session.user.id
       },
       orderBy: {
         createdAt: "desc"
@@ -34,9 +34,9 @@ export async function GET(req: NextRequest) {
       notifications: notifications.map(notification => ({
         id: notification.id,
         title: notification.title,
-        description: notification.description,
-        type: notification.type || "info",
-        read: notification.read,
+        description: notification.content,
+        type: "info", // You may want to add a type field to your schema
+        read: notification.isRead, // Use isRead from schema
         timestamp: notification.createdAt
       }))
     });

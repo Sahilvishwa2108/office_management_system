@@ -88,11 +88,11 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
         <div className="flex items-center gap-2">
-          <Button asChild>
-            <Link href="/dashboard/admin/users/create">
-              <Plus className="mr-2 h-4 w-4" /> Add User
-            </Link>
-          </Button>
+        <Button asChild>
+          <Link href="/dashboard/admin/users/create">
+            <Plus className="mr-2 h-4 w-4" /> Add User
+          </Link>
+        </Button>
         </div>
       </div>
 
