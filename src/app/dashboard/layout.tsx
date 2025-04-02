@@ -23,6 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Building2,
+  LayoutDashboard,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { toast } from "sonner";
@@ -38,6 +39,7 @@ interface NavItem {
   href: string;
   icon: React.ReactNode;
   role: string[];
+  category?: string; // Optional category for grouping
 }
 
 export default function DashboardLayout({
@@ -57,12 +59,13 @@ export default function DashboardLayout({
 
   const userRole = session?.user?.role || "";
 
-  // Navigation items based on user role
+  // Navigation items based on user role with categories
   const navItems: NavItem[] = [
+    // Main navigation
     {
       title: "Dashboard",
       href: getRoleDashboardPath(userRole),
-      icon: <Home className="h-6 w-6" />,
+      icon: <LayoutDashboard className="h-6 w-6" />,
       role: [
         "ADMIN",
         "PARTNER",
@@ -71,7 +74,9 @@ export default function DashboardLayout({
         "PERMANENT_CLIENT",
         "GUEST_CLIENT",
       ],
+      category: "main",
     },
+    // Management
     {
       title: "Users",
       href:
@@ -80,6 +85,7 @@ export default function DashboardLayout({
           : "/dashboard/partner/users",
       icon: <Users className="h-6 w-6" />,
       role: ["ADMIN", "PARTNER"],
+      category: "management",
     },
     {
       title: "Tasks",
@@ -91,18 +97,22 @@ export default function DashboardLayout({
           : "/dashboard/tasks",
       icon: <ClipboardList className="h-6 w-6" />,
       role: ["ADMIN", "PARTNER", "BUSINESS_CONSULTANT", "BUSINESS_EXECUTIVE"],
+      category: "management",
     },
     {
       title: "Clients",
       href: "/dashboard/admin/clients",
       icon: <Briefcase className="h-6 w-6" />,
       role: ["ADMIN"],
+      category: "management",
     },
+    // Services and resources
     {
       title: "Services",
       href: "/dashboard/client/services",
       icon: <Briefcase className="h-6 w-6" />,
       role: ["PERMANENT_CLIENT", "GUEST_CLIENT"],
+      category: "resources",
     },
     {
       title: "Documents",
@@ -123,7 +133,9 @@ export default function DashboardLayout({
         "PERMANENT_CLIENT",
         "GUEST_CLIENT",
       ],
+      category: "resources",
     },
+    // Communication
     {
       title: "Messages",
       href: "/dashboard/chat",
@@ -136,7 +148,9 @@ export default function DashboardLayout({
         "PERMANENT_CLIENT",
         "GUEST_CLIENT",
       ],
+      category: "communication",
     },
+    // Preferences
     {
       title: "Settings",
       href: "/dashboard/settings",
@@ -149,8 +163,14 @@ export default function DashboardLayout({
         "PERMANENT_CLIENT",
         "GUEST_CLIENT",
       ],
+      category: "preferences",
     },
   ];
+
+  // Function to get visible nav items
+  const getVisibleNavItems = () => {
+    return navItems.filter((item) => item.role.includes(userRole));
+  };
 
   // Helper to get correct dashboard path for role
   function getRoleDashboardPath(role: string) {
@@ -236,18 +256,18 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden">
       <div className="flex flex-1">
-        {/* Sidebar for desktop - with collapsible functionality */}
+        {/* Fixed Sidebar */}
         <div
           className={cn(
-            "hidden h-screen flex-col border-r bg-card transition-all duration-300 lg:flex relative",
+            "hidden fixed top-0 bottom-0 flex-col border-r bg-card transition-all duration-300 lg:flex",
             sidebarCollapsed ? "w-20" : "w-64"
           )}
         >
-          {/* Toggle collapse button - positioned within the sidebar */}
+          {/* Toggle collapse button - now centered vertically */}
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-0 top-4 z-20 h-6 w-6 -mr-3 rounded-full border bg-background shadow-sm"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-6 w-6 -mr-3 rounded-full border bg-background shadow-sm"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           >
             {sidebarCollapsed ? (
@@ -259,10 +279,10 @@ export default function DashboardLayout({
           </Button>
 
           <div className="flex h-14 items-center border-b px-4">
-            <Link 
-              href="/" 
+            <Link
+              href="/"
               className={cn(
-                "flex items-center gap-2 font-semibold", 
+                "flex items-center gap-2 font-semibold",
                 sidebarCollapsed && "justify-center w-full"
               )}
             >
@@ -273,11 +293,9 @@ export default function DashboardLayout({
 
           <ScrollArea className="flex-1 py-2">
             <nav className="grid gap-1 px-2">
-              {navItems
-                .filter((item) => item.role.includes(userRole))
-                .map((item) => (
-                  <NavItemComponent key={item.href} item={item} />
-                ))}
+              {getVisibleNavItems().map((item) => (
+                <NavItemComponent key={item.href} item={item} />
+              ))}
             </nav>
           </ScrollArea>
 
@@ -341,7 +359,40 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* Mobile navigation */}
+        {/* Main content with margin to account for sidebar */}
+        <div
+          className={cn(
+            "flex flex-1 flex-col",
+            sidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
+          )}
+        >
+          {/* Mobile header */}
+          <header className="sticky top-0 z-30 flex h-14 items-center border-b bg-background lg:hidden">
+            <div className="flex items-center gap-2 px-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setIsMobileNavOpen(true)}
+              >
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+              <Link href="/" className="flex items-center gap-1 font-semibold">
+                <Building2 className="h-6 w-6" />
+                Office
+              </Link>
+            </div>
+          </header>
+
+          {/* Dashboard header */}
+          <DashboardHeader />
+
+          {/* Main content */}
+          <main className="flex-1 p-4 md:p-6">{children}</main>
+        </div>
+
+        {/* Mobile navigation overlay */}
         <div
           className={cn(
             "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden",
@@ -364,25 +415,23 @@ export default function DashboardLayout({
             </div>
             <ScrollArea className="h-[calc(100%-64px)]">
               <nav className="grid gap-1">
-                {navItems
-                  .filter((item) => item.role.includes(userRole))
-                  .map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-2 text-base transition-colors",
-                        pathname === item.href ||
-                          pathname.startsWith(`${item.href}/`)
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted"
-                      )}
-                      onClick={() => setIsMobileNavOpen(false)}
-                    >
-                      {item.icon}
-                      {item.title}
-                    </Link>
-                  ))}
+                {getVisibleNavItems().map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-base transition-colors",
+                      pathname === item.href ||
+                        pathname.startsWith(`${item.href}/`)
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted"
+                    )}
+                    onClick={() => setIsMobileNavOpen(false)}
+                  >
+                    {item.icon}
+                    {item.title}
+                  </Link>
+                ))}
               </nav>
               <div className="mt-6 border-t pt-4">
                 <div className="flex items-center gap-3 rounded-md p-2">
@@ -416,34 +465,6 @@ export default function DashboardLayout({
               </div>
             </ScrollArea>
           </div>
-        </div>
-
-        {/* Main content */}
-        <div className="flex flex-1 flex-col">
-          {/* Mobile header */}
-          <header className="sticky top-0 z-30 flex h-14 items-center border-b bg-background lg:hidden">
-            <div className="flex items-center gap-2 px-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setIsMobileNavOpen(true)}
-              >
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-              <Link href="/" className="flex items-center gap-1 font-semibold">
-                <Building2 className="h-6 w-6" />
-                Office
-              </Link>
-            </div>
-          </header>
-
-          {/* Desktop header */}
-          <DashboardHeader />
-
-          {/* Main content area */}
-          <main className="flex-1 p-4 md:p-6">{children}</main>
         </div>
       </div>
     </div>

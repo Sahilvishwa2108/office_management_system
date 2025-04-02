@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { Search, BellIcon } from "lucide-react";
+import { BellIcon } from "lucide-react"; // Removed Search import
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -21,7 +20,6 @@ import { NotificationPanel } from "@/components/dashboard/notification-panel";
 
 export function DashboardHeader() {
   const { data: session } = useSession();
-  const [searchQuery, setSearchQuery] = useState("");
   
   // Mock notifications for demo - would be fetched from API in real app
   const mockNotifications = [
@@ -61,12 +59,6 @@ export function DashboardHeader() {
       .substring(0, 2) || 'U';
   };
   
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Implement search functionality
-    console.log("Searching for:", searchQuery);
-  };
-  
   const handleMarkNotificationRead = (id: string) => {
     console.log("Marking notification as read:", id);
     // Implement notification read functionality
@@ -83,19 +75,7 @@ export function DashboardHeader() {
   };
   
   return (
-    <div className="hidden h-14 items-center border-b px-4 lg:flex">
-      <div className="flex-1">
-        <form onSubmit={handleSearch} className="relative w-64">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search..."
-            className="w-full pl-8 bg-muted/50"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </form>
-      </div>
+    <div className="hidden h-14 items-center border-b px-4 lg:flex justify-end">
       <div className="flex items-center gap-3">
         <div className="hidden md:flex items-center text-sm text-muted-foreground mr-2">
           <span>{format(new Date(), 'EEEE, MMMM d, yyyy')}</span>
