@@ -22,7 +22,7 @@ export function Breadcrumbs({ segments, className }: BreadcrumbsProps) {
     >
       <ol className="flex flex-wrap items-center gap-1.5">
         {segments.map((segment, index) => (
-          <li key={segment.href} className="flex items-center gap-1.5">
+          <li key={`${segment.href}-${index}`} className="flex items-center gap-1.5">
             {index > 0 && <ChevronRight className="h-3 w-3" />}
             {index === segments.length - 1 ? (
               <span className="font-medium text-foreground">{segment.name}</span>
