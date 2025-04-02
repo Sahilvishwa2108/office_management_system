@@ -91,10 +91,10 @@ export default function DashboardLayout({
       title: "Tasks",
       href:
         userRole === "ADMIN"
-          ? "/dashboard/admin/tasks"
+          ? "/dashboard/upcoming/tasks"
           : userRole === "PARTNER"
-          ? "/dashboard/partner/tasks"
-          : "/dashboard/tasks",
+          ? "/dashboard/upcoming/tasks"
+          : "/dashboard/upcoming/tasks",
       icon: <ClipboardList className="h-6 w-6" />,
       role: ["ADMIN", "PARTNER", "BUSINESS_CONSULTANT", "BUSINESS_EXECUTIVE"],
       category: "management",
@@ -118,12 +118,12 @@ export default function DashboardLayout({
       title: "Documents",
       href:
         userRole === "ADMIN"
-          ? "/dashboard/admin/documents"
+          ? "/dashboard/upcoming/admin/documents"
           : userRole === "PARTNER"
-          ? "/dashboard/partner/documents"
+          ? "/dashboard/upcoming/partner/documents"
           : userRole.includes("CLIENT")
-          ? "/dashboard/client/documents"
-          : "/dashboard/documents",
+          ? "/dashboard/upcoming/client/documents"
+          : "/dashboard/upcoming/documents",
       icon: <FileText className="h-6 w-6" />,
       role: [
         "ADMIN",
@@ -138,7 +138,7 @@ export default function DashboardLayout({
     // Communication
     {
       title: "Team Chat",
-      href: "/dashboard/chat",
+      href: "/dashboard/upcoming/team-chat",
       icon: <MessageSquare className="h-6 w-6" />,
       role: [
         "ADMIN",
