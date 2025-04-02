@@ -3,61 +3,49 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma"; // Fixed import
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    // Get the session to check if user is authenticated and has partner role
     const session = await getServerSession(authOptions);
 
-    // Check if user is authenticated and has partner role
     if (!session || session.user.role !== "PARTNER") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const partnerId = session.user.id;
-
-    // Fetch staff managed by this partner - using tasks they've assigned instead of non-existent managerId
-    const tasksAssignedByPartner = await prisma.task.findMany({
+    // Count staff (users who are not admins or clients)
+    const totalStaff = await prisma.user.count({
       where: {
-        assignedById: partnerId
-      },
-      select: {
-        assignedToId: true
+        role: {
+          in: ["BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT", "PARTNER"] // Added PARTNER role
+        },
+        isActive: true
       }
     });
-    
-    const juniorStaffIds = tasksAssignedByPartner
-      .map(task => task.assignedToId)
-      .filter(id => id !== null) as string[];
-    
-    // Remove duplicates
-    const uniqueStaffIds = [...new Set(juniorStaffIds)];
-    
-    // Fetch staff details
-    const staff = await prisma.user.findMany({
+
+    console.log("Total staff count:", totalStaff);
+
+    // Get staff details
+    const staffMembers = await prisma.user.findMany({
       where: {
-        id: { in: uniqueStaffIds },
         role: {
-          in: ["BUSINESS_CONSULTANT", "BUSINESS_EXECUTIVE"]
-        }
+          in: ["BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"]
+        },
+        isActive: true
       },
       select: {
         id: true,
         name: true,
         email: true,
-        role: true,
-        isActive: true // Using isActive instead of status
+        role: true
+        // Other fields you need
       }
     });
-
-    // Get staff IDs for task queries
-    const staffIds = staff.map(s => s.id);
 
     // Fetch tasks assigned to staff managed by this partner
     const tasks = await prisma.task.findMany({
       where: {
         OR: [
-          { assignedById: partnerId },
-          { assignedToId: { in: staffIds } }
+          { assignedById: session.user.id },
+          { assignedToId: { in: staffMembers.map(s => s.id) } }
         ]
       },
       include: {
@@ -65,86 +53,51 @@ export async function GET(_req: NextRequest) {
           select: {
             id: true,
             name: true
-            // Remove image field as it doesn't exist
-          }
-        }
-      }
-    });
-
-    // Fetch activities related to this partner's team
-    const recentActivities = await prisma.activity.findMany({
-      where: {
-        OR: [
-          { userId: partnerId },
-          { userId: { in: staffIds } }
-        ]
-      },
-      take: 10,
-      orderBy: {
-        createdAt: "desc"
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            role: true
-            // Remove image field as it doesn't exist
           }
         }
       }
     });
 
     // Calculate stats
-    const totalStaff = staff.length;
-    
-    const activeTasks = tasks.filter(t => 
+    const activeTasks = tasks.filter(t =>
       t.status !== "completed" && t.status !== "cancelled"
     ).length;
-    
-    const pendingTasks = tasks.filter(t => 
+
+    const pendingTasks = tasks.filter(t =>
       t.status === "pending"
     ).length;
-    
-    const completedTasks = tasks.filter(t => 
+
+    const completedTasks = tasks.filter(t =>
       t.status === "completed"
     ).length;
-    
-    // Calculate task completion rate
-    const tasksWithDueDate = tasks.filter(t => t.dueDate && t.status === "completed");
-    const tasksCompletedOnTime = tasksWithDueDate.filter(t => {
-      const completedAt = t.updatedAt;
-      const dueDate = t.dueDate;
-      return dueDate && completedAt <= dueDate;
-    });
-    
-    const taskCompletionRate = tasksWithDueDate.length > 0
-      ? Math.round((tasksCompletedOnTime.length / tasksWithDueDate.length) * 100)
-      : 0;
-    
-    // Calculate staff utilization - use isActive instead of status
-    const activeStaff = staff.filter(s => s.isActive).length;
-    const staffWithTasks = new Set(
-      tasks
-        .filter(t => t.status !== "completed" && t.assignedToId)
-        .map(t => t.assignedToId)
-    ).size;
-    
-    const staffUtilization = totalStaff > 0
-      ? Math.round((staffWithTasks / totalStaff) * 100)
-      : 0;
+
+    // Calculate task completion rate - default to 100% if no tasks assigned
+    let taskCompletionRate = 100; // Default to 100% initially
+
+    if (completedTasks > 0) {
+      // If there are completed tasks, calculate actual rate
+      const tasksWithDueDate = tasks.filter(t => t.dueDate && t.status === "completed");
+      if (tasksWithDueDate.length > 0) {
+        const tasksCompletedOnTime = tasksWithDueDate.filter(t => {
+          const completedAt = t.updatedAt;
+          const dueDate = t.dueDate;
+          return dueDate && completedAt <= dueDate;
+        });
+        taskCompletionRate = Math.round((tasksCompletedOnTime.length / tasksWithDueDate.length) * 100);
+      }
+    }
 
     // Count tasks per staff member
-    const staffWithTaskCounts = staff.map(s => {
+    const staffWithTaskCounts = staffMembers.map(s => {
       const staffTasks = tasks.filter(t => t.assignedToId === s.id);
       const activeTaskCount = staffTasks.filter(t => t.status !== "completed").length;
       const completedTaskCount = staffTasks.filter(t => t.status === "completed").length;
-      
+
       return {
         ...s,
         activeTasks: activeTaskCount,
         completedTasks: completedTaskCount,
-        status: s.isActive ? "ACTIVE" : "INACTIVE" // Convert isActive to status for UI
+        status: "ACTIVE" // Assuming all fetched staff are active
       };
     });
 
@@ -159,25 +112,9 @@ export async function GET(_req: NextRequest) {
       assignedTo: task.assignedTo ? {
         id: task.assignedTo.id,
         name: task.assignedTo.name,
-        // Generate avatar from name instead of using image field
         image: `https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedTo.name}`
       } : undefined,
       progress: calculateTaskProgress(task.status)
-    }));
-
-    // Transform activities for the frontend
-    const transformedActivities = recentActivities.map(activity => ({
-      id: activity.id,
-      type: activity.type,
-      user: {
-        name: activity.user.name,
-        role: activity.user.role,
-        // Generate avatar from name instead of using image field
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${activity.user.name}`
-      },
-      action: activity.action,
-      target: activity.target,
-      timestamp: activity.createdAt.toISOString()
     }));
 
     // Return the dashboard data
@@ -187,12 +124,10 @@ export async function GET(_req: NextRequest) {
         activeTasks,
         pendingTasks,
         completedTasks,
-        taskCompletionRate,
-        staffUtilization
+        taskCompletionRate
       },
       staff: staffWithTaskCounts,
-      tasks: processedTasks,
-      recentActivities: transformedActivities
+      tasks: processedTasks
     });
   } catch (error) {
     console.error("Error fetching partner dashboard data:", error);

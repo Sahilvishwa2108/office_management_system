@@ -39,16 +39,23 @@ import {
   FilterX,
 } from "lucide-react";
 import Link from "next/link";
+import { UserCount } from "@/components/dashboard/user-count";
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
-  isActive?: boolean;
+  isActive?: boolean; // Changed from isActive?: boolean
   createdAt: string;
   updatedAt: string;
 }
+
+// For partner page showing only team members
+const partnerRoleConfigs = [
+  { role: "BUSINESS_EXECUTIVE", label: "Business Executives", color: "bg-green-500" },
+  { role: "BUSINESS_CONSULTANT", label: "Business Consultants", color: "bg-teal-500" },
+];
 
 export default function PartnerUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -127,6 +134,18 @@ export default function PartnerUsersPage() {
           </Link>
         </Button>
       </div>
+
+      <UserCount 
+        users={users.map(user => ({
+          ...user,
+          isActive: user.isActive !== false // Ensures isActive is a boolean, defaulting to true if undefined
+        }))}
+        title="Team Members"
+        description="Your team distribution by role"
+        includeRoles={["BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"]}
+        roleConfigs={partnerRoleConfigs}
+        showTotal={true}
+      />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

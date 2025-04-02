@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react"; // Add session import
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,7 +39,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { TaskProgress } from "@/components/dashboard/task-progress";
+import { UserCount } from "@/components/dashboard/user-count";
 
 interface User {
   id: string;
@@ -50,8 +51,20 @@ interface User {
   isActive: boolean;
 }
 
+// Client roles to exclude
+const CLIENT_ROLES = ["PERMANENT_CLIENT", "GUEST_CLIENT"];
+
+// Define role configurations
+const roleConfigs = [
+  { role: "ADMIN", label: "Admins", color: "bg-blue-500" },
+  { role: "PARTNER", label: "Partners", color: "bg-purple-500" },
+  { role: "BUSINESS_EXECUTIVE", label: "Business Executives", color: "bg-green-500" },
+  { role: "BUSINESS_CONSULTANT", label: "Business Consultants", color: "bg-teal-500" },
+];
+
 export default function UsersPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,7 +78,7 @@ export default function UsersPage() {
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
-  // Load users
+  // Load users - excluding clients and current user
   const loadUsers = async () => {
     setLoading(true);
     try {
@@ -74,7 +87,14 @@ export default function UsersPage() {
         url += `?role=${roleFilter}`;
       }
       const response = await axios.get(url);
-      setUsers(response.data);
+      
+      // Filter out client users and the current logged-in user
+      const filteredUsers = response.data.filter((user: User) => 
+        !CLIENT_ROLES.includes(user.role) && 
+        user.id !== session?.user?.id
+      );
+      
+      setUsers(filteredUsers);
     } catch (error) {
       console.error("Error loading users:", error);
       toast.error("Failed to load users");
@@ -112,33 +132,16 @@ export default function UsersPage() {
 
   // Initial load
   useEffect(() => {
-    loadUsers();
-  }, [roleFilter]);
+    if (session) {
+      loadUsers();
+    }
+  }, [roleFilter, session]);
 
   // Filter users based on search term
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // Add this section for role statistics
-  const getRoleStats = () => {
-    if (!users.length) return [];
-    
-    const roleCounts = users.reduce((acc, user) => {
-      acc[user.role] = (acc[user.role] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    return [
-      { label: "Admins", value: roleCounts["ADMIN"] || 0, color: "bg-blue-500" },
-      { label: "Partners", value: roleCounts["PARTNER"] || 0, color: "bg-purple-500" },
-      { label: "Business Executives", value: roleCounts["BUSINESS_EXECUTIVE"] || 0, color: "bg-green-500" },
-      { label: "Business Consultants", value: roleCounts["BUSINESS_CONSULTANT"] || 0, color: "bg-teal-500" },
-      { label: "Permanent Clients", value: roleCounts["PERMANENT_CLIENT"] || 0, color: "bg-amber-500" },
-      { label: "Guest Clients", value: roleCounts["GUEST_CLIENT"] || 0, color: "bg-orange-500" },
-    ];
-  };
 
   return (
     <div className="space-y-6">
@@ -158,18 +161,12 @@ export default function UsersPage() {
 
       {/* New: Role distribution chart */}
       {!loading && users.length > 0 && (
-        <Card className="p-4">
-          <div className="mb-2">
-            <h3 className="font-medium">User Role Distribution</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Overview of user distribution across different roles
-            </p>
-            <TaskProgress 
-              items={getRoleStats()} 
-              size="md"
-            />
-          </div>
-        </Card>
+        <UserCount 
+          users={users}
+          excludeRoles={CLIENT_ROLES}
+          roleConfigs={roleConfigs}
+          showTotal={true}
+        />
       )}
 
       {/* Users list card with filters */}
@@ -198,8 +195,6 @@ export default function UsersPage() {
                 <SelectItem value="PARTNER">Partner</SelectItem>
                 <SelectItem value="BUSINESS_EXECUTIVE">Business Executive</SelectItem>
                 <SelectItem value="BUSINESS_CONSULTANT">Business Consultant</SelectItem>
-                <SelectItem value="PERMANENT_CLIENT">Permanent Client</SelectItem>
-                <SelectItem value="GUEST_CLIENT">Guest Client</SelectItem>
               </SelectContent>
             </Select>
           </div>

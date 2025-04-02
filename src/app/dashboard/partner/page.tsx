@@ -69,7 +69,8 @@ interface PartnerDashboardData {
 }
 
 export default function PartnerDashboard() {
-  const [dashboardData, setDashboardData] = useState<PartnerDashboardData | null>(null);
+  const [dashboardData, setDashboardData] =
+    useState<PartnerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -133,15 +134,9 @@ export default function PartnerDashboard() {
             <StatsCard
               title="Total Staff"
               value={loading ? "..." : stats.totalStaff.toString()}
-              description={`${stats.staffUtilization}% utilization`}
-              trend={
-                stats.staffUtilization > 80
-                  ? "up"
-                  : stats.staffUtilization < 50
-                  ? "down"
-                  : "neutral"
-              }
+              description="Active staff members" // Changed from utilization percentage
               icon={<Users className="h-4 w-4 text-muted-foreground" />}
+              // Remove the trend prop that depends on staffUtilization
             />
             <StatsCard
               title="Active Tasks"
@@ -171,7 +166,11 @@ export default function PartnerDashboard() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <DashboardCard title="Recent Activity" className="col-span-4" loading={loading}>
+            <DashboardCard
+              title="Recent Activity"
+              className="col-span-4"
+              loading={loading}
+            >
               {error ? (
                 <div className="flex flex-col items-center justify-center p-6 text-center">
                   <p className="text-sm text-muted-foreground">{error}</p>
@@ -210,21 +209,29 @@ export default function PartnerDashboard() {
                     <AlertTriangle className="h-10 w-10 text-muted-foreground mb-2 opacity-20" />
                     <p className="text-sm text-muted-foreground">{error}</p>
                   </div>
-                ) : dashboardData?.tasks?.filter((t) => t.priority === "high").length === 0 ? (
+                ) : dashboardData?.tasks?.filter((t) => t.priority === "high")
+                    .length === 0 ? (
                   <div className="flex flex-col items-center justify-center p-6 text-center">
                     <CheckCircle className="h-10 w-10 text-green-500 mb-2 opacity-50" />
-                    <p className="text-sm text-muted-foreground">No high priority tasks</p>
+                    <p className="text-sm text-muted-foreground">
+                      No high priority tasks
+                    </p>
                   </div>
                 ) : (
                   dashboardData?.tasks
                     ?.filter((task) => task.priority === "high")
                     .slice(0, 3)
                     .map((task) => (
-                      <Link key={task.id} href={`/dashboard/partner/tasks/${task.id}`}>
+                      <Link
+                        key={task.id}
+                        href={`/dashboard/partner/tasks/${task.id}`}
+                      >
                         <div className="border rounded-md p-3 hover:bg-muted/50 transition-colors">
                           <div className="flex justify-between items-start">
                             <div>
-                              <p className="font-medium truncate">{task.title}</p>
+                              <p className="font-medium truncate">
+                                {task.title}
+                              </p>
                               <p className="text-sm text-muted-foreground truncate">
                                 {task.assignedTo?.name || "Unassigned"}
                               </p>
@@ -360,19 +367,21 @@ export default function PartnerDashboard() {
                 </Button>
               </div>
             ) : dashboardData?.tasks && dashboardData.tasks.length > 0 ? (
-              dashboardData.tasks.slice(0, 6).map((task) => (
-                <TaskCard
-                  key={task.id}
-                  id={task.id}
-                  title={task.title}
-                  description={task.description}
-                  status={task.status}
-                  priority={task.priority}
-                  dueDate={task.dueDate}
-                  assignee={task.assignedTo}
-                  progress={task.progress}
-                />
-              ))
+              dashboardData.tasks
+                .slice(0, 6)
+                .map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    id={task.id}
+                    title={task.title}
+                    description={task.description}
+                    status={task.status}
+                    priority={task.priority}
+                    dueDate={task.dueDate}
+                    assignee={task.assignedTo}
+                    progress={task.progress}
+                  />
+                ))
             ) : (
               <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
                 <CheckCircle className="h-12 w-12 text-green-500 mb-2 opacity-50" />
