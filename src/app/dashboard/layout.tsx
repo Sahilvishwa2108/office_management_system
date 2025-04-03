@@ -138,7 +138,7 @@ export default function DashboardLayout({
     // Communication
     {
       title: "Team Chat",
-      href: "/dashboard/upcoming/team-chat",
+      href: "/dashboard/chat",
       icon: <MessageSquare className="h-6 w-6" />,
       role: [
         "ADMIN",
