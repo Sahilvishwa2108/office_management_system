@@ -172,6 +172,22 @@ export async function PUT(
       },
     });
 
+    // Log activity for role change
+    if (newRole && newRole !== userToUpdate.role) {
+      await logActivity(
+        "user",
+        "role_changed",
+        `${userToUpdate.name} from ${userToUpdate.role} to ${newRole}`,
+        session.user.id,
+        {
+          userId: userId,
+          oldRole: userToUpdate.role,
+          newRole: newRole,
+          relatedUserIds: [userId]  // This is critical! Include the affected user's ID
+        }
+      );
+    }
+
     return NextResponse.json({
       message: "User updated successfully",
       user: {

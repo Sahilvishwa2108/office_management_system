@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -39,40 +37,42 @@ export function DashboardHeader() {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const response = await fetch('/api/notifications');
-
-        if (!response.ok) {
-          throw new Error(`Error fetching notifications: ${response.status}`);
+        const response = await fetch("/api/notifications/dashboard");
+        if (response.ok) {
+          const data = await response.json();
+          setNotifications(data.notifications || []);
         }
-
-        const data = await response.json();
-        setNotifications(data.notifications);
-        setError(null);
-      } catch (err) {
-        console.error('Failed to fetch notifications:', err);
-        setError('Failed to load notifications');
+      } catch (error) {
+        console.error("Failed to fetch notifications:", error);
       } finally {
         setLoading(false);
       }
     };
 
+    // Initial fetch
     fetchNotifications();
+
+    // Set up interval for periodic fetching (every 30 seconds)
+    const intervalId = setInterval(fetchNotifications, 30000);
+
+    // Clean up on unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   // Get user initials for avatar fallback
   const getInitials = (name?: string) => {
     return name
-      ?.split(' ')
-      .map(part => part[0])
-      .join('')
+      ?.split(" ")
+      .map((part) => part[0])
+      .join("")
       .toUpperCase()
-      .substring(0, 2) || 'U';
+      .substring(0, 2) || "U";
   };
 
   const handleMarkNotificationRead = async (id: string) => {
     try {
       const response = await fetch(`/api/notifications/${id}/read`, {
-        method: 'PUT'
+        method: "PUT",
       });
 
       if (!response.ok) {
@@ -80,22 +80,20 @@ export function DashboardHeader() {
       }
 
       // Update local state using the isRead property
-      setNotifications(prev =>
-        prev.map(notification =>
-          notification.id === id
-            ? { ...notification, read: true }
-            : notification
+      setNotifications((prev) =>
+        prev.map((notification) =>
+          notification.id === id ? { ...notification, read: true } : notification
         )
       );
     } catch (err) {
-      console.error('Failed to mark notification as read:', err);
+      console.error("Failed to mark notification as read:", err);
     }
   };
 
   const handleMarkAllNotificationsRead = async () => {
     try {
-      const response = await fetch('/api/notifications/read-all', {
-        method: 'PUT'
+      const response = await fetch("/api/notifications/read-all", {
+        method: "PUT",
       });
 
       if (!response.ok) {
@@ -103,16 +101,16 @@ export function DashboardHeader() {
       }
 
       // Update local state
-      setNotifications(prev =>
-        prev.map(notification => ({ ...notification, read: true }))
+      setNotifications((prev) =>
+        prev.map((notification) => ({ ...notification, read: true }))
       );
     } catch (err) {
-      console.error('Failed to mark all notifications as read:', err);
+      console.error("Failed to mark all notifications as read:", err);
     }
   };
 
   const handleViewAllNotifications = () => {
-    router.push('/dashboard/notifications');
+    router.push("/dashboard/notifications");
   };
 
   return (
@@ -122,7 +120,7 @@ export function DashboardHeader() {
 
       <div className="flex items-center gap-3">
         <div className="hidden md:flex items-center text-sm text-muted-foreground mr-2">
-          <span>{format(new Date(), 'EEEE, MMMM d, yyyy')}</span>
+          <span>{format(new Date(), "EEEE, MMMM d, yyyy")}</span>
         </div>
 
         <ThemeToggle />
@@ -140,7 +138,10 @@ export function DashboardHeader() {
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
               <Avatar className="h-9 w-9">
                 <AvatarImage
-                  src={session?.user?.image || `https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
+                  src={
+                    session?.user?.image ||
+                    `https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`
+                  }
                   alt={session?.user?.name || "User"}
                 />
                 <AvatarFallback>{getInitials(session?.user?.name)}</AvatarFallback>
@@ -155,10 +156,12 @@ export function DashboardHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/dashboard/settings/profile')}>
+            <DropdownMenuItem
+              onClick={() => router.push("/dashboard/settings/profile")}
+            >
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
+            <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />

@@ -1,12 +1,24 @@
 import nodemailer from 'nodemailer';
 
-// Create transporter
+// Create reusable transporter object using SMTP transport
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
+    user: process.env.EMAIL_USER || 'sahilvishwa2108@gmail.com',
+    pass: process.env.EMAIL_PASSWORD || 'zjfx obfh thac dabr', // App password, not regular password
   },
+  tls: {
+    rejectUnauthorized: false // Helps with self-signed certificates
+  }
+});
+
+// Verify connection configuration (optional but recommended)
+transporter.verify((error: Error | null) => {
+  if (error) {
+    console.error('SMTP connection error:', error);
+  } else {
+    console.log('Server is ready to send emails');
+  }
 });
 
 export async function sendPasswordSetupEmail(
@@ -82,6 +94,65 @@ export async function sendPasswordResetEmail(
     return { success: true };
   } catch (error) {
     console.error('Error sending password reset email:', error);
+    return { success: false, error };
+  }
+}
+
+export async function sendActivityNotificationEmail(
+  email: string,
+  name: string,
+  activityTitle: string,
+  activityDetails: string,
+  activityType: string
+) {
+  // Add console log for debugging
+  console.log(`Sending email to ${email} for activity: ${activityTitle}`);
+  
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const dashboardUrl = `${baseUrl}/dashboard`;
+
+  // Icon based on activity type
+  let activityIcon = "📝";
+  switch(activityType) {
+    case 'user': activityIcon = "👤"; break;
+    case 'task': activityIcon = "✅"; break;
+    case 'client': activityIcon = "🏢"; break;
+    case 'document': activityIcon = "📄"; break;
+    case 'message': activityIcon = "💬"; break;
+  }
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM || 'noreply@officemanagement.com',
+    to: email,
+    subject: `New Activity: ${activityTitle} - Office Management System`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>${activityIcon} Activity Update</h2>
+        <p>Hello ${name},</p>
+        <p><strong>${activityTitle}</strong></p>
+        <p>${activityDetails}</p>
+        <div style="margin: 30px 0;">
+          <a href="${dashboardUrl}" style="background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+            View in Dashboard
+          </a>
+        </div>
+        <p>Thank you,<br>Office Management Team</p>
+      </div>
+    `
+  };
+
+  try {
+    // Ensure environment variables are set
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.error('Missing email credentials in .env file');
+      return { success: false, error: 'Email configuration missing' };
+    }
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Activity notification email sent to ${email}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending activity notification email:', error);
     return { success: false, error };
   }
 }
