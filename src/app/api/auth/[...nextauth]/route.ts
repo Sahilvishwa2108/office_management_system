@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activity-logger";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -96,6 +97,47 @@ export const authOptions: NextAuthOptions = {
           role: token.role,
         },
       };
+    },
+
+    async signIn({ user }) {
+      // Log login activity
+      if (user.id) {
+        try {
+          await logActivity(
+            "user",
+            "login",
+            user.name || user.email || "Unknown user",
+            user.id
+          );
+        } catch (error) {
+          console.error("Failed to log login activity:", error);
+          // Don't block login if activity logging fails
+        }
+      }
+
+      return true;
+    },
+  },
+  events: {
+    async signOut({ token }) {
+      if (token?.sub) {
+        try {
+          // Get user details first (since token might not have name)
+          const user = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: { name: true },
+          });
+
+          await logActivity(
+            "user",
+            "logout",
+            user?.name || "Unknown user",
+            token.sub
+          );
+        } catch (error) {
+          console.error("Failed to log logout activity:", error);
+        }
+      }
     },
   },
   debug: process.env.NODE_ENV === "development",

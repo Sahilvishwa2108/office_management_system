@@ -77,7 +77,7 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Link href="/dashboard/settings/security" className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
+                  <Link href="/dashboard/upcoming/settings/security" className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-red-50 dark:bg-red-900 rounded">
                         <SettingsIcon className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -90,7 +90,7 @@ export default function SettingsPage() {
                     <ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
                   </Link>
                   
-                  <Link href="/dashboard/settings/access-logs" className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
+                  <Link href="/dashboard/upcoming/settings/access-logs" className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-green-50 dark:bg-green-900 rounded">
                         <SettingsIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -131,7 +131,7 @@ export default function SettingsPage() {
                   <ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
                 </Link>
                 
-                <Link href="/dashboard/settings/dashboard" className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
+                <Link href="/dashboard/upcoming/settings/dashboard" className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-indigo-50 dark:bg-indigo-900 rounded">
                       <SettingsIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
@@ -158,7 +158,7 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Link href="/dashboard/settings/notifications/system" className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
+                <Link href="/dashboard/upcoming/settings/notifications/system" className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-50 dark:bg-blue-900 rounded">
                       <BellIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -171,7 +171,7 @@ export default function SettingsPage() {
                   <ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
                 </Link>
                 
-                <Link href="/dashboard/settings/notifications/email" className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
+                <Link href="/dashboard/upcoming/settings/notifications/email" className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-green-50 dark:bg-green-900 rounded">
                       <BellIcon className="h-4 w-4 text-green-600 dark:text-green-400" />

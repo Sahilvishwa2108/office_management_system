@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
-import { prisma } from "@/lib/prisma"; // Fixed import
+import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       prisma.user.count(),
       prisma.user.count({
         where: {
-          isActive: true // Assuming isActive field exists instead of status
+          isActive: true
         }
       }),
       prisma.client.count(),
@@ -36,9 +36,14 @@ export async function GET(req: NextRequest) {
       })
     ]);
 
-    // Fetch recent activities
+    // Fetch recent activities with filtering out login/logout actions
     const recentActivities = await prisma.activity.findMany({
-      take: 10,
+      where: {
+        action: {
+          notIn: ["login", "logout"] // Exclude login and logout actions
+        }
+      },
+      take: 20,
       orderBy: {
         createdAt: "desc"
       },
@@ -48,7 +53,6 @@ export async function GET(req: NextRequest) {
             id: true,
             name: true,
             role: true
-            // Removed image field as it likely doesn't exist
           }
         }
       }
@@ -61,7 +65,6 @@ export async function GET(req: NextRequest) {
       user: {
         name: activity.user.name,
         role: activity.user.role,
-        // Use user's name for avatar generation instead of non-existent image field
         avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${activity.user.name}`
       },
       action: activity.action,

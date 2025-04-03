@@ -139,12 +139,15 @@ model Notification {
 
 model Activity {
   id        String   @id @default(uuid())
-  type      String   // "user", "client", "document", "task", etc.
-  action    String   // "created", "updated", "deleted", "completed", etc.
-  target    String   // The item that was acted upon
-  userId    String
+  type      String   // "client", "user", "task", "project", "document"
+  action    String   // "created", "updated", "deleted", "assigned", "completed", "role_changed"
+  target    String   // What was affected (name of client, user, task, etc.)
+  details   Json?    // Additional context as JSON (optional)
+  userId    String   
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
 
+  @@index([type])
   @@index([userId])
+  @@index([createdAt])
 }

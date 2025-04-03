@@ -4,6 +4,7 @@ import { sendPasswordSetupEmail } from "@/lib/email";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { v4 as uuidv4 } from "uuid";
+import { logActivity } from "@/lib/activity-logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -80,6 +81,18 @@ export async function POST(req: NextRequest) {
 
     // Send email with password setup link
     await sendPasswordSetupEmail(email, name, passwordToken);
+
+    // Log the activity
+    await logActivity(
+      "user",
+      "created",
+      user.name, 
+      session.user.id,
+      { 
+        userId: user.id, 
+        role: user.role 
+      }
+    );
 
     return NextResponse.json(
       { message: "User created successfully", userId: user.id },
