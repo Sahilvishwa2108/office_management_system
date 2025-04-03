@@ -7,8 +7,18 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  LogIn
+  LogIn,
+  LogOut,
+  UserCog,
+  Trash2,
+  PlusCircle,
+  Briefcase,
+  ClipboardList
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface PartnerActivityProps {
   activities: Array<{
@@ -36,8 +46,26 @@ export function PartnerActivity({ activities, loading = false }: PartnerActivity
       .toUpperCase();
   };
 
-  // Function to get icon based on activity type
-  const getActivityIcon = (type: string) => {
+  // Enhanced function to get appropriate icon based on activity type AND action
+  const getActivityIcon = (type: string, action: string) => {
+    // First check for special combinations of type + action
+    if (type === "user" && action === "login") {
+      return <LogIn className="h-4 w-4 text-blue-500" />;
+    }
+    if (type === "user" && action === "logout") {
+      return <LogOut className="h-4 w-4 text-blue-500" />;
+    }
+    if (type === "user" && action === "role_changed") {
+      return <UserCog className="h-4 w-4 text-purple-500" />;
+    }
+    if (type === "user" && action === "created") {
+      return <PlusCircle className="h-4 w-4 text-green-500" />;
+    }
+    if (type === "user" && action === "deleted") {
+      return <Trash2 className="h-4 w-4 text-red-500" />;
+    }
+    
+    // Otherwise fall back to type-based icons
     switch (type.toLowerCase()) {
       case "user":
         return <User className="h-4 w-4 text-blue-500" />;
@@ -46,14 +74,35 @@ export function PartnerActivity({ activities, loading = false }: PartnerActivity
       case "message":
         return <MessagesSquare className="h-4 w-4 text-purple-500" />;
       case "task":
-        return <CheckCircle className="h-4 w-4 text-amber-500" />;
+        return action === "completed" 
+          ? <CheckCircle className="h-4 w-4 text-emerald-500" />
+          : <ClipboardList className="h-4 w-4 text-amber-500" />;
+      case "client":
+        return <Briefcase className="h-4 w-4 text-amber-500" />;
       case "deadline":
         return <Clock className="h-4 w-4 text-red-500" />;
-      case "login":
-        return <LogIn className="h-4 w-4 text-blue-500" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-500" />;
     }
+  };
+  
+  // Format the activity message more intelligently
+  const formatActivityMessage = (type: string, action: string, target: string) => {
+    // Special cases for more readable messages
+    if (type === "user" && action === "role_changed") {
+      return `changed role for ${target}`;
+    }
+    
+    if (type === "task" && action === "assigned") {
+      return `assigned ${target}`;
+    }
+    
+    if (type === "user" && (action === "login" || action === "logout")) {
+      return action === "login" ? "logged in" : "logged out";
+    }
+    
+    // Default formatting
+    return `${action} ${target}`;
   };
 
   if (loading) {
@@ -82,39 +131,55 @@ export function PartnerActivity({ activities, loading = false }: PartnerActivity
   }
 
   return (
-    <div className="space-y-4">
-      {activities.map((activity) => (
-        <div key={activity.id} className="flex items-start gap-4">
-          <Avatar className="h-10 w-10">
-            <AvatarImage 
-              src={activity.user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${activity.user.name}`} 
-              alt={activity.user.name} 
-            />
-            <AvatarFallback>{getInitials(activity.user.name)}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-medium leading-none">
-                {activity.user.name}
-              </p>
-              <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(activity.timestamp), {
-                  addSuffix: true,
-                })}
-              </span>
+    <ScrollArea className="h-[360px] pr-4 rounded-md">
+      <div className="space-y-4 pr-2">
+        {activities.map((activity) => (
+          <TooltipProvider key={activity.id}>
+            <div className="flex items-start gap-4">
+              <Avatar className="h-10 w-10">
+                <AvatarImage 
+                  src={activity.user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${activity.user.name}`} 
+                  alt={activity.user.name} 
+                />
+                <AvatarFallback>{getInitials(activity.user.name)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium leading-none">
+                    {activity.user.name}
+                  </p>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-xs text-muted-foreground cursor-help">
+                        {formatDistanceToNow(new Date(activity.timestamp), {
+                          addSuffix: true,
+                        })}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {new Date(activity.timestamp).toLocaleString()}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    {getActivityIcon(activity.type, activity.action)}
+                    <span>
+                      {formatActivityMessage(activity.type, activity.action, activity.target)}
+                    </span>
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground">{activity.user.role}</p>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                {getActivityIcon(activity.type)}
-                <span>
-                  {activity.action} {activity.target}
-                </span>
-              </span>
-            </p>
-            <p className="text-xs text-muted-foreground">{activity.user.role}</p>
-          </div>
-        </div>
-      ))}
-    </div>
+          </TooltipProvider>
+        ))}
+      </div>
+      <div className="mt-2 text-center">
+        <Button variant="ghost" size="sm" asChild className="text-xs">
+          <Link href="/dashboard/activities">View all activities</Link>
+        </Button>
+      </div>
+    </ScrollArea>
   );
 }

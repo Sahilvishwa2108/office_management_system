@@ -7,8 +7,13 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== "PARTNER") {
+    if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user is a partner
+    if (session.user.role !== "ADMIN" && session.user.role !== "PARTNER") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Count staff (users who are not admins or clients)
@@ -117,6 +122,42 @@ export async function GET(req: NextRequest) {
       progress: calculateTaskProgress(task.status)
     }));
 
+    // Get recent activities (excluding login/logout)
+    const recentActivities = await prisma.activity.findMany({
+      where: {
+        action: {
+          notIn: ["login", "logout"] // Exclude login and logout actions
+        }
+      },
+      take: 20,
+      orderBy: {
+        createdAt: "desc"
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            role: true
+          }
+        }
+      }
+    });
+
+    // Transform activities for the frontend
+    const transformedActivities = recentActivities.map(activity => ({
+      id: activity.id,
+      type: activity.type,
+      user: {
+        name: activity.user.name,
+        role: activity.user.role,
+        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${activity.user.name}`
+      },
+      action: activity.action,
+      target: activity.target,
+      timestamp: activity.createdAt.toISOString()
+    }));
+
     // Return the dashboard data
     return NextResponse.json({
       stats: {
@@ -127,7 +168,8 @@ export async function GET(req: NextRequest) {
         taskCompletionRate
       },
       staff: staffWithTaskCounts,
-      tasks: processedTasks
+      tasks: processedTasks,
+      recentActivities: transformedActivities
     });
   } catch (error) {
     console.error("Error fetching partner dashboard data:", error);
