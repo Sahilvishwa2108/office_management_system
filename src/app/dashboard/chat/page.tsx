@@ -483,16 +483,16 @@ export default function ChatPage() {
   };
 
   // Select a user to mention
-  const selectMention = (user: User) => {
+    const selectMention = (user: User) => {
     if (mentionStartPosition.current !== -1) {
       const beforeMention = input.substring(0, mentionStartPosition.current);
       const afterMention = input.substring(
         mentionStartPosition.current + mentionQuery.length + 1
       );
-
+  
       const newText = `${beforeMention}@${user.name} ${afterMention}`;
       setInput(newText);
-
+  
       setShowMentions(false);
       mentionStartPosition.current = -1;
       setMentionQuery("");
@@ -603,17 +603,17 @@ export default function ChatPage() {
   };
 
   // Format message text with mentions highlighted
-  const formatMessageWithMentions = (text: string) => {
+    const formatMessageWithMentions = (text: string) => {
     // Split by potential @mentions
     const parts = text.split(/(@\w+)/g);
-
+  
     return parts.map((part, index) => {
       if (part.startsWith("@")) {
         const username = part.substring(1);
         const mentionedUser = onlineUsers.find(
           (user) => user.name.toLowerCase() === username.toLowerCase()
         );
-
+  
         if (mentionedUser) {
           return (
             <span
@@ -972,10 +972,13 @@ export default function ChatPage() {
 
           <CardContent className="flex-1 p-0 relative bg-card/10">
             {/* Virtual list for messages */}
-            <div
+                        <div
               ref={messageContainerRef}
-              className="h-full overflow-auto"
-              style={{ contain: "strict" }}
+              className="h-full overflow-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent hover:scrollbar-thumb-muted/80"
+              style={{
+                contain: "strict",
+                scrollbarWidth: "thin", // For Firefox
+              }}
             >
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-12">
@@ -1004,22 +1007,11 @@ export default function ChatPage() {
                         getMessageDate(
                           new Date(messages[virtualRow.index - 1].sentAt)
                         );
-
-                    // Check if this is first message from a user or if previous message is from someone else
+            
                     const isNewSender =
                       virtualRow.index === 0 ||
                       messages[virtualRow.index - 1].name !== message.name;
-
-                    // Check if this is a consecutive message within 5 minutes
-                    const isConsecutive =
-                      virtualRow.index > 0 &&
-                      messages[virtualRow.index - 1].name === message.name &&
-                      new Date(message.sentAt).getTime() -
-                        new Date(
-                          messages[virtualRow.index - 1].sentAt
-                        ).getTime() <
-                        5 * 60 * 1000;
-
+            
                     return (
                       <div
                         key={message.id}
@@ -1036,7 +1028,7 @@ export default function ChatPage() {
                             </div>
                           </div>
                         )}
-
+            
                         <div
                           className={cn(
                             "flex gap-3 max-w-[85%] mb-1 mx-2",
@@ -1044,35 +1036,27 @@ export default function ChatPage() {
                               ? "ml-auto flex-row-reverse"
                               : "",
                             !isNewSender && message.name !== session?.user?.name
-                              ? "pl-12" // Indent continued messages from others
+                              ? "pl-12"
                               : ""
                           )}
                         >
-                          {message.name !== session?.user?.name &&
-                            isNewSender && (
-                              <Avatar className="h-9 w-9 mt-1">
-                                <AvatarImage
-                                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${message.name}`}
-                                  alt={message.name}
-                                />
-                                <AvatarFallback>
-                                  {message.name.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                            )}
+                          {message.name !== session?.user?.name && isNewSender && (
+                            <Avatar className="h-9 w-9 mt-1">
+                              <AvatarImage
+                                src={`https://api.dicebear.com/7.x/initials/svg?seed=${message.name}`}
+                                alt={message.name}
+                              />
+                              <AvatarFallback>
+                                {message.name.substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
                           <div
                             className={cn(
                               "rounded-lg p-3 min-w-[120px] animate-in fade-in",
                               message.name === session?.user?.name
                                 ? "bg-primary text-primary-foreground rounded-tr-none"
-                                : "bg-muted rounded-tl-none",
-                              isConsecutive &&
-                                message.name !== session?.user?.name
-                                ? "rounded-tl-lg"
-                                : "",
-                              isConsecutive && message.name === session?.user?.name
-                                ? "rounded-tr-lg"
-                                : ""
+                                : "bg-muted rounded-tl-none"
                             )}
                           >
                             {isNewSender && (
@@ -1096,13 +1080,13 @@ export default function ChatPage() {
                                 </TooltipProvider>
                               </div>
                             )}
-
+            
                             {message.message && (
                               <div className="whitespace-pre-wrap break-words">
                                 {formatMessageWithMentions(message.message)}
                               </div>
                             )}
-
+            
                             {message.attachments &&
                               message.attachments.length > 0 && (
                                 <div className="mt-2 space-y-2">
@@ -1122,11 +1106,6 @@ export default function ChatPage() {
                                             src={attachment.url}
                                             alt={attachment.filename}
                                             className="max-h-40 max-w-full object-contain"
-                                            onLoad={() => {
-                                              if (shouldScrollToBottom.current) {
-                                                scrollToBottom();
-                                              }
-                                            }}
                                           />
                                         </a>
                                       ) : (
@@ -1134,7 +1113,7 @@ export default function ChatPage() {
                                           href={attachment.url}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="p-2 flex items-center gap-2 hover:bg-muted/60 transition-colors"
+                                          className="p-2 flex items-center gap-2 hover:bg-muted/60"
                                         >
                                           <FileText className="h-5 w-5" />
                                           <div className="overflow-hidden">
@@ -1212,10 +1191,10 @@ export default function ChatPage() {
               </div>
             )}
           </CardContent>
-
+          
           {/* Mention list */}
           {showMentions && (
-            <div className="absolute bottom-24 left-4 bg-background shadow-lg rounded-lg border p-1 max-h-48 overflow-auto z-20">
+            <div className="absolute bottom-[72px] left-4 bg-background shadow-lg rounded-lg border p-1 max-h-48 overflow-auto z-20">
               {mentionUsers.length > 0 ? (
                 mentionUsers.map((user) => (
                   <Button
@@ -1293,7 +1272,7 @@ export default function ChatPage() {
                 >
                   <SmilePlus className="h-5 w-5" />
                 </Button>
-
+ 
                 {showEmojiPicker && (
                   <div className="absolute bottom-12 left-0 w-64 bg-background shadow-lg rounded-lg border p-3 z-20">
                     <div className="grid grid-cols-8 gap-2">
@@ -1309,6 +1288,7 @@ export default function ChatPage() {
                           className="h-8 w-8 p-0"
                           onClick={() => {
                             setInput((prev) => prev + emoji);
+                            setShowEmojiPicker(false);
                             // Keep focus on input after adding emoji
                             document.querySelector("input")?.focus();
                           }}
