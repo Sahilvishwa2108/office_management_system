@@ -61,6 +61,7 @@ interface Message {
   userId?: string;
   isOnline?: boolean;
   avatar?: string;
+  edited?: boolean; // Added edited flag
 }
 
 interface Attachment {
@@ -99,6 +100,8 @@ export default function ChatPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
@@ -382,6 +385,26 @@ export default function ChatPage() {
             return;
           }
 
+          // Handle message edit
+          if (data.type === "message_edit") {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === data.id
+                  ? { ...msg, message: data.message, edited: true }
+                  : msg
+              )
+            );
+            return;
+          }
+
+          // Handle message delete
+          if (data.type === "message_delete") {
+            setMessages((prev) =>
+              prev.filter((msg) => msg.id !== data.id)
+            );
+            return;
+          }
+
           // Regular chat message
           setMessages((prev) => {
             // Only add if not already in the list
@@ -483,16 +506,16 @@ export default function ChatPage() {
   };
 
   // Select a user to mention
-    const selectMention = (user: User) => {
+  const selectMention = (user: User) => {
     if (mentionStartPosition.current !== -1) {
       const beforeMention = input.substring(0, mentionStartPosition.current);
       const afterMention = input.substring(
         mentionStartPosition.current + mentionQuery.length + 1
       );
-  
+
       const newText = `${beforeMention}@${user.name} ${afterMention}`;
       setInput(newText);
-  
+
       setShowMentions(false);
       mentionStartPosition.current = -1;
       setMentionQuery("");
@@ -603,17 +626,17 @@ export default function ChatPage() {
   };
 
   // Format message text with mentions highlighted
-    const formatMessageWithMentions = (text: string) => {
+  const formatMessageWithMentions = (text: string) => {
     // Split by potential @mentions
     const parts = text.split(/(@\w+)/g);
-  
+
     return parts.map((part, index) => {
       if (part.startsWith("@")) {
         const username = part.substring(1);
         const mentionedUser = onlineUsers.find(
           (user) => user.name.toLowerCase() === username.toLowerCase()
         );
-  
+
         if (mentionedUser) {
           return (
             <span
@@ -627,6 +650,77 @@ export default function ChatPage() {
       }
       return <span key={index}>{part}</span>;
     });
+  };
+
+  // Handle message edit
+  const startEditingMessage = (message: Message) => {
+    setEditingMessage(message.id);
+    setEditText(message.message || "");
+  };
+
+  // Save edited message
+  const saveEditedMessage = async () => {
+    if (!editingMessage) return;
+
+    try {
+      const response = await fetch("/api/chat/edit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messageId: editingMessage,
+          newText: editText,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to edit message");
+      }
+
+      // Update message locally
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === editingMessage
+            ? { ...msg, message: editText, edited: true }
+            : msg
+        )
+      );
+
+      // Clear editing state
+      setEditingMessage(null);
+      setEditText("");
+    } catch (error) {
+      console.error("Error editing message:", error);
+      toast.error("Failed to edit message");
+    }
+  };
+
+  // Delete/unsend message
+  const deleteMessage = async (messageId: string) => {
+    if (!confirm("Are you sure you want to delete this message?")) return;
+
+    try {
+      const response = await fetch("/api/chat/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messageId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete message");
+      }
+
+      // Remove message locally
+      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      toast.error("Failed to delete message");
+    }
+  };
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingMessage(null);
+    setEditText("");
   };
 
   // Group messages by date for better visual organization
@@ -972,7 +1066,7 @@ export default function ChatPage() {
 
           <CardContent className="flex-1 p-0 relative bg-card/10">
             {/* Virtual list for messages */}
-                        <div
+            <div
               ref={messageContainerRef}
               className="h-full overflow-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent hover:scrollbar-thumb-muted/80"
               style={{
@@ -1007,11 +1101,11 @@ export default function ChatPage() {
                         getMessageDate(
                           new Date(messages[virtualRow.index - 1].sentAt)
                         );
-            
+
                     const isNewSender =
                       virtualRow.index === 0 ||
                       messages[virtualRow.index - 1].name !== message.name;
-            
+
                     return (
                       <div
                         key={message.id}
@@ -1028,10 +1122,10 @@ export default function ChatPage() {
                             </div>
                           </div>
                         )}
-            
+
                         <div
                           className={cn(
-                            "flex gap-3 max-w-[85%] mb-1 mx-2",
+                            "flex gap-3 max-w-[85%] mb-1 mx-2 group",
                             message.name === session?.user?.name
                               ? "ml-auto flex-row-reverse"
                               : "",
@@ -1040,17 +1134,18 @@ export default function ChatPage() {
                               : ""
                           )}
                         >
-                          {message.name !== session?.user?.name && isNewSender && (
-                            <Avatar className="h-9 w-9 mt-1">
-                              <AvatarImage
-                                src={`https://api.dicebear.com/7.x/initials/svg?seed=${message.name}`}
-                                alt={message.name}
-                              />
-                              <AvatarFallback>
-                                {message.name.substring(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                          )}
+                          {message.name !== session?.user?.name &&
+                            isNewSender && (
+                              <Avatar className="h-9 w-9 mt-1">
+                                <AvatarImage
+                                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${message.name}`}
+                                  alt={message.name}
+                                />
+                                <AvatarFallback>
+                                  {message.name.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                            )}
                           <div
                             className={cn(
                               "rounded-lg p-3 min-w-[120px] animate-in fade-in",
@@ -1078,15 +1173,62 @@ export default function ChatPage() {
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
+                                {message.edited && (
+                                  <span className="text-xs opacity-70">
+                                    (edited)
+                                  </span>
+                                )}
                               </div>
                             )}
-            
-                            {message.message && (
-                              <div className="whitespace-pre-wrap break-words">
-                                {formatMessageWithMentions(message.message)}
+
+                            {editingMessage === message.id ? (
+                              <div className="space-y-2">
+                                <Input
+                                  value={editText}
+                                  onChange={(e) =>
+                                    setEditText(e.target.value)
+                                  }
+                                  className="bg-background/70"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                      e.preventDefault();
+                                      saveEditedMessage();
+                                    } else if (e.key === "Escape") {
+                                      cancelEditing();
+                                    }
+                                  }}
+                                />
+                                <div className="flex gap-2 justify-end">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={cancelEditing}
+                                    className="h-7 px-2"
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={saveEditedMessage}
+                                    className="h-7 px-2"
+                                  >
+                                    Save
+                                  </Button>
+                                </div>
                               </div>
+                            ) : (
+                              <>
+                                {message.message && (
+                                  <div className="whitespace-pre-wrap break-words">
+                                    {formatMessageWithMentions(
+                                      message.message
+                                    )}
+                                  </div>
+                                )}
+                              </>
                             )}
-            
+
                             {message.attachments &&
                               message.attachments.length > 0 && (
                                 <div className="mt-2 space-y-2">
@@ -1121,13 +1263,49 @@ export default function ChatPage() {
                                               {attachment.filename}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
-                                              {formatFileSize(attachment.size)}
+                                              {formatFileSize(
+                                                attachment.size
+                                              )}
                                             </p>
                                           </div>
                                         </a>
                                       )}
                                     </div>
                                   ))}
+                                </div>
+                              )}
+
+                            {/* Message actions (only show for current user's messages) */}
+                            {message.name === session?.user?.name &&
+                              !editingMessage && (
+                                <div
+                                  className={cn(
+                                    "flex gap-1 justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity",
+                                    message.name === session?.user?.name
+                                      ? "justify-end"
+                                      : "justify-start"
+                                  )}
+                                >
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 rounded-full"
+                                    onClick={() =>
+                                      startEditingMessage(message)
+                                    }
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() =>
+                                      deleteMessage(message.id)
+                                    }
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </Button>
                                 </div>
                               )}
                           </div>
@@ -1177,12 +1355,14 @@ export default function ChatPage() {
                 <span>
                   {onlineUsers
                     .filter(
-                      (u) => u.status === "typing" && u.id !== session?.user?.id
+                      (u) =>
+                        u.status === "typing" && u.id !== session?.user?.id
                     )
                     .map((u) => u.name)
                     .join(", ")}{" "}
                   {onlineUsers.filter(
-                    (u) => u.status === "typing" && u.id !== session?.user?.id
+                    (u) =>
+                      u.status === "typing" && u.id !== session?.user?.id
                   ).length === 1
                     ? "is"
                     : "are"}{" "}
@@ -1191,7 +1371,7 @@ export default function ChatPage() {
               </div>
             )}
           </CardContent>
-          
+
           {/* Mention list */}
           {showMentions && (
             <div className="absolute bottom-[72px] left-4 bg-background shadow-lg rounded-lg border p-1 max-h-48 overflow-auto z-20">
@@ -1272,15 +1452,43 @@ export default function ChatPage() {
                 >
                   <SmilePlus className="h-5 w-5" />
                 </Button>
- 
+
                 {showEmojiPicker && (
                   <div className="absolute bottom-12 left-0 w-64 bg-background shadow-lg rounded-lg border p-3 z-20">
                     <div className="grid grid-cols-8 gap-2">
                       {[
-                        "😀", "😂", "🙂", "😍", "😎", "🤔", "👍", "👎", "👏", "🙏",
-                        "🔥", "❤️", "⭐", "✅", "⚠️", "❌", "💯", "🎉", "👀", "💪",
-                        "🤝", "👋", "👨‍💻", "📊", "🗓️", "📝", "📞", "💼", "🏢", "⏰",
-                        "🚀", "💡"
+                        "😀",
+                        "😂",
+                        "🙂",
+                        "😍",
+                        "😎",
+                        "🤔",
+                        "👍",
+                        "👎",
+                        "👏",
+                        "🙏",
+                        "🔥",
+                        "❤️",
+                        "⭐",
+                        "✅",
+                        "⚠️",
+                        "❌",
+                        "💯",
+                        "🎉",
+                        "👀",
+                        "💪",
+                        "🤝",
+                        "👋",
+                        "👨‍💻",
+                        "📊",
+                        "🗓️",
+                        "📝",
+                        "📞",
+                        "💼",
+                        "🏢",
+                        "⏰",
+                        "🚀",
+                        "💡",
                       ].map((emoji) => (
                         <Button
                           key={emoji}
@@ -1326,14 +1534,18 @@ export default function ChatPage() {
               <div className="relative flex-1">
                 <Input
                   placeholder="Type a message... (Use @ to mention)"
-                  value={input}
-                  onChange={handleInputChange}
+                  value={editingMessage ? editText : input}
+                  onChange={(e) =>
+                    editingMessage
+                      ? setEditText(e.target.value)
+                      : handleInputChange(e)
+                  }
                   disabled={isUploading}
                   className="pr-10"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      sendMessage();
+                      editingMessage ? saveEditedMessage() : sendMessage();
                     }
                   }}
                   autoFocus
@@ -1360,6 +1572,19 @@ export default function ChatPage() {
                   <Send className="h-5 w-5" />
                 )}
               </Button>
+
+              {/* Cancel editing button */}
+              {editingMessage && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={cancelEditing}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              )}
             </form>
           </div>
         </Card>
