@@ -1,5 +1,14 @@
 "use client";
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useSession } from "next-auth/react";
@@ -101,6 +110,9 @@ export default function ChatPage() {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const shouldScrollToBottom = useRef(true);
   const emojiRef = useRef<HTMLDivElement>(null);
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
 
   // Close emoji picker when clicking outside
   useEffect(() => {
@@ -374,15 +386,16 @@ export default function ChatPage() {
 
           // Regular chat message
           setMessages((prev) => {
-            // Only add if not already in the list
-            if (!prev.find((msg) => msg.id === data.id)) {
+            // Create a Set of existing message IDs for faster lookup
+            const existingIds = new Set(prev.map(msg => msg.id));
+            
+            if (!existingIds.has(data.id)) {
               const newMessages = [...prev, data];
-
-              // Check if we need to update unread count
+              
               if (isScrolling) {
                 setUnreadCount((prev) => prev + 1);
               }
-
+              
               return newMessages;
             }
             return prev;
@@ -663,27 +676,40 @@ export default function ChatPage() {
 
   // Delete/unsend message
   const deleteMessage = async (messageId: string) => {
-    if (!confirm("Are you sure you want to delete this message?")) return;
+    setMessageToDelete(messageId);
+    setIsDeleteDialogOpen(true);
+  };
 
+  const confirmDeleteMessage = async () => {
+    if (!messageToDelete) return;
+    
     try {
       const response = await fetch("/api/chat/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messageId }),
+        body: JSON.stringify({ messageId: messageToDelete }),
       });
-
+  
       if (!response.ok) {
         throw new Error("Failed to delete message");
       }
-
+  
       // Remove message locally
-      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+      setMessages((prev) => prev.filter((msg) => msg.id !== messageToDelete));
+      
+      // Show success toast
+      toast.success("Message deleted successfully");
     } catch (error) {
       console.error("Error deleting message:", error);
       toast.error("Failed to delete message");
+    } finally {
+      // Reset state
+      setMessageToDelete(null);
+      setIsDeleteDialogOpen(false);
     }
   };
 
+  
   // Cancel editing
   const cancelEditing = () => {
     setEditingMessage(null);
@@ -1023,25 +1049,25 @@ export default function ChatPage() {
               ) : (
                 <div className="">
                   {messages.map((message, index) => {
-                    const messageDate = new Date(message.sentAt);
-                    const showDateDivider =
-                      index === 0 ||
-                      getMessageDate(messageDate) !==
-                      getMessageDate(new Date(messages[index - 1].sentAt));
+  const messageDate = new Date(message.sentAt);
+  const showDateDivider =
+    index === 0 ||
+    getMessageDate(messageDate) !==
+    getMessageDate(new Date(messages[index - 1].sentAt));
 
-                    // Check if this is first message from a user or if previous message is from someone else
-                    const isNewSender =
-                      index === 0 || 
-                      messages[index - 1].name !== message.name || 
-                      new Date(message.sentAt).getTime() - new Date(messages[index - 1].sentAt).getTime() > 5 * 60 * 1000;
+  // Check if this is first message from a user or if previous message is from someone else
+  const isNewSender =
+    index === 0 || 
+    messages[index - 1].name !== message.name || 
+    new Date(message.sentAt).getTime() - new Date(messages[index - 1].sentAt).getTime() > 5 * 60 * 1000;
 
-                    const isUserMessage = message.name === session?.user?.name;
+  const isUserMessage = message.name === session?.user?.name;
 
-                    return (
-                      <div key={message.id} className="mb-1">
-                        {/* Date separator */}
-                        {showDateDivider && (
-                          <div className="flex justify-center my-3">
+  return (
+    <div key={`${message.id}-${index}`} className="mb-1">
+      {/* Date separator */}
+      {showDateDivider && (
+        <div className="flex justify-center my-3">
                             <div className="bg-background/70 backdrop-blur-sm px-4 py-1.5 rounded-full text-xs font-medium text-muted-foreground border shadow-sm">
                               {getMessageDate(messageDate)}
                             </div>
@@ -1533,6 +1559,27 @@ export default function ChatPage() {
           </div>
         </Card>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Message</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this message? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteMessage}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
