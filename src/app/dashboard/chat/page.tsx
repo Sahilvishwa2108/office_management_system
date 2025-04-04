@@ -92,7 +92,7 @@ export default function ChatPage() {
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [userSearch, setUserSearch] = useState("");
   const [isScrolling, setIsScrolling] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -127,15 +127,17 @@ export default function ChatPage() {
   const rowVirtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => messageContainerRef.current,
+    // Update the estimateSize function in rowVirtualizer config
     estimateSize: (index) => {
-      // Calculate approximate message height based on content
       const message = messages[index];
-      const baseHeight = 60; // Base height for a message
-      const textHeight = message.message
-        ? Math.ceil(message.message.length / 50) * 20 // Rough estimate of text height
-        : 0;
+      const baseHeight = 120; // Significantly increased to prevent overlaps
+      const textLength = message.message?.length || 0;
+      const textHeight = Math.max(
+        Math.ceil(textLength / 30) * 24, // More generous calculation
+        50 // Minimum height
+      );
       const attachmentsHeight = message.attachments?.length
-        ? message.attachments.length * 60
+        ? message.attachments.length * 100
         : 0;
 
       return baseHeight + textHeight + attachmentsHeight;
@@ -144,9 +146,8 @@ export default function ChatPage() {
   });
 
   // Group users by online status for display
-  const onlineUsersList = onlineUsers.filter((user) => user.isOnline);
-  const offlineUsersList = onlineUsers.filter((user) => !user.isOnline);
-
+  const onlineUsersList = onlineUsers.filter(user => user.id !== session?.user?.id && user.isOnline);
+  const offlineUsersList = onlineUsers.filter(user => user.id !== session?.user?.id && !user.isOnline);
   // Filter users based on search
   const filteredUsers = onlineUsers.filter((user) =>
     user.name.toLowerCase().includes(userSearch.toLowerCase())
@@ -759,44 +760,39 @@ export default function ChatPage() {
           sidebarCollapsed ? "w-20" : "w-72"
         )}
       >
-        {/* Sidebar header with toggle button */}
-        <div className="p-4 border-b">
-          {!sidebarCollapsed ? (
-            <div className="flex flex-col">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-lg">Team Members</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => setSidebarCollapsed(true)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="mt-2 relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search users..."
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-between">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={() => setSidebarCollapsed(false)}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-20">
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-10 w-6 rounded-md border shadow-md"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
         </div>
+        {/* Sidebar header with toggle button */}
+        {/* <div className="p-4 border-b"> */}
+        {!sidebarCollapsed && (
+          <div className="flex flex-col p-4 border-b">
+            <div className="flex items-center justify-center">
+              <h2 className="font-semibold text-lg">Team Members</h2>
+            </div>
+            <div className="mt-2 relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
+        )}
+        {/* </div> */}
 
         {/* Sidebar content */}
         {sidebarCollapsed ? (
@@ -1000,8 +996,8 @@ export default function ChatPage() {
                           <p className="text-xs text-muted-foreground">
                             {!user.isOnline && user.lastSeen
                               ? `Last seen: ${formatDistanceToNow(
-                                  new Date(user.lastSeen)
-                                )} ago`
+                                new Date(user.lastSeen)
+                              )} ago`
                               : user.role.replace(/_/g, " ")}
                           </p>
                         </div>
@@ -1022,12 +1018,12 @@ export default function ChatPage() {
       {/* Chat main area */}
       <div className="flex-1 flex flex-col">
         <Card className="flex-1 flex flex-col overflow-hidden border-0 rounded-none shadow-none">
-          <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b bg-card">
+          <CardHeader className="py-2 px-4 flex flex-row items-center justify-center border-b bg-card h-[60px]">
             <div>
-              <CardTitle className="text-xl">Team Chat Room</CardTitle>
-              <CardDescription className="flex items-center gap-2">
+              <CardTitle className="text-lg">Chat Room</CardTitle>
+              <CardDescription className="flex items-center gap-2 justify-center">
                 <span className="bg-green-500 rounded-full h-2 w-2"></span>
-                {onlineUsersList.length} online
+                {onlineUsersList.filter(user => user.id !== session?.user?.id).length} online
               </CardDescription>
             </div>
             {!sidebarCollapsed && (
@@ -1067,7 +1063,7 @@ export default function ChatPage() {
             {/* Virtual list for messages */}
             <div
               ref={messageContainerRef}
-              className="h-full overflow-auto scrollbar-thin scrollbar-thumb-muted/50 scrollbar-track-transparent hover:scrollbar-thumb-muted/70 bg-gradient-to-b from-card/40 to-background/80"
+              className="h-full overflow-auto scrollbar-thin scrollbar-thumb-muted/50 scrollbar-track-transparent hover:scrollbar-thumb-muted/70 bg-gradient-to-b from-card/40 to-background/80 px-4"
               style={{ contain: "strict", scrollbarWidth: "thin" }}
             >
               {messages.length === 0 ? (
@@ -1094,14 +1090,14 @@ export default function ChatPage() {
                     const showDateDivider =
                       virtualRow.index === 0 ||
                       getMessageDate(messageDate) !==
-                        getMessageDate(new Date(messages[virtualRow.index - 1].sentAt));
-          
+                      getMessageDate(new Date(messages[virtualRow.index - 1].sentAt));
+
                     // Check if this is first message from a user or if previous message is from someone else
                     const isNewSender =
                       virtualRow.index === 0 || messages[virtualRow.index - 1].name !== message.name;
-                    
+
                     const isUserMessage = message.name === session?.user?.name;
-          
+
                     return (
                       <div
                         key={message.id}
@@ -1121,7 +1117,7 @@ export default function ChatPage() {
                             </div>
                           </div>
                         )}
-                        
+
                         {/* Message container */}
                         <div
                           className={cn(
@@ -1142,17 +1138,9 @@ export default function ChatPage() {
                                   {message.name.substring(0, 2).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
-                              <span
-                                className={cn(
-                                  "absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-background",
-                                  onlineUsers.find((u) => u.name === message.name)?.isOnline
-                                    ? "bg-green-500"
-                                    : "bg-gray-400"
-                                )}
-                              ></span>
                             </div>
                           )}
-          
+
                           {/* Message content with edit/delete buttons */}
                           <div className="relative group/message">
                             {/* Message bubble with pointer */}
@@ -1160,7 +1148,7 @@ export default function ChatPage() {
                               className={cn(
                                 "relative rounded-2xl p-3 min-w-[120px] shadow-sm",
                                 isUserMessage
-                                  ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-tr-sm"
+                                  ? "bg-gradient-to-br from-primary/50 to-primary/30 text-primary-foreground rounded-tr-sm border border-primary/20"
                                   : "bg-card border rounded-tl-sm",
                               )}
                             >
@@ -1173,7 +1161,7 @@ export default function ChatPage() {
                                     : "left-0 bg-card rounded-br-md border-r border-b"
                                 )}
                               ></div>
-          
+
                               {/* Message sender and time */}
                               {isNewSender && (
                                 <div className="flex gap-2 items-center mb-1.5">
@@ -1202,7 +1190,7 @@ export default function ChatPage() {
                                   )}
                                 </div>
                               )}
-          
+
                               {/* Message text or edit form */}
                               {editingMessage === message.id ? (
                                 <div className="space-y-2">
@@ -1242,13 +1230,13 @@ export default function ChatPage() {
                                 <div
                                   className={cn(
                                     "whitespace-pre-wrap break-words text-[15px] leading-relaxed",
-                                    isUserMessage ? "text-primary-foreground" : "text-foreground"
+                                    isUserMessage ? "text-primary-foreground/95 font-medium" : "text-foreground"
                                   )}
                                 >
                                   {formatMessageWithMentions(message.message)}
                                 </div>
                               )}
-          
+
                               {/* Attachments */}
                               {message.attachments && message.attachments.length > 0 && (
                                 <div className="mt-2 space-y-2">
@@ -1310,7 +1298,7 @@ export default function ChatPage() {
                                 </div>
                               )}
                             </div>
-          
+
                             {/* Time for non-new messages - subtle timestamp on hover */}
                             {!isNewSender && (
                               <div
@@ -1323,10 +1311,10 @@ export default function ChatPage() {
                                 {message.edited && " (edited)"}
                               </div>
                             )}
-          
+
                             {/* Edit/delete buttons that appear on hover - but only for user's own messages */}
                             {isUserMessage && !editingMessage && (
-                              <div 
+                              <div
                                 className={cn(
                                   "absolute scale-90 opacity-0 group-hover/message:scale-100 group-hover/message:opacity-100 transition-all duration-150",
                                   "top-0 shadow-md rounded-full border bg-background/95 backdrop-blur-sm z-10",
@@ -1363,7 +1351,7 @@ export default function ChatPage() {
                 </div>
               )}
             </div>
-          
+
             {/* New messages indicator */}
             {isScrolling && unreadCount > 0 && (
               <Button
@@ -1375,7 +1363,7 @@ export default function ChatPage() {
                 <ChevronDown className="ml-1 h-4 w-4" />
               </Button>
             )}
-          
+
             {/* Users typing indicator */}
             {onlineUsers.some((u) => u.status === "typing" && u.id !== session?.user?.id) && (
               <div className="absolute bottom-0 left-4 py-1 px-3 rounded-t-lg bg-background border border-b-0 flex items-center gap-2 z-10 shadow-md">
@@ -1400,7 +1388,7 @@ export default function ChatPage() {
 
           {/* Mention list */}
           {showMentions && (
-            <div className="absolute bottom-[72px] left-4 bg-background shadow-lg rounded-lg border p-1 max-h-48 overflow-auto z-20">
+            <div className="relative bottom-0 left-24 bg-background shadow-lg rounded-lg border max-h-48 overflow-auto z-50 w-[25%]">
               {mentionUsers.length > 0 ? (
                 mentionUsers.map((user) => (
                   <Button
