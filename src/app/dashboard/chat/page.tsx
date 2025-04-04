@@ -1,21 +1,9 @@
 "use client";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useEffect, useState, useRef, useCallback } from "react";
-import { v4 as uuidv4 } from "uuid";
-import { useSession } from "next-auth/react";
+import NextImage from "next/image";
 import {
   Send,
   Paperclip,
-  Image,
+  Image as ImageIcon,
   FileText,
   AtSign,
   X,
@@ -33,6 +21,20 @@ import {
   RotateCw,
   Eye,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useEffect, useState, useRef, useCallback, memo } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { useSession } from "next-auth/react";
+import { FixedSizeList as List } from 'react-window';
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -56,6 +58,7 @@ import { Dialog, DialogTitle, DialogContent, DialogClose } from "@/components/ui
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import axios from "axios";
+import { debounce } from "lodash";
 
 interface Message {
   id: string;
@@ -90,7 +93,7 @@ interface User {
 }
 
 // Create a new component for inline document previews
-const DocumentPreview = ({ attachment }: { attachment: Attachment }) => {
+const DocumentPreview = memo(({ attachment }: { attachment: Attachment }) => {
   const extension = attachment.filename.split(".").pop()?.toLowerCase();
 
   // Render PDF preview
@@ -98,36 +101,36 @@ const DocumentPreview = ({ attachment }: { attachment: Attachment }) => {
     // Function to handle PDF downloads
     const handleDownload = async (url: string, filename: string) => {
       try {
-      // Show loading state
-      const downloadingFile = filename;
-      
-      // Fetch the file
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Download failed');
-      
-      const blob = await response.blob();
-      
-      // Create a temporary URL for the blob
-      const downloadUrl = window.URL.createObjectURL(blob);
-      
-      // Create a temporary anchor element to trigger download
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = filename;
-      
-      // Append to body, click and remove
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up the URL object
-      window.URL.revokeObjectURL(downloadUrl);
-      
-      // Show success notification
-      toast.success(`Downloaded ${filename}`);
+        // Show loading state
+        const downloadingFile = filename;
+
+        // Fetch the file
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Download failed');
+
+        const blob = await response.blob();
+
+        // Create a temporary URL for the blob
+        const downloadUrl = window.URL.createObjectURL(blob);
+
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename;
+
+        // Append to body, click and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Clean up the URL object
+        window.URL.revokeObjectURL(downloadUrl);
+
+        // Show success notification
+        toast.success(`Downloaded ${filename}`);
       } catch (error) {
-      console.error('Download error:', error);
-      toast.error('Failed to download file');
+        console.error('Download error:', error);
+        toast.error('Failed to download file');
       }
     };
 
@@ -172,26 +175,460 @@ const DocumentPreview = ({ attachment }: { attachment: Attachment }) => {
     );
   }
 
+  // Image attachment component with zoom/preview capability
+  if (extension === "jpg" || extension === "jpeg" || extension === "png" || extension === "gif" || extension === "webp") {
+    // Function to handle image downloads
+    const handleDownload = async (url: string, filename: string) => {
+      try {
+        // Show loading state or feedback
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Download failed');
+
+        const blob = await response.blob();
+
+        // Create a temporary URL for the blob
+        const downloadUrl = window.URL.createObjectURL(blob);
+
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename;
+
+        // Append to body, click and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Clean up the URL object
+        window.URL.revokeObjectURL(downloadUrl);
+
+        // Show success notification
+        toast.success(`Downloaded ${filename}`);
+      } catch (error) {
+        console.error('Download error:', error);
+        toast.error('Failed to download file');
+      }
+    };
+
+    return (
+      <div className="cursor-pointer relative overflow-hidden" onClick={() => window.open(attachment.url, "_blank")}>
+        <div className="relative">
+          <NextImage
+            src={attachment.url}
+            alt={attachment.filename}
+            width={500}
+            height={300}
+            className="max-h-72 object-cover w-full"
+            loading="lazy"
+          />
+
+          <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div className="flex gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(attachment.url, "_blank");
+                }}
+                className="p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
+              >
+                <ZoomIn className="h-5 w-5 text-white" />
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload(attachment.url, attachment.filename);
+                }}
+                className="p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
+              >
+                <Download className="h-5 w-5 text-white" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-2 py-1 text-xs truncate bg-background/90 absolute bottom-0 w-full">
+          {attachment.filename}
+        </div>
+      </div>
+    );
+  }
+
+  function formatFileSize(size: number): string {
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  }
+
+  function handleDownload(url: string, filename: string): void {
+    throw new Error("Function not implemented.");
+  }
+
   // For other document types
   return (
     <div className="flex items-center p-3 bg-muted/20">
       {/* Render based on extension type */}
-      {/* ...rest of your document preview code... */}
+      <div className="mr-3">
+        <FileText className="h-6 w-6" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium truncate">{attachment.filename}</p>
+        <p className="text-xs text-muted-foreground">
+          Document • {formatFileSize(attachment.size)}
+        </p>
+      </div>
+
+      <div className="flex gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handleDownload(attachment.url, attachment.filename)}
+        >
+          <Download className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
-};
+});
+
+DocumentPreview.displayName = "DocumentPreview";
 
 // Add this component for upload progress display
-const UploadProgressBar = ({ progress }: { progress: number }) => {
+const UploadProgressBar = memo(({ progress }: { progress: number }) => {
   return (
     <div className="w-full bg-background/20 rounded-full h-1 mt-1">
-      <div 
+      <div
         className="bg-primary h-1 rounded-full transition-all duration-300"
         style={{ width: `${progress}%` }}
       />
     </div>
   );
-};
+});
+
+UploadProgressBar.displayName = "UploadProgressBar";
+
+// Message component to reduce re-renders
+const MessageItem = memo(({
+  message,
+  index,
+  messages,
+  session,
+  onDelete,
+  onEdit,
+  onImageView,
+  onDownload,
+  formatMessageWithMentions,
+  getMessageDate
+}: {
+  message: Message,
+  index: number,
+  messages: Message[],
+  session: any,
+  onDelete: (id: string) => void,
+  onEdit: (message: Message) => void,
+  onImageView: (url: string, filename: string) => void,
+  onDownload: (url: string, filename: string) => void,
+  formatMessageWithMentions: (text: string) => React.ReactNode,
+  getMessageDate: (date: Date) => string,
+  downloading?: string | null
+}) => {
+  const messageDate = new Date(message.sentAt);
+  const showDateDivider =
+    index === 0 ||
+    getMessageDate(messageDate) !==
+    getMessageDate(new Date(messages[index - 1].sentAt));
+
+  // Check if this is first message from a user or if previous message is from someone else
+  const isNewSender =
+    index === 0 ||
+    messages[index - 1].name !== message.name ||
+    new Date(message.sentAt).getTime() -
+    new Date(messages[index - 1].sentAt).getTime() >
+    5 * 60 * 1000;
+
+  const isUserMessage = message.name === session?.user?.name;
+
+  return (
+    <div key={`${message.id}-${index}`} className="mb-1">
+      {/* Date separator */}
+      {showDateDivider && (
+        <div className="flex justify-center my-3">
+          <div className="bg-background/70 backdrop-blur-sm px-4 py-1.5 rounded-full text-xs font-medium text-muted-foreground border shadow-sm">
+            {getMessageDate(messageDate)}
+          </div>
+        </div>
+      )}
+
+      {/* Message container */}
+      <div
+        className={cn(
+          "group flex gap-3 max-w-[85%] mb-1",
+          isUserMessage
+            ? "ml-auto flex-row-reverse"
+            : "",
+          !isNewSender && !isUserMessage ? "pl-12" : ""
+        )}
+      >
+        {/* User avatar - only show on new sender and not user's own message */}
+        {message.name !== session?.user?.name &&
+          isNewSender && (
+            <div className="mt-1 pb-[48px] relative">
+              <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
+                <AvatarImage
+                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${message.name}`}
+                  alt={message.name}
+                />
+                <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                  {message.name
+                    .substring(0, 2)
+                    .toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+          )}
+
+        {/* Message content with edit/delete buttons */}
+        <div className="relative group/message">
+          {/* Message bubble with pointer */}
+          <div
+            className={cn(
+              "relative rounded-2xl p-3 min-w-[120px] shadow-sm",
+              isUserMessage
+                ? "bg-gradient-to-br from-primary/50 to-primary/30 text-primary-foreground rounded-tr-sm border border-primary/20"
+                : "bg-card border rounded-tl-sm"
+            )}
+          >
+            {/* Message pointer triangle */}
+            <div
+              className={cn(
+                "absolute top-0 w-3 h-3",
+                isUserMessage
+                  ? "right-0 bg-primary rounded-bl-md"
+                  : "left-0 bg-card rounded-br-md border-r border-b"
+              )}
+            ></div>
+
+            {/* Message sender and time */}
+            {isNewSender && (
+              <div className="flex gap-2 items-center mb-1.5">
+                <p
+                  className={cn(
+                    "text-sm font-medium truncate",
+                    !isUserMessage && "text-primary"
+                  )}
+                >
+                  {isUserMessage
+                    ? "You"
+                    : message.name}
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <time className="text-xs opacity-70">
+                        {format(
+                          messageDate,
+                          "h:mm a"
+                        )}
+                      </time>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side={
+                        isUserMessage
+                          ? "left"
+                          : "right"
+                      }
+                    >
+                      {format(
+                        messageDate,
+                        "PPP p"
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                {message.edited && (
+                  <span className="text-xs opacity-70 italic">
+                    (edited)
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Message text */}
+            <div
+              className={cn(
+                "whitespace-pre-wrap break-words text-[15px] leading-relaxed",
+                isUserMessage
+                  ? "text-primary-foreground/95 font-medium"
+                  : "text-foreground"
+              )}
+            >
+              {formatMessageWithMentions(
+                message.message
+              )}
+            </div>
+
+            {/* Attachments */}
+            {message.attachments &&
+              message.attachments.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  {message.attachments.length > 1 && (
+                    <div className="text-xs text-muted-foreground mb-1">
+                      {message.attachments.length} attachments
+                    </div>
+                  )}
+
+                  <div
+                    className={cn(
+                      "rounded-lg border",
+                      isUserMessage
+                        ? "border-primary-foreground/20"
+                        : "border-border",
+                      message.attachments.length > 1
+                        ? "grid grid-cols-2 gap-1 p-1"
+                        : ""
+                    )}
+                  >
+                    {message.attachments.map(
+                      (attachment) => (
+                        <div
+                          key={attachment.id}
+                          className={cn(
+                            "rounded overflow-hidden relative group",
+                            message.attachments &&
+                              message.attachments.length === 1
+                              ? ""
+                              : "aspect-square"
+                          )}
+                        >
+                          {attachment.type === "image" ? (
+                            <div className="relative">
+                              {/* Image preview with WhatsApp-like overlay on hover */}
+                              <div
+                                onClick={() =>
+                                  onImageView(
+                                    attachment.url,
+                                    attachment.filename
+                                  )
+                                }
+                                className="cursor-pointer overflow-hidden relative"
+                              >
+                                <NextImage
+                                  src={attachment.url}
+                                  alt={attachment.filename}
+                                  width={500}
+                                  height={300}
+                                  className={cn(
+                                    "object-cover w-full transition-transform",
+                                    message.attachments?.length === 1 ? "max-h-72" : "h-full"
+                                  )}
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = "/placeholder-image.jpg";
+                                  }}
+                                />
+
+                                {/* WhatsApp-like overlay with download button on hover */}
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onImageView(
+                                          attachment.url,
+                                          attachment.filename
+                                        );
+                                      }}
+                                      className="p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
+                                      aria-label="View full image"
+                                    >
+                                      <ZoomIn className="h-5 w-5 text-white" />
+                                    </button>
+
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDownload(
+                                          attachment.url,
+                                          attachment.filename
+                                        );
+                                      }}
+                                      className="p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
+                                      aria-label="Download image"
+                                    >
+                                      <Download className="h-5 w-5 text-white" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* File name at the bottom */}
+                              <div className="px-2 py-1 text-xs truncate bg-background/90 absolute bottom-0 w-full">
+                                {attachment.filename}
+                              </div>
+                            </div>
+                          ) : (
+                            <DocumentPreview attachment={attachment} />
+                          )}
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+          </div>
+
+          {/* Time for non-new messages - subtle timestamp on hover */}
+          {!isNewSender && (
+            <div
+              className={cn(
+                "text-[10px] opacity-0 group-hover/message:opacity-70 text-muted-foreground mt-1 transition-opacity",
+                isUserMessage
+                  ? "text-right mr-1"
+                  : "ml-1"
+              )}
+            >
+              {format(messageDate, "h:mm a")}
+              {message.edited && " (edited)"}
+            </div>
+          )}
+
+          {/* Edit/delete buttons - Make them more visible on hover */}
+          {isUserMessage && (
+            <div
+              className={cn(
+                "absolute scale-90 opacity-0 group-hover/message:scale-100 group-hover/message:opacity-100 transition-all duration-150",
+                "top-0 shadow-md rounded-full border bg-background/95 backdrop-blur-sm z-10",
+                "left-0 transform -translate-x-[110%] flex"
+              )}
+            >
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 rounded-full text-primary hover:bg-primary/20"
+                onClick={() => onEdit(message)}
+                title="Edit message"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 rounded-full text-destructive hover:bg-destructive/20"
+                onClick={() => onDelete(message.id)}
+                title="Delete message"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+MessageItem.displayName = "MessageItem";
 
 export default function ChatPage() {
   const { data: session } = useSession();
@@ -222,6 +659,9 @@ export default function ChatPage() {
   const [imageRotation, setImageRotation] = useState(0);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
@@ -230,6 +670,7 @@ export default function ChatPage() {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const shouldScrollToBottom = useRef(true);
   const emojiRef = useRef<HTMLDivElement>(null);
+  const messageIdsRef = useRef(new Set<string>());
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
@@ -258,16 +699,23 @@ export default function ChatPage() {
     user.name.toLowerCase().includes(userSearch.toLowerCase())
   );
 
-  // Debounce typing indicator
-  useEffect(() => {
-    if (input.trim() && !isTyping) {
-      setIsTyping(true);
-      // Send typing indicator to server
+  // Debounced typing indicator function
+  const debouncedUpdateTypingStatus = useCallback(
+    debounce((isTyping: boolean) => {
       fetch("/api/chat/typing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isTyping: true }),
+        body: JSON.stringify({ isTyping }),
       }).catch(console.error);
+    }, 500),
+    []
+  );
+
+  // Handle typing indicator
+  useEffect(() => {
+    if (input.trim() && !isTyping) {
+      setIsTyping(true);
+      debouncedUpdateTypingStatus(true);
     }
 
     if (typingTimerRef.current) {
@@ -275,14 +723,9 @@ export default function ChatPage() {
     }
 
     typingTimerRef.current = setTimeout(() => {
-      if (isTyping) {
+      if (isTyping && !input.trim()) {
         setIsTyping(false);
-        // Send stopped typing to server
-        fetch("/api/chat/typing", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ isTyping: false }),
-        }).catch(console.error);
+        debouncedUpdateTypingStatus(false);
       }
     }, 2000);
 
@@ -291,7 +734,7 @@ export default function ChatPage() {
         clearTimeout(typingTimerRef.current);
       }
     };
-  }, [input, isTyping]);
+  }, [input, isTyping, debouncedUpdateTypingStatus]);
 
   // Scroll to bottom of messages
   const scrollToBottom = useCallback(() => {
@@ -305,6 +748,41 @@ export default function ChatPage() {
       shouldScrollToBottom.current = true;
     }
   }, []);
+
+  // Load more messages when scrolling to top
+  const loadMoreMessages = useCallback(async () => {
+    if (!hasMore || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+
+    try {
+      const res = await fetch(`/api/chat?page=${page}&limit=30`);
+      if (res.ok) {
+        const data = await res.json();
+
+        if (data.length < 30) {
+          setHasMore(false);
+        }
+
+        // Filter out duplicates
+        const newMessages = data.filter((msg: Message) =>
+          !messageIdsRef.current.has(msg.id)
+        );
+
+        // Update our message ID tracking
+        newMessages.forEach((msg: Message) => {
+          messageIdsRef.current.add(msg.id);
+        });
+
+        setMessages(prev => [...newMessages, ...prev]);
+        setPage(p => p + 1);
+      }
+    } catch (error) {
+      console.error("Failed to fetch more messages:", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [page, hasMore, isLoadingMore]);
 
   // Check if we're at bottom
   const isAtBottom = useCallback(() => {
@@ -333,6 +811,11 @@ export default function ChatPage() {
 
       const isBottomVisible = isAtBottom();
 
+      // Load more messages when scrolling to top
+      if (container.scrollTop < 100 && hasMore && !isLoadingMore) {
+        loadMoreMessages();
+      }
+
       // Only update isScrolling if the value changes to prevent re-renders
       if (isScrolling !== !isBottomVisible) {
         setIsScrolling(!isBottomVisible);
@@ -348,7 +831,7 @@ export default function ChatPage() {
 
     container?.addEventListener("scroll", handleScroll);
     return () => container?.removeEventListener("scroll", handleScroll);
-  }, [isScrolling, unreadCount, isAtBottom]);
+  }, [isScrolling, unreadCount, isAtBottom, hasMore, isLoadingMore, loadMoreMessages]);
 
   // Handle new messages
   useEffect(() => {
@@ -365,13 +848,18 @@ export default function ChatPage() {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const res = await fetch("/api/chat");
+        const res = await fetch("/api/chat?limit=30");
         if (res.ok) {
           const data = await res.json();
           const sortedMessages = data.sort(
             (a: Message, b: Message) =>
               new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
           );
+
+          // Track message IDs to avoid duplicates
+          sortedMessages.forEach((msg: Message) => {
+            messageIdsRef.current.add(msg.id);
+          });
 
           setMessages(sortedMessages);
           setLastReadMessageIndex(sortedMessages.length - 1);
@@ -437,17 +925,17 @@ export default function ChatPage() {
           // Check if it's a typing indicator
           if (data.type === "typing_indicator") {
             setOnlineUsers((prev) => {
+              // Only update if the user status has actually changed
+              const userIndex = prev.findIndex(u => u.id === data.userId);
+              if (userIndex === -1) return prev;
+
+              const currentStatus = prev[userIndex].status;
+              const newStatus = data.isTyping ? "typing" : "idle";
+
+              if (currentStatus === newStatus) return prev;
+
               const updatedUsers = [...prev];
-              const userIndex = updatedUsers.findIndex(
-                (u) => u.id === data.userId
-              );
-
-              if (userIndex !== -1) {
-                updatedUsers[userIndex].status = data.isTyping
-                  ? "typing"
-                  : "idle";
-              }
-
+              updatedUsers[userIndex].status = newStatus;
               return updatedUsers;
             });
             return;
@@ -456,34 +944,37 @@ export default function ChatPage() {
           // Check if it's a user status update
           if (data.type === "user_status") {
             setOnlineUsers((prev) => {
-              const updatedUsers = [...prev];
-              const userIndex = updatedUsers.findIndex(
-                (u) => u.id === data.userId
-              );
-
               // Skip updating the current user's status from external events
               if (data.userId === session?.user?.id) {
-                return updatedUsers;
+                return prev;
               }
 
+              const userIndex = prev.findIndex(u => u.id === data.userId);
+              const updatedUsers = [...prev];
+
               if (userIndex !== -1) {
-                updatedUsers[userIndex].isOnline = data.isOnline;
-                if (!data.isOnline) {
-                  updatedUsers[userIndex].lastSeen = new Date().toISOString();
+                // Only update if status has changed
+                if (updatedUsers[userIndex].isOnline !== data.isOnline) {
+                  updatedUsers[userIndex].isOnline = data.isOnline;
+                  if (!data.isOnline) {
+                    updatedUsers[userIndex].lastSeen = new Date().toISOString();
+                  }
+                  return updatedUsers;
                 }
+                return prev;
               } else if (data.isOnline) {
                 // Add user if they've just come online
-                updatedUsers.push({
+                return [...prev, {
                   id: data.userId,
                   name: data.name,
                   role: data.role,
                   avatar: data.avatar,
                   isOnline: true,
                   status: "idle",
-                });
+                }];
               }
 
-              return updatedUsers;
+              return prev;
             });
             return;
           }
@@ -503,15 +994,15 @@ export default function ChatPage() {
           // Handle message delete
           if (data.type === "message_delete") {
             setMessages((prev) => prev.filter((msg) => msg.id !== data.id));
+            messageIdsRef.current.delete(data.id);
             return;
           }
 
           // Regular chat message
-          setMessages((prev) => {
-            // Create a Set of existing message IDs for faster lookup
-            const existingIds = new Set(prev.map((msg) => msg.id));
+          if (!messageIdsRef.current.has(data.id)) {
+            messageIdsRef.current.add(data.id);
 
-            if (!existingIds.has(data.id)) {
+            setMessages((prev) => {
               const newMessages = [...prev, data];
 
               if (isScrolling) {
@@ -519,9 +1010,8 @@ export default function ChatPage() {
               }
 
               return newMessages;
-            }
-            return prev;
-          });
+            });
+          }
         } catch (error) {
           console.error("Error parsing message:", error);
         }
@@ -582,7 +1072,7 @@ export default function ChatPage() {
   }, [mentionQuery]);
 
   // Handle input changes (for mentions)
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const text = e.target.value;
     setInput(text);
 
@@ -605,10 +1095,10 @@ export default function ChatPage() {
       setShowMentions(false);
       mentionStartPosition.current = -1;
     }
-  };
+  }, [onlineUsers]);
 
   // Select a user to mention
-  const selectMention = (user: User) => {
+  const selectMention = useCallback((user: User) => {
     if (mentionStartPosition.current !== -1) {
       const beforeMention = input.substring(0, mentionStartPosition.current);
       const afterMention = input.substring(
@@ -622,10 +1112,49 @@ export default function ChatPage() {
       mentionStartPosition.current = -1;
       setMentionQuery("");
     }
-  };
+  }, [input, mentionQuery]);
+
+  // Compress image before upload
+  const compressImageIfNeeded = useCallback(async (file: File): Promise<File> => {
+    if (!file.type.startsWith('image/') || file.size <= 1000000) {
+      return file;
+    }
+
+    return new Promise((resolve) => {
+      const img = new Image(); // Create a new image element
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+
+      img.onload = () => {
+        // Calculate new dimensions (max 1200px width/height)
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > 1200) {
+          height = Math.round((height * 1200) / width);
+          width = 1200;
+        } else if (height > 1200) {
+          width = Math.round((width * 1200) / height);
+          height = 1200;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to blob with reduced quality
+        canvas.toBlob((blob) => {
+          resolve(new File([blob!], file.name, { type: 'image/jpeg' }));
+        }, 'image/jpeg', 0.85);
+      };
+
+      img.src = URL.createObjectURL(file);
+    });
+  }, []);
 
   // Handle file selection
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
       const newFiles = Array.from(e.target.files);
 
@@ -644,24 +1173,34 @@ export default function ChatPage() {
         return;
       }
 
-      setAttachments((prev) => [...prev, ...newFiles]);
+      // Process images if needed
+      const processedFiles = await Promise.all(
+        newFiles.map(async (file) => {
+          if (file.type.startsWith('image/')) {
+            return compressImageIfNeeded(file);
+          }
+          return file;
+        })
+      );
+
+      setAttachments((prev) => [...prev, ...processedFiles]);
     }
-  };
+  }, [attachments, compressImageIfNeeded]);
 
   // Remove an attachment before sending
-  const removeAttachment = (index: number) => {
+  const removeAttachment = useCallback((index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
-  };
+  }, []);
 
   // Format file size for display
-  const formatFileSize = (bytes: number): string => {
+  const formatFileSize = useCallback((bytes: number): string => {
     if (bytes < 1024) return bytes + " B";
     else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
     else return (bytes / 1048576).toFixed(1) + " MB";
-  };
+  }, []);
 
   // Send message
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     if (!input.trim() && attachments.length === 0) return;
 
     const newMessageId = uuidv4();
@@ -712,7 +1251,7 @@ export default function ChatPage() {
           },
         });
 
-        // ...rest of upload handling
+        // Handle upload response
         const uploadResult = uploadResponse.data;
         newMessage.attachments = uploadResult.attachments;
 
@@ -741,10 +1280,10 @@ export default function ChatPage() {
       console.error("❌ Network error:", error);
       toast.error("Failed to send message");
     }
-  };
+  }, [input, attachments, session?.user]);
 
   // Format message text with mentions highlighted
-  const formatMessageWithMentions = (text: string) => {
+  const formatMessageWithMentions = useCallback((text: string) => {
     // Split by potential @mentions
     const parts = text.split(/(@\w+)/g);
 
@@ -768,16 +1307,16 @@ export default function ChatPage() {
       }
       return <span key={index}>{part}</span>;
     });
-  };
+  }, [onlineUsers]);
 
   // Handle message edit
-  const startEditingMessage = (message: Message) => {
+  const startEditingMessage = useCallback((message: Message) => {
     setEditingMessage(message.id);
     setEditText(message.message || "");
-  };
+  }, []);
 
   // Save edited message
-  const saveEditedMessage = async () => {
+  const saveEditedMessage = useCallback(async () => {
     if (!editingMessage) return;
 
     try {
@@ -810,15 +1349,15 @@ export default function ChatPage() {
       console.error("Error editing message:", error);
       toast.error("Failed to edit message");
     }
-  };
+  }, [editingMessage, editText]);
 
   // Delete/unsend message
-  const deleteMessage = async (messageId: string) => {
+  const deleteMessage = useCallback((messageId: string) => {
     setMessageToDelete(messageId);
     setIsDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDeleteMessage = async () => {
+  const confirmDeleteMessage = useCallback(async () => {
     if (!messageToDelete) return;
 
     try {
@@ -834,6 +1373,7 @@ export default function ChatPage() {
 
       // Remove message locally
       setMessages((prev) => prev.filter((msg) => msg.id !== messageToDelete));
+      messageIdsRef.current.delete(messageToDelete);
 
       // Show success toast
       toast.success("Message deleted successfully");
@@ -845,23 +1385,23 @@ export default function ChatPage() {
       setMessageToDelete(null);
       setIsDeleteDialogOpen(false);
     }
-  };
+  }, [messageToDelete]);
 
   // Cancel editing
-  const cancelEditing = () => {
+  const cancelEditing = useCallback(() => {
     setEditingMessage(null);
     setEditText("");
-  };
+  }, []);
 
   // Group messages by date for better visual organization
-  const getMessageDate = (date: Date) => {
+  const getMessageDate = useCallback((date: Date) => {
     if (isToday(date)) return "Today";
     if (isYesterday(date)) return "Yesterday";
     return format(date, "MMM d, yyyy");
-  };
+  }, []);
 
   // Helper function to handle downloads with feedback
-  const handleDownload = async (url: string, filename: string) => {
+  const handleDownload = useCallback(async (url: string, filename: string) => {
     try {
       setDownloading(filename);
 
@@ -889,15 +1429,15 @@ export default function ChatPage() {
     } finally {
       setDownloading(null);
     }
-  };
+  }, []);
 
   // Function to open image viewer
-  const openImageViewer = (url: string, filename: string) => {
+  const openImageViewer = useCallback((url: string, filename: string) => {
     setCurrentImage({ url, filename });
     setImageViewerOpen(true);
     setImageViewerZoom(1);
     setImageRotation(0);
-  };
+  }, []);
 
   return (
     <div className="flex h-[calc(100vh-7rem)] rounded-md overflow-hidden">
@@ -1142,8 +1682,8 @@ export default function ChatPage() {
                           <p className="text-xs text-muted-foreground">
                             {!user.isOnline && user.lastSeen
                               ? `Last seen: ${formatDistanceToNow(
-                                  new Date(user.lastSeen)
-                                )} ago`
+                                new Date(user.lastSeen)
+                              )} ago`
                               : user.role.replace(/_/g, " ")}
                           </p>
                         </div>
@@ -1164,7 +1704,7 @@ export default function ChatPage() {
       {/* Chat main area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <Card className="flex-1 flex flex-col overflow-hidden border-0 rounded-none shadow-none">
-          <CardHeader className="py-2 px-4 flex flex-row items-center justify-center border-b bg-card h-[60px]">
+          <CardHeader className="py-2 px-4 flex flex-row items-center justify-center border-b bg-card h-[60px] z-10">
             <div>
               <CardTitle className="text-lg">Chat Room</CardTitle>
               <CardDescription className="flex items-center gap-2 justify-center">
@@ -1210,13 +1750,21 @@ export default function ChatPage() {
               </div>
             )}
           </CardHeader>
-          <CardContent className="flex-1 p-0 relative overflow-hidden">
+          <CardContent className="flex-1 p-0 relative flex flex-col overflow-hidden">
             {/* Standard scrollable messages list */}
             <div
               ref={messageContainerRef}
-              className="h-full overflow-auto scrollbar-thin scrollbar-thumb-muted/50 scrollbar-track-transparent hover:scrollbar-thumb-muted/70 bg-gradient-to-b from-card/40 to-background/80 px-6"
-              style={{ scrollbarWidth: "thin" }}
+              className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-muted/50 scrollbar-track-transparent hover:scrollbar-thumb-muted/70 bg-gradient-to-b from-card/40 to-background/80 px-6"
             >
+              {isLoadingMore && (
+                <div className="flex justify-center p-2">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-xs text-muted-foreground">Loading older messages...</span>
+                  </div>
+                </div>
+              )}
+
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-12">
                   <div className="bg-primary/5 p-4 rounded-full mb-4 border border-primary/10">
@@ -1229,783 +1777,350 @@ export default function ChatPage() {
                 </div>
               ) : (
                 <div className="">
-                  {messages.map((message, index) => {
-                    const messageDate = new Date(message.sentAt);
-                    const showDateDivider =
-                      index === 0 ||
-                      getMessageDate(messageDate) !==
-                        getMessageDate(
-                          new Date(messages[index - 1].sentAt)
-                        );
+                  {messages.map((message, index) => (
+                    <MessageItem
+                      key={`${message.id}-${index}`}
+                      message={message}
+                      index={index}
+                      messages={messages}
+                      session={session}
+                      onDelete={deleteMessage}
+                      onEdit={startEditingMessage}
+                      onImageView={openImageViewer}
+                      onDownload={handleDownload}
+                      formatMessageWithMentions={formatMessageWithMentions}
+                      getMessageDate={getMessageDate}
+                    />
+                  ))}
+                </div>
+              )}
 
-                    // Check if this is first message from a user or if previous message is from someone else
-                    const isNewSender =
-                      index === 0 ||
-                      messages[index - 1].name !== message.name ||
-                      new Date(message.sentAt).getTime() -
-                        new Date(messages[index - 1].sentAt).getTime() >
-                        5 * 60 * 1000;
+              {/* End of messages marker */}
+              <div ref={messageEndRef} />
 
-                    const isUserMessage =
-                      message.name === session?.user?.name;
-
-                    return (
-                      <div key={`${message.id}-${index}`} className="mb-1">
-                        {/* Date separator */}
-                        {showDateDivider && (
-                          <div className="flex justify-center my-3">
-                            <div className="bg-background/70 backdrop-blur-sm px-4 py-1.5 rounded-full text-xs font-medium text-muted-foreground border shadow-sm">
-                              {getMessageDate(messageDate)}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Message container */}
-                        <div
-                          className={cn(
-                            "group flex gap-3 max-w-[85%] mb-1",
-                            isUserMessage
-                              ? "ml-auto flex-row-reverse"
-                              : "",
-                            !isNewSender && !isUserMessage ? "pl-12" : ""
-                          )}
-                        >
-                          {/* User avatar - only show on new sender and not user's own message */}
-                          {message.name !== session?.user?.name &&
-                            isNewSender && (
-                              <div className="mt-1 pb-[48px] relative">
-                                <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
-                                  <AvatarImage
-                                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${message.name}`}
-                                    alt={message.name}
-                                  />
-                                  <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                                    {message.name
-                                      .substring(0, 2)
-                                      .toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                              </div>
-                            )}
-
-                          {/* Message content with edit/delete buttons */}
-                          <div className="relative group/message">
-                            {/* Message bubble with pointer */}
-                            <div
-                              className={cn(
-                                "relative rounded-2xl p-3 min-w-[120px] shadow-sm",
-                                isUserMessage
-                                  ? "bg-gradient-to-br from-primary/50 to-primary/30 text-primary-foreground rounded-tr-sm border border-primary/20"
-                                  : "bg-card border rounded-tl-sm"
-                              )}
-                            >
-                              {/* Message pointer triangle */}
-                              <div
-                                className={cn(
-                                  "absolute top-0 w-3 h-3",
-                                  isUserMessage
-                                    ? "right-0 bg-primary rounded-bl-md"
-                                    : "left-0 bg-card rounded-br-md border-r border-b"
-                                )}
-                              ></div>
-
-                              {/* Message sender and time */}
-                              {isNewSender && (
-                                <div className="flex gap-2 items-center mb-1.5">
-                                  <p
-                                    className={cn(
-                                      "text-sm font-medium truncate",
-                                      !isUserMessage && "text-primary"
-                                    )}
-                                  >
-                                    {isUserMessage
-                                      ? "You"
-                                      : message.name}
-                                  </p>
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <time className="text-xs opacity-70">
-                                          {format(
-                                            messageDate,
-                                            "h:mm a"
-                                          )}
-                                        </time>
-                                      </TooltipTrigger>
-                                      <TooltipContent
-                                        side={
-                                          isUserMessage
-                                            ? "left"
-                                            : "right"
-                                        }
-                                      >
-                                        {format(
-                                          messageDate,
-                                          "PPP p"
-                                        )}
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                  {message.edited && (
-                                    <span className="text-xs opacity-70 italic">
-                                      (edited)
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Message text or edit form */}
-                              {editingMessage === message.id ? (
-                                <div className="space-y-2">
-                                  <Input
-                                    value={editText}
-                                    onChange={(e) =>
-                                      setEditText(e.target.value)
-                                    }
-                                    className="bg-background/70"
-                                    autoFocus
-                                    onKeyDown={(e) => {
-                                      if (
-                                        e.key === "Enter" &&
-                                        !e.shiftKey
-                                      ) {
-                                        e.preventDefault();
-                                        saveEditedMessage();
-                                      } else if (
-                                        e.key === "Escape"
-                                      ) {
-                                        cancelEditing();
-                                      }
-                                    }}
-                                  />
-                                  <div className="flex gap-2 justify-end">
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={cancelEditing}
-                                      className="h-7 px-2"
-                                    >
-                                      Cancel
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      onClick={saveEditedMessage}
-                                      className="h-7 px-2"
-                                    >
-                                      Save
-                                    </Button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div
-                                  className={cn(
-                                    "whitespace-pre-wrap break-words text-[15px] leading-relaxed",
-                                    isUserMessage
-                                      ? "text-primary-foreground/95 font-medium"
-                                      : "text-foreground"
-                                  )}
-                                >
-                                  {formatMessageWithMentions(
-                                    message.message
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Attachments */}
-                              {message.attachments &&
-                                message.attachments.length > 0 && (
-                                  <div className="mt-2 space-y-2">
-                                    {message.attachments.length >
-                                      1 && (
-                                      <div className="text-xs text-muted-foreground mb-1">
-                                        {message.attachments.length}{" "}
-                                        attachments
-                                      </div>
-                                    )}
-
-                                    <div
-                                      className={cn(
-                                        "rounded-lg border",
-                                        isUserMessage
-                                          ? "border-primary-foreground/20"
-                                          : "border-border",
-                                        message.attachments.length >
-                                          1
-                                          ? "grid grid-cols-2 gap-1 p-1"
-                                          : ""
-                                      )}
-                                    >
-                                      {message.attachments.map(
-                                        (attachment) => (
-                                          <div
-                                            key={attachment.id}
-                                            className={cn(
-                                              "rounded overflow-hidden relative group",
-                                              message.attachments &&
-                                              message.attachments
-                                                ?.length === 1
-                                              ? ""
-                                              : "aspect-square"
-                                            )}
-                                          >
-                                            {attachment.type ===
-                                            "image" ? (
-                                              <div className="relative">
-                                                {/* Image preview with WhatsApp-like overlay on hover */}
-                                                <div
-                                                  onClick={() =>
-                                                    openImageViewer(
-                                                      attachment.url,
-                                                      attachment.filename
-                                                    )
-                                                  }
-                                                  className="cursor-pointer overflow-hidden relative"
-                                                >
-                                                  <img
-                                                    src={
-                                                      attachment.url
-                                                    }
-                                                    alt={
-                                                      attachment.filename
-                                                    }
-                                                    className={cn(
-                                                      "object-cover w-full transition-transform",
-                                                      message
-                                                        .attachments?.length === 
-                                                      1
-                                                        ? "max-h-72"
-                                                        : "h-full"
-                                                    )}
-                                                    onError={(e) => {
-                                                      (
-                                                        e.target as HTMLImageElement
-                                                      ).src =
-                                                        "/placeholder-image.jpg";
-                                                    }}
-                                                  />
-
-                                                  {/* WhatsApp-like overlay with download button on hover */}
-                                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <div className="flex gap-2">
-                                                      <button
-                                                        onClick={(
-                                                          e
-                                                        ) => {
-                                                          e.stopPropagation();
-                                                          openImageViewer(
-                                                            attachment.url,
-                                                            attachment.filename
-                                                          );
-                                                        }}
-                                                        className="p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
-                                                        aria-label="View full image"
-                                                      >
-                                                        <ZoomIn className="h-5 w-5 text-white" />
-                                                      </button>
-
-                                                      <button
-                                                        onClick={(
-                                                          e
-                                                        ) => {
-                                                          e.stopPropagation();
-                                                          handleDownload(
-                                                            attachment.url,
-                                                            attachment.filename
-                                                          );
-                                                        }}
-                                                        className="p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
-                                                        disabled={
-                                                          downloading ===
-                                                          attachment.filename
-                                                        }
-                                                        aria-label="Download image"
-                                                      >
-                                                        {downloading ===
-                                                        attachment.filename ? (
-                                                          <Loader2 className="h-5 w-5 text-white animate-spin" />
-                                                        ) : (
-                                                          <Download className="h-5 w-5 text-white" />
-                                                        )}
-                                                      </button>
-                                                    </div>
-                                                  </div>
-                                                </div>
-
-                                                {/* File name at the bottom */}
-                                                <div className="px-2 py-1 text-xs truncate bg-background/90 absolute bottom-0 w-full">
-                                                  {
-                                                    attachment.filename
-                                                  }
-                                                </div>
-                                              </div>
-                                            ) : (
-                                              <DocumentPreview
-                                                attachment={attachment}
-                                              />
-                                            )}
-                                          </div>
-                                        )
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                            </div>
-
-                            {/* Time for non-new messages - subtle timestamp on hover */}
-                            {!isNewSender && (
-                              <div
-                                className={cn(
-                                  "text-[10px] opacity-0 group-hover/message:opacity-70 text-muted-foreground mt-1 transition-opacity",
-                                  isUserMessage
-                                    ? "text-right mr-1"
-                                    : "ml-1"
-                                )}
-                              >
-                                {format(messageDate, "h:mm a")}
-                                {message.edited && " (edited)"}
-                              </div>
-                            )}
-
-                            {/* Edit/delete buttons that appear on hover - but only for user's own messages */}
-                            {isUserMessage && !editingMessage && (
-                              <div
-                                className={cn(
-                                  "absolute scale-90 opacity-0 group-hover/message:scale-100 group-hover/message:opacity-100 transition-all duration-150",
-                                  "top-0 shadow-md rounded-full border bg-background/95 backdrop-blur-sm z-10",
-                                  "left-0 transform -translate-x-[110%] flex"
-                                )}
-                              >
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:text-foreground"
-                                  onClick={() =>
-                                    startEditingMessage(message)
-                                  }
-                                  title="Edit message"
-                                >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:text-destructive"
-                                  onClick={() =>
-                                    deleteMessage(message.id)
-                                  }
-                                  title="Delete message"
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div ref={messageEndRef} />
+              {/* Unread messages indicator */}
+              {unreadCount > 0 && (
+                <div className="sticky bottom-4 w-full flex justify-center pointer-events-none z-20">
+                  <Button
+                    onClick={scrollToBottom}
+                    className="rounded-full bg-primary shadow-lg pointer-events-auto flex items-center gap-1 h-9 animate-pulse"
+                    size="sm"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                    <span>{unreadCount} new message{unreadCount !== 1 ? "s" : ""}</span>
+                  </Button>
                 </div>
               )}
             </div>
 
-            {/* Jump to bottom button */}
-            {isScrolling && (
-              <Button
-                size="icon"
-                className="absolute bottom-4 right-4 shadow-lg rounded-full h-10 w-10 bg-primary text-primary-foreground hover:bg-primary/90 z-10"
-                onClick={scrollToBottom}
-                variant="default"
-                aria-label="Scroll to bottom"
-              >
-                <ChevronDown className="h-5 w-5" />
-              </Button>
-            )}
+            {/* Ensures the input area is displayed at the bottom */}
+            <div className="p-4 border-t bg-card min-h-[80px]">
+              {/* File attachments preview */}
+              {attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {attachments.map((file, index) => (
+                    <div
+                      key={index}
+                      className="bg-background rounded-md border px-3 py-1 flex items-center gap-2 group relative"
+                    >
+                      {file.type.startsWith("image/") ? (
+                        <div className="w-6 h-6 relative">
+                          <NextImage
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
+                            width={24}
+                            height={24}
+                            className="w-6 h-6 object-cover rounded"
+                          />
+                        </div>
+                      ) : (
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                      )}
+                      <div className="max-w-[180px]">
+                        <div className="text-xs font-medium truncate">
+                          {file.name}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {formatFileSize(file.size)}
+                        </div>
+                      </div>
 
-            {/* Users typing indicator */}
-            {onlineUsers.some(
-              (u) =>
-                u.status === "typing" && u.id !== session?.user?.id
-            ) && (
-              <div className="absolute bottom-0 left-4 py-1 px-3 rounded-t-lg bg-background border border-b-0 flex items-center gap-2 z-10 shadow-md">
-                <div className="flex space-x-1">
-                  <span className="animate-bounce delay-0 h-1.5 w-1.5 bg-primary rounded-full"></span>
-                  <span className="animate-bounce delay-150 h-1.5 w-1.5 bg-primary/80 rounded-full"></span>
-                  <span className="animate-bounce delay-300 h-1.5 w-1.5 bg-primary/60 rounded-full"></span>
-                </div>
-                <span className="text-xs font-medium">
-                  {onlineUsers
-                    .filter(
-                      (u) =>
-                        u.status === "typing" &&
-                        u.id !== session?.user?.id
-                    )
-                    .map((u) => u.name)
-                    .join(", ")}{" "}
-                  {onlineUsers.filter(
-                    (u) =>
-                      u.status === "typing" &&
-                      u.id !== session?.user?.id
-                  ).length === 1
-                    ? "is"
-                    : "are"}{" "}
-                  typing...
-                </span>
-              </div>
-            )}
-          </CardContent>
+                      {/* Progress bar for upload */}
+                      {isUploading && (
+                        <UploadProgressBar progress={uploadProgress[file.name] || 0} />
+                      )}
 
-          {/* Attachment preview */}
-          {attachments.length > 0 && (
-            <div className="px-4 pt-3 pb-0 flex flex-wrap gap-2 border-t bg-card max-h-24 overflow-y-auto">
-              {attachments.map((file, index) => (
-                <div
-                  key={index}
-                  className="rounded-lg border p-2 flex items-center gap-2 group relative"
-                >
-                  {file.type.startsWith("image/") ? (
-                    <Image className="h-4 w-4" />
-                  ) : (
-                    <FileText className="h-4 w-4" />
-                  )}
-                  <div className="overflow-hidden">
-                    <p className="truncate max-w-28 text-sm">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatFileSize(file.size)}
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-5 w-5 p-0 opacity-70 hover:opacity-100 absolute -top-1 -right-1 bg-background rounded-full"
-                    onClick={() => removeAttachment(index)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Upload progress display */}
-          {isUploading && (
-            <div className="mt-2 space-y-2 px-4">
-              {attachments.map((file, index) => (
-                <div key={index} className="rounded-lg border p-3 bg-card">
-                  <div className="flex items-center">
-                    {file.type.startsWith("image/") ? (
-                      <Image className="h-5 w-5 mr-2" />
-                    ) : (
-                      <FileText className="h-5 w-5 mr-2" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm truncate">{file.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatFileSize(file.size)} • {uploadProgress[file.name] || 0}%
-                      </p>
+                      {/* Remove attachment button */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeAttachment(index)}
+                        className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground rounded-full ml-1"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
-                  </div>
-                  <UploadProgressBar progress={uploadProgress[file.name] || 0} />
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
 
-          {/* Input area */}
-          <div className="p-4 border-t bg-card min-h-[80px]">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                sendMessage();
-              }}
-              className="flex gap-2 items-center relative"
-            >
-              {/* Emoji picker button */}
-              <div className="relative" ref={emojiRef}>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="outline"
-                  className="shrink-0"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                >
-                  <SmilePlus className="h-5 w-5" />
-                </Button>
-
-                {showEmojiPicker && (
-                  <div className="absolute bottom-12 left-0 w-64 bg-background shadow-lg rounded-lg border p-3 z-20">
-                    <div className="grid grid-cols-8 gap-2">
-                      {[
-                        "😀",
-                        "😂",
-                        "🙂",
-                        "😍",
-                        "😎",
-                        "🤔",
-                        "👍",
-                        "👎",
-                        "👏",
-                        "🙏",
-                        "🔥",
-                        "❤️",
-                        "⭐",
-                        "✅",
-                        "⚠️",
-                        "❌",
-                        "💯",
-                        "🎉",
-                        "👀",
-                        "💪",
-                        "🤝",
-                        "👋",
-                        "👨‍💻",
-                        "📊",
-                        "🗓️",
-                        "📝",
-                        "📞",
-                        "💼",
-                        "🏢",
-                        "⏰",
-                        "🚀",
-                        "💡",
-                      ].map((emoji) => (
-                        <Button
-                          key={emoji}
-                          variant="ghost"
-                          className="h-8 w-8 p-0"
-                          onClick={() => {
-                            setInput((prev) => prev + emoji);
-                            setShowEmojiPicker(false);
-                            document.querySelector("input")?.focus();
-                          }}
-                        >
-                          {emoji}
-                        </Button>
-                      ))}
-                    </div>
-                    <div className="h-2 w-2 bg-background border-l border-b rotate-45 absolute -bottom-1 left-4 border-r-0 border-t-0"></div>
-                  </div>
-                )}
-              </div>
-
-              {/* File attachment button */}
-              <Button
-                type="button"
-                size="icon"
-                variant="outline"
-                className="shrink-0"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-              >
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  multiple
-                  accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain"
-                />
-                <Paperclip className="h-5 w-5" />
-              </Button>
-
-              {/* Message input */}
-              <div className="relative flex-1">
+              {/* Input area with buttons */}
+              <div className="relative flex items-center">
                 <Input
-                  placeholder="Type a message... (Use @ to mention)"
-                  value={editingMessage ? editText : input}
-                  onChange={(e) =>
-                    editingMessage
-                      ? setEditText(e.target.value)
-                      : handleInputChange(e)
-                  }
-                  disabled={isUploading}
-                  className="pr-10"
+                  placeholder="Type a message..."
+                  value={input}
+                  onChange={handleInputChange}
+                  className="pr-24 py-6 shadow-sm border-muted"
+                  disabled={isUploading || !!editingMessage}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      editingMessage ? saveEditedMessage() : sendMessage();
+                      sendMessage();
                     }
                   }}
-                  autoFocus
                 />
-                {mentionQuery && (
-                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                    <AtSign className="h-4 w-4" />
-                  </span>
-                )}
-              </div>
 
-              {/* Send button */}
-              <Button
-                type="submit"
-                size="icon"
-                className="shrink-0"
-                disabled={
-                  (!input.trim() && attachments.length === 0) || isUploading
-                }
-              >
-                {isUploading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Send className="h-5 w-5" />
-                )}
-              </Button>
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-background/50 backdrop-blur-sm px-1 py-1 rounded-full">
+                  {/* Emoji button */}
+                  <div className="relative" ref={emojiRef}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-primary hover:text-primary/80"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      title="Add emoji"
+                    >
+                      <SmilePlus className="h-5 w-5" />
+                    </Button>
 
-              {/* Cancel editing button */}
-              {editingMessage && (
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="outline"
-                  className="shrink-0"
-                  onClick={cancelEditing}
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              )}
+                    {showEmojiPicker && (
+                      <div className="absolute right-0 w-64 bottom-12 mb-2 shadow-lg rounded-lg border bg-background p-3 z-30">
+                        {/* Improved emoji picker with categories */}
+                        <div className="mb-2 pb-2 border-b flex justify-between items-center">
+                          <span className="text-xs font-medium">Quick Emojis</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => setShowEmojiPicker(false)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-8 gap-2">
+                          {["😊", "😂", "😍", "🥰", "😘", "😎", "🙄", "😏", "🤔", "🤨", "😮", "😢",
+                            "😭", "😡", "🥳", "🎉", "👍", "👎", "👏", "🙏", "❤️", "🔥", "✅", "❌",
+                            "⭐", "💯", "🚀", "💪"].map(
+                              (emoji) => (
+                                <button
+                                  key={emoji}
+                                  className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded-md transition-colors text-lg"
+                                  onClick={() => {
+                                    setInput((prev) => prev + emoji);
+                                    setShowEmojiPicker(false);
+                                  }}
+                                >
+                                  {emoji}
+                                </button>
+                              )
+                            )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-              {/* Mentions dropdown absolute positioning like emoji picker */}
-              {showMentions && (
-                <div className="absolute bottom-12 left-24 w-64 bg-background shadow-lg rounded-lg border max-h-48 overflow-hidden z-20">
-                  {mentionUsers.length > 0 ? (
-                    mentionUsers.map((user) => (
-                      <Button
-                        key={user.id}
-                        variant="ghost"
-                        className="w-full justify-start gap-2 px-2 py-1.5"
-                        onClick={() => selectMention(user)}
-                      >
-                        <span
-                          className={cn(
-                            "h-2.5 w-2.5 rounded-full",
-                            user.isOnline ? "bg-green-500" : "bg-gray-400"
-                          )}
-                        ></span>
-                        {user.name}
-                      </Button>
-                    ))
-                  ) : (
-                    <div className="text-center p-2 text-sm text-muted-foreground">
-                      No users found
-                    </div>
-                  )}
-                  <div className="h-2 w-2 bg-background border-l border-b rotate-45 absolute -bottom-1 left-4 border-r-0 border-t-0"></div>
+                  {/* Attachment button */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-primary hover:text-primary/80"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Attach files"
+                    disabled={attachments.length >= 3 || isUploading}
+                  >
+                    <Paperclip className="h-5 w-5" />
+                  </Button>
+
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    multiple
+                    onChange={handleFileSelect}
+                    accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  />
+
+                  {/* Mention button */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-primary hover:text-primary/80"
+                    onClick={() => {
+                      setInput((prev) => prev + "@");
+                      mentionStartPosition.current = input.length;
+                      setMentionQuery("");
+                      setShowMentions(true);
+                    }}
+                    title="Mention someone"
+                  >
+                    <AtSign className="h-5 w-5" />
+                  </Button>
+
+                  {/* Send button with more visibility */}
+                  <Button
+                    size="icon"
+                    variant="default"
+                    className="h-8 w-8 rounded-full ml-1 bg-primary hover:bg-primary/90"
+                    onClick={sendMessage}
+                    disabled={(!input.trim() && attachments.length === 0) || isUploading}
+                  >
+                    {isUploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
-              )}
-            </form>
-          </div>
+              </div>
+            </div>
+
+            {/* Message editing overlay - Make it more visible and better positioned */}
+            {editingMessage && (
+              <div className="absolute bottom-[80px] left-0 right-0 border-t bg-background p-4 flex flex-col space-y-3 shadow-lg z-20">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-medium text-sm">Edit message</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={cancelEditing}
+                    className="h-8 px-2"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    className="flex-1"
+                    placeholder="Edit your message..."
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        saveEditedMessage();
+                      } else if (e.key === "Escape") {
+                        cancelEditing();
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={saveEditedMessage}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
         </Card>
       </div>
 
-      {/* Delete confirmation dialog */}
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-      >
+      {/* Image Viewer Dialog */}
+      <Dialog open={imageViewerOpen} onOpenChange={setImageViewerOpen}>
+        <DialogContent className="sm:max-w-[80vw] max-h-[90vh] flex flex-col p-0 gap-0 border-none bg-background/70 backdrop-blur-xl">
+          <div className="p-4 flex items-center border-b">
+            <DialogTitle className="text-sm flex-1 truncate">
+              {currentImage?.filename}
+            </DialogTitle>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setImageViewerZoom((prev) => Math.max(0.5, prev - 0.1))}
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setImageViewerZoom((prev) => Math.min(3, prev + 0.1))}
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setImageRotation((prev) => (prev + 90) % 360)}
+              >
+                <RotateCw className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => currentImage && handleDownload(currentImage.url, currentImage.filename)}
+              >
+                {downloading === currentImage?.filename ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Save
+              </Button>
+              <DialogClose asChild>
+                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                  <X className="h-4 w-4" />
+                </Button>
+              </DialogClose>
+            </div>
+          </div>
+          <div className="flex-1 overflow-hidden flex items-center justify-center p-4">
+            <div
+              className="overflow-auto max-w-full max-h-full flex items-center justify-center"
+              style={{
+                transform: `scale(${imageViewerZoom}) rotate(${imageRotation}deg)`,
+                transition: "transform 0.2s ease",
+              }}
+            >
+              {currentImage && (
+                <NextImage
+                  src={currentImage.url}
+                  alt={currentImage.filename}
+                  width={1200}
+                  height={800}
+                  className="max-w-full max-h-full object-contain pointer-events-none"
+                  unoptimized={true} // For external images
+                />
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete message confirmation dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Message</AlertDialogTitle>
+            <AlertDialogTitle>Delete message</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this message? This action cannot
-              be undone.
+              Are you sure you want to delete this message? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteMessage}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Full-screen image viewer modal */}
-      <Dialog open={imageViewerOpen} onOpenChange={setImageViewerOpen}>
-        <DialogContent className="max-w-7xl w-full h-[90vh] p-0 bg-black/95 border-none overflow-hidden">
-          <DialogTitle className="sr-only">
-            {currentImage?.filename || "Image Viewer"}
-          </DialogTitle>
-          <div className="relative h-full flex flex-col">
-            {/* Top controls */}
-            <div className="flex items-center justify-between p-4 bg-black/80">
-              <div className="text-white text-sm truncate max-w-md">
-                {currentImage?.filename}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() =>
-                    handleDownload(
-                      currentImage?.url || "",
-                      currentImage?.filename || "image.jpg"
-                    )
-                  }
-                  className="p-2 rounded-full hover:bg-white/20 text-white"
-                  disabled={downloading === currentImage?.filename}
-                >
-                  {downloading === currentImage?.filename ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Download className="h-5 w-5" />
-                  )}
-                </button>
-
-                <button
-                  onClick={() =>
-                    setImageViewerZoom((z) => Math.min(z + 0.5, 3))
-                  }
-                  className="p-2 rounded-full hover:bg-white/20 text-white"
-                >
-                  <ZoomIn className="h-5 w-5" />
-                </button>
-
-                <button
-                  onClick={() =>
-                    setImageViewerZoom((z) => Math.max(z - 0.5, 0.5))
-                  }
-                  className="p-2 rounded-full hover:bg-white/20 text-white"
-                >
-                  <ZoomOut className="h-5 w-5" />
-                </button>
-
-                <button
-                  onClick={() => setImageRotation((r) => r + 90)}
-                  className="p-2 rounded-full hover:bg-white/20 text-white"
-                >
-                  <RotateCw className="h-5 w-5" />
-                </button>
-
-                <DialogClose className="p-2 rounded-full hover:bg-white/20 text-white">
-                  <X className="h-5 w-5" />
-                </DialogClose>
-              </div>
-            </div>
-
-            {/* Image container */}
-            <div className="flex-1 flex items-center justify-center overflow-auto">
-              {currentImage && (
-                <div className="relative h-full w-full flex items-center justify-center">
-                  <img
-                    src={currentImage.url}
-                    alt={currentImage.filename}
-                    className="max-h-full max-w-full object-contain transition-all duration-200"
-                    style={{
-                      transform: `scale(${imageViewerZoom}) rotate(${imageRotation}deg)`,
-                    }}
-                    onError={(e) => {
-                      const img = e.target as HTMLImageElement;
-                      img.src = "/placeholder-image.jpg";
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
