@@ -27,6 +27,11 @@ import {
   Search,
   Pencil,
   ChevronDown,
+  Download,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  Eye,
 } from "lucide-react";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -47,8 +52,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Dialog, DialogTitle, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import axios from "axios";
 
 interface Message {
   id: string;
@@ -82,6 +89,110 @@ interface User {
   status?: "typing" | "idle";
 }
 
+// Create a new component for inline document previews
+const DocumentPreview = ({ attachment }: { attachment: Attachment }) => {
+  const extension = attachment.filename.split(".").pop()?.toLowerCase();
+
+  // Render PDF preview
+  if (extension === "pdf") {
+    // Function to handle PDF downloads
+    const handleDownload = async (url: string, filename: string) => {
+      try {
+      // Show loading state
+      const downloadingFile = filename;
+      
+      // Fetch the file
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      
+      // Create a temporary URL for the blob
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      
+      // Append to body, click and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL object
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      // Show success notification
+      toast.success(`Downloaded ${filename}`);
+      } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download file');
+      }
+    };
+
+    function formatFileSize(size: number): string {
+      if (size < 1024) return `${size} B`;
+      if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+      if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+      return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    }
+
+    return (
+      <div className="flex items-center p-3 bg-muted/20 hover:bg-muted/30 transition-colors">
+        <div className="mr-3 text-red-500">
+          <FileText className="h-6 w-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium truncate">{attachment.filename}</p>
+          <p className="text-xs text-muted-foreground">
+            PDF Document • {formatFileSize(attachment.size)}
+          </p>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => window.open(attachment.url, "_blank")}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleDownload(attachment.url, attachment.filename)}
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // For other document types
+  return (
+    <div className="flex items-center p-3 bg-muted/20">
+      {/* Render based on extension type */}
+      {/* ...rest of your document preview code... */}
+    </div>
+  );
+};
+
+// Add this component for upload progress display
+const UploadProgressBar = ({ progress }: { progress: number }) => {
+  return (
+    <div className="w-full bg-background/20 rounded-full h-1 mt-1">
+      <div 
+        className="bg-primary h-1 rounded-full transition-all duration-300"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+  );
+};
+
 export default function ChatPage() {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -102,6 +213,15 @@ export default function ChatPage() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [currentImage, setCurrentImage] = useState<{
+    url: string;
+    filename: string;
+  } | null>(null);
+  const [imageViewerZoom, setImageViewerZoom] = useState(1);
+  const [imageRotation, setImageRotation] = useState(0);
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
@@ -127,8 +247,12 @@ export default function ChatPage() {
   }, []);
 
   // Group users by online status for display
-  const onlineUsersList = onlineUsers.filter(user => user.id !== session?.user?.id && user.isOnline);
-  const offlineUsersList = onlineUsers.filter(user => user.id !== session?.user?.id && !user.isOnline);
+  const onlineUsersList = onlineUsers.filter(
+    (user) => user.id !== session?.user?.id && user.isOnline
+  );
+  const offlineUsersList = onlineUsers.filter(
+    (user) => user.id !== session?.user?.id && !user.isOnline
+  );
   // Filter users based on search
   const filteredUsers = onlineUsers.filter((user) =>
     user.name.toLowerCase().includes(userSearch.toLowerCase())
@@ -174,7 +298,7 @@ export default function ChatPage() {
     if (messageContainerRef.current) {
       messageContainerRef.current.scrollTo({
         top: messageContainerRef.current.scrollHeight,
-        behavior: "smooth"
+        behavior: "smooth",
       });
       setIsScrolling(false);
       setUnreadCount(0);
@@ -378,24 +502,22 @@ export default function ChatPage() {
 
           // Handle message delete
           if (data.type === "message_delete") {
-            setMessages((prev) =>
-              prev.filter((msg) => msg.id !== data.id)
-            );
+            setMessages((prev) => prev.filter((msg) => msg.id !== data.id));
             return;
           }
 
           // Regular chat message
           setMessages((prev) => {
             // Create a Set of existing message IDs for faster lookup
-            const existingIds = new Set(prev.map(msg => msg.id));
-            
+            const existingIds = new Set(prev.map((msg) => msg.id));
+
             if (!existingIds.has(data.id)) {
               const newMessages = [...prev, data];
-              
+
               if (isScrolling) {
                 setUnreadCount((prev) => prev + 1);
               }
-              
+
               return newMessages;
             }
             return prev;
@@ -562,20 +684,36 @@ export default function ChatPage() {
         const formData = new FormData();
         attachments.forEach((file) => {
           formData.append("files", file);
+          // Initialize progress for this file
+          setUploadProgress((prev) => ({
+            ...prev,
+            [file.name]: 0,
+          }));
         });
         formData.append("messageId", newMessageId);
 
-        // Upload files
-        const uploadResponse = await fetch("/api/chat/upload", {
-          method: "POST",
-          body: formData,
+        // Create custom axios request with progress tracking
+        const uploadResponse = await axios.post("/api/chat/upload", formData, {
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+
+              // Update progress for all files (simple approach)
+              setUploadProgress((prev) => {
+                const newProgress = { ...prev };
+                attachments.forEach((file) => {
+                  newProgress[file.name] = percentCompleted;
+                });
+                return newProgress;
+              });
+            }
+          },
         });
 
-        if (!uploadResponse.ok) {
-          throw new Error("Failed to upload files");
-        }
-
-        const uploadResult = await uploadResponse.json();
+        // ...rest of upload handling
+        const uploadResult = uploadResponse.data;
         newMessage.attachments = uploadResult.attachments;
 
         setAttachments([]);
@@ -682,21 +820,21 @@ export default function ChatPage() {
 
   const confirmDeleteMessage = async () => {
     if (!messageToDelete) return;
-    
+
     try {
       const response = await fetch("/api/chat/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messageId: messageToDelete }),
       });
-  
+
       if (!response.ok) {
         throw new Error("Failed to delete message");
       }
-  
+
       // Remove message locally
       setMessages((prev) => prev.filter((msg) => msg.id !== messageToDelete));
-      
+
       // Show success toast
       toast.success("Message deleted successfully");
     } catch (error) {
@@ -709,7 +847,6 @@ export default function ChatPage() {
     }
   };
 
-  
   // Cancel editing
   const cancelEditing = () => {
     setEditingMessage(null);
@@ -721,6 +858,45 @@ export default function ChatPage() {
     if (isToday(date)) return "Today";
     if (isYesterday(date)) return "Yesterday";
     return format(date, "MMM d, yyyy");
+  };
+
+  // Helper function to handle downloads with feedback
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      setDownloading(filename);
+
+      // Fetch the file from the URL
+      const response = await fetch(url);
+      const blob = await response.blob();
+
+      // Create a temporary download link
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename;
+
+      // Trigger the download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up
+      window.URL.revokeObjectURL(downloadUrl);
+      toast.success(`Downloaded ${filename}`);
+    } catch (error) {
+      toast.error("Failed to download file");
+      console.error("Download error:", error);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  // Function to open image viewer
+  const openImageViewer = (url: string, filename: string) => {
+    setCurrentImage({ url, filename });
+    setImageViewerOpen(true);
+    setImageViewerZoom(1);
+    setImageRotation(0);
   };
 
   return (
@@ -746,7 +922,7 @@ export default function ChatPage() {
             )}
           </Button>
         </div>
-        
+
         {!sidebarCollapsed && (
           <div className="flex flex-col p-4 border-b">
             <div className="flex items-center justify-center">
@@ -966,8 +1142,8 @@ export default function ChatPage() {
                           <p className="text-xs text-muted-foreground">
                             {!user.isOnline && user.lastSeen
                               ? `Last seen: ${formatDistanceToNow(
-                                new Date(user.lastSeen)
-                              )} ago`
+                                  new Date(user.lastSeen)
+                                )} ago`
                               : user.role.replace(/_/g, " ")}
                           </p>
                         </div>
@@ -993,7 +1169,12 @@ export default function ChatPage() {
               <CardTitle className="text-lg">Chat Room</CardTitle>
               <CardDescription className="flex items-center gap-2 justify-center">
                 <span className="bg-green-500 rounded-full h-2 w-2"></span>
-                {onlineUsersList.filter(user => user.id !== session?.user?.id).length} online
+                {
+                  onlineUsersList.filter(
+                    (user) => user.id !== session?.user?.id
+                  ).length
+                }{" "}
+                online
               </CardDescription>
             </div>
             {!sidebarCollapsed && (
@@ -1049,25 +1230,30 @@ export default function ChatPage() {
               ) : (
                 <div className="">
                   {messages.map((message, index) => {
-  const messageDate = new Date(message.sentAt);
-  const showDateDivider =
-    index === 0 ||
-    getMessageDate(messageDate) !==
-    getMessageDate(new Date(messages[index - 1].sentAt));
+                    const messageDate = new Date(message.sentAt);
+                    const showDateDivider =
+                      index === 0 ||
+                      getMessageDate(messageDate) !==
+                        getMessageDate(
+                          new Date(messages[index - 1].sentAt)
+                        );
 
-  // Check if this is first message from a user or if previous message is from someone else
-  const isNewSender =
-    index === 0 || 
-    messages[index - 1].name !== message.name || 
-    new Date(message.sentAt).getTime() - new Date(messages[index - 1].sentAt).getTime() > 5 * 60 * 1000;
+                    // Check if this is first message from a user or if previous message is from someone else
+                    const isNewSender =
+                      index === 0 ||
+                      messages[index - 1].name !== message.name ||
+                      new Date(message.sentAt).getTime() -
+                        new Date(messages[index - 1].sentAt).getTime() >
+                        5 * 60 * 1000;
 
-  const isUserMessage = message.name === session?.user?.name;
+                    const isUserMessage =
+                      message.name === session?.user?.name;
 
-  return (
-    <div key={`${message.id}-${index}`} className="mb-1">
-      {/* Date separator */}
-      {showDateDivider && (
-        <div className="flex justify-center my-3">
+                    return (
+                      <div key={`${message.id}-${index}`} className="mb-1">
+                        {/* Date separator */}
+                        {showDateDivider && (
+                          <div className="flex justify-center my-3">
                             <div className="bg-background/70 backdrop-blur-sm px-4 py-1.5 rounded-full text-xs font-medium text-muted-foreground border shadow-sm">
                               {getMessageDate(messageDate)}
                             </div>
@@ -1078,24 +1264,29 @@ export default function ChatPage() {
                         <div
                           className={cn(
                             "group flex gap-3 max-w-[85%] mb-1",
-                            isUserMessage ? "ml-auto flex-row-reverse" : "",
+                            isUserMessage
+                              ? "ml-auto flex-row-reverse"
+                              : "",
                             !isNewSender && !isUserMessage ? "pl-12" : ""
                           )}
                         >
                           {/* User avatar - only show on new sender and not user's own message */}
-                          {message.name !== session?.user?.name && isNewSender && (
-                            <div className="mt-1 pb-[48px] relative">
-                              <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
-                                <AvatarImage
-                                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${message.name}`}
-                                  alt={message.name}
-                                />
-                                <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                                  {message.name.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                            </div>
-                          )}
+                          {message.name !== session?.user?.name &&
+                            isNewSender && (
+                              <div className="mt-1 pb-[48px] relative">
+                                <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
+                                  <AvatarImage
+                                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${message.name}`}
+                                    alt={message.name}
+                                  />
+                                  <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                                    {message.name
+                                      .substring(0, 2)
+                                      .toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </div>
+                            )}
 
                           {/* Message content with edit/delete buttons */}
                           <div className="relative group/message">
@@ -1105,7 +1296,7 @@ export default function ChatPage() {
                                 "relative rounded-2xl p-3 min-w-[120px] shadow-sm",
                                 isUserMessage
                                   ? "bg-gradient-to-br from-primary/50 to-primary/30 text-primary-foreground rounded-tr-sm border border-primary/20"
-                                  : "bg-card border rounded-tl-sm",
+                                  : "bg-card border rounded-tl-sm"
                               )}
                             >
                               {/* Message pointer triangle */}
@@ -1127,22 +1318,38 @@ export default function ChatPage() {
                                       !isUserMessage && "text-primary"
                                     )}
                                   >
-                                    {isUserMessage ? "You" : message.name}
+                                    {isUserMessage
+                                      ? "You"
+                                      : message.name}
                                   </p>
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <time className="text-xs opacity-70">
-                                          {format(messageDate, "h:mm a")}
+                                          {format(
+                                            messageDate,
+                                            "h:mm a"
+                                          )}
                                         </time>
                                       </TooltipTrigger>
-                                      <TooltipContent side={isUserMessage ? "left" : "right"}>
-                                        {format(messageDate, "PPP p")}
+                                      <TooltipContent
+                                        side={
+                                          isUserMessage
+                                            ? "left"
+                                            : "right"
+                                        }
+                                      >
+                                        {format(
+                                          messageDate,
+                                          "PPP p"
+                                        )}
                                       </TooltipContent>
                                     </Tooltip>
                                   </TooltipProvider>
                                   {message.edited && (
-                                    <span className="text-xs opacity-70 italic">(edited)</span>
+                                    <span className="text-xs opacity-70 italic">
+                                      (edited)
+                                    </span>
                                   )}
                                 </div>
                               )}
@@ -1152,14 +1359,21 @@ export default function ChatPage() {
                                 <div className="space-y-2">
                                   <Input
                                     value={editText}
-                                    onChange={(e) => setEditText(e.target.value)}
+                                    onChange={(e) =>
+                                      setEditText(e.target.value)
+                                    }
                                     className="bg-background/70"
                                     autoFocus
                                     onKeyDown={(e) => {
-                                      if (e.key === "Enter" && !e.shiftKey) {
+                                      if (
+                                        e.key === "Enter" &&
+                                        !e.shiftKey
+                                      ) {
                                         e.preventDefault();
                                         saveEditedMessage();
-                                      } else if (e.key === "Escape") {
+                                      } else if (
+                                        e.key === "Escape"
+                                      ) {
                                         cancelEditing();
                                       }
                                     }}
@@ -1186,64 +1400,155 @@ export default function ChatPage() {
                                 <div
                                   className={cn(
                                     "whitespace-pre-wrap break-words text-[15px] leading-relaxed",
-                                    isUserMessage ? "text-primary-foreground/95 font-medium" : "text-foreground"
+                                    isUserMessage
+                                      ? "text-primary-foreground/95 font-medium"
+                                      : "text-foreground"
                                   )}
                                 >
-                                  {formatMessageWithMentions(message.message)}
+                                  {formatMessageWithMentions(
+                                    message.message
+                                  )}
                                 </div>
                               )}
 
                               {/* Attachments */}
-                              {message.attachments && message.attachments.length > 0 && (
-                                <div className="mt-2 space-y-2">
-                                  {message.attachments.map((attachment) => (
+                              {message.attachments &&
+                                message.attachments.length > 0 && (
+                                  <div className="mt-2 space-y-2">
+                                    {message.attachments.length >
+                                      1 && (
+                                      <div className="text-xs text-muted-foreground mb-1">
+                                        {message.attachments.length}{" "}
+                                        attachments
+                                      </div>
+                                    )}
+
                                     <div
-                                      key={attachment.id}
                                       className={cn(
-                                        "rounded-lg overflow-hidden border transition-all hover:shadow-md",
-                                        isUserMessage ? "bg-primary-foreground/10 border-primary-foreground/20" : "bg-background border-border"
+                                        "rounded-lg border",
+                                        isUserMessage
+                                          ? "border-primary-foreground/20"
+                                          : "border-border",
+                                        message.attachments.length >
+                                          1
+                                          ? "grid grid-cols-2 gap-1 p-1"
+                                          : ""
                                       )}
                                     >
-                                      {attachment.type === "image" ? (
-                                        <a
-                                          href={attachment.url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="block"
-                                        >
-                                          <img
-                                            src={attachment.url}
-                                            alt={attachment.filename}
-                                            className="max-h-40 max-w-full object-contain rounded"
-                                          />
-                                          <div className="px-2 py-1 text-xs truncate">
-                                            {attachment.filename}
+                                      {message.attachments.map(
+                                        (attachment) => (
+                                          <div
+                                            key={attachment.id}
+                                            className={cn(
+                                              "rounded overflow-hidden relative group",
+                                              message.attachments &&
+                                              message.attachments
+                                                ?.length === 1
+                                              ? ""
+                                              : "aspect-square"
+                                            )}
+                                          >
+                                            {attachment.type ===
+                                            "image" ? (
+                                              <div className="relative">
+                                                {/* Image preview with WhatsApp-like overlay on hover */}
+                                                <div
+                                                  onClick={() =>
+                                                    openImageViewer(
+                                                      attachment.url,
+                                                      attachment.filename
+                                                    )
+                                                  }
+                                                  className="cursor-pointer overflow-hidden relative"
+                                                >
+                                                  <img
+                                                    src={
+                                                      attachment.url
+                                                    }
+                                                    alt={
+                                                      attachment.filename
+                                                    }
+                                                    className={cn(
+                                                      "object-cover w-full transition-transform",
+                                                      message
+                                                        .attachments?.length === 
+                                                      1
+                                                        ? "max-h-72"
+                                                        : "h-full"
+                                                    )}
+                                                    onError={(e) => {
+                                                      (
+                                                        e.target as HTMLImageElement
+                                                      ).src =
+                                                        "/placeholder-image.jpg";
+                                                    }}
+                                                  />
+
+                                                  {/* WhatsApp-like overlay with download button on hover */}
+                                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <div className="flex gap-2">
+                                                      <button
+                                                        onClick={(
+                                                          e
+                                                        ) => {
+                                                          e.stopPropagation();
+                                                          openImageViewer(
+                                                            attachment.url,
+                                                            attachment.filename
+                                                          );
+                                                        }}
+                                                        className="p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
+                                                        aria-label="View full image"
+                                                      >
+                                                        <ZoomIn className="h-5 w-5 text-white" />
+                                                      </button>
+
+                                                      <button
+                                                        onClick={(
+                                                          e
+                                                        ) => {
+                                                          e.stopPropagation();
+                                                          handleDownload(
+                                                            attachment.url,
+                                                            attachment.filename
+                                                          );
+                                                        }}
+                                                        className="p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
+                                                        disabled={
+                                                          downloading ===
+                                                          attachment.filename
+                                                        }
+                                                        aria-label="Download image"
+                                                      >
+                                                        {downloading ===
+                                                        attachment.filename ? (
+                                                          <Loader2 className="h-5 w-5 text-white animate-spin" />
+                                                        ) : (
+                                                          <Download className="h-5 w-5 text-white" />
+                                                        )}
+                                                      </button>
+                                                    </div>
+                                                  </div>
+                                                </div>
+
+                                                {/* File name at the bottom */}
+                                                <div className="px-2 py-1 text-xs truncate bg-background/90 absolute bottom-0 w-full">
+                                                  {
+                                                    attachment.filename
+                                                  }
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <DocumentPreview
+                                                attachment={attachment}
+                                              />
+                                            )}
                                           </div>
-                                        </a>
-                                      ) : (
-                                        <a
-                                          href={attachment.url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="p-2 flex items-center gap-2 hover:bg-muted/20"
-                                        >
-                                          <div className="p-2 rounded bg-muted/30">
-                                            <FileText className="h-5 w-5" />
-                                          </div>
-                                          <div className="overflow-hidden">
-                                            <p className="truncate text-sm font-medium">
-                                              {attachment.filename}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                              {formatFileSize(attachment.size)}
-                                            </p>
-                                          </div>
-                                        </a>
+                                        )
                                       )}
                                     </div>
-                                  ))}
-                                </div>
-                              )}
+                                  </div>
+                                )}
                             </div>
 
                             {/* Time for non-new messages - subtle timestamp on hover */}
@@ -1251,7 +1556,9 @@ export default function ChatPage() {
                               <div
                                 className={cn(
                                   "text-[10px] opacity-0 group-hover/message:opacity-70 text-muted-foreground mt-1 transition-opacity",
-                                  isUserMessage ? "text-right mr-1" : "ml-1"
+                                  isUserMessage
+                                    ? "text-right mr-1"
+                                    : "ml-1"
                                 )}
                               >
                                 {format(messageDate, "h:mm a")}
@@ -1272,7 +1579,9 @@ export default function ChatPage() {
                                   size="sm"
                                   variant="ghost"
                                   className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:text-foreground"
-                                  onClick={() => startEditingMessage(message)}
+                                  onClick={() =>
+                                    startEditingMessage(message)
+                                  }
                                   title="Edit message"
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
@@ -1281,7 +1590,9 @@ export default function ChatPage() {
                                   size="sm"
                                   variant="ghost"
                                   className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:text-destructive"
-                                  onClick={() => deleteMessage(message.id)}
+                                  onClick={() =>
+                                    deleteMessage(message.id)
+                                  }
                                   title="Delete message"
                                 >
                                   <X className="h-3.5 w-3.5" />
@@ -1312,7 +1623,10 @@ export default function ChatPage() {
             )}
 
             {/* Users typing indicator */}
-            {onlineUsers.some((u) => u.status === "typing" && u.id !== session?.user?.id) && (
+            {onlineUsers.some(
+              (u) =>
+                u.status === "typing" && u.id !== session?.user?.id
+            ) && (
               <div className="absolute bottom-0 left-4 py-1 px-3 rounded-t-lg bg-background border border-b-0 flex items-center gap-2 z-10 shadow-md">
                 <div className="flex space-x-1">
                   <span className="animate-bounce delay-0 h-1.5 w-1.5 bg-primary rounded-full"></span>
@@ -1321,10 +1635,18 @@ export default function ChatPage() {
                 </div>
                 <span className="text-xs font-medium">
                   {onlineUsers
-                    .filter((u) => u.status === "typing" && u.id !== session?.user?.id)
+                    .filter(
+                      (u) =>
+                        u.status === "typing" &&
+                        u.id !== session?.user?.id
+                    )
                     .map((u) => u.name)
                     .join(", ")}{" "}
-                  {onlineUsers.filter((u) => u.status === "typing" && u.id !== session?.user?.id).length === 1
+                  {onlineUsers.filter(
+                    (u) =>
+                      u.status === "typing" &&
+                      u.id !== session?.user?.id
+                  ).length === 1
                     ? "is"
                     : "are"}{" "}
                   typing...
@@ -1360,6 +1682,30 @@ export default function ChatPage() {
                   >
                     <X className="h-3 w-3" />
                   </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Upload progress display */}
+          {isUploading && (
+            <div className="mt-2 space-y-2 px-4">
+              {attachments.map((file, index) => (
+                <div key={index} className="rounded-lg border p-3 bg-card">
+                  <div className="flex items-center">
+                    {file.type.startsWith("image/") ? (
+                      <Image className="h-5 w-5 mr-2" />
+                    ) : (
+                      <FileText className="h-5 w-5 mr-2" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm truncate">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(file.size)} • {uploadProgress[file.name] || 0}%
+                      </p>
+                    </div>
+                  </div>
+                  <UploadProgressBar progress={uploadProgress[file.name] || 0} />
                 </div>
               ))}
             </div>
@@ -1517,7 +1863,7 @@ export default function ChatPage() {
                   <X className="h-5 w-5" />
                 </Button>
               )}
-              
+
               {/* Mentions dropdown absolute positioning like emoji picker */}
               {showMentions && (
                 <div className="absolute bottom-12 left-24 w-64 bg-background shadow-lg rounded-lg border max-h-48 overflow-hidden z-20">
@@ -1552,17 +1898,21 @@ export default function ChatPage() {
       </div>
 
       {/* Delete confirmation dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Message</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this message? This action cannot be undone.
+              Are you sure you want to delete this message? This action cannot
+              be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmDeleteMessage}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
@@ -1571,6 +1921,91 @@ export default function ChatPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Full-screen image viewer modal */}
+      <Dialog open={imageViewerOpen} onOpenChange={setImageViewerOpen}>
+        <DialogContent className="max-w-7xl w-full h-[90vh] p-0 bg-black/95 border-none overflow-hidden">
+          <DialogTitle className="sr-only">
+            {currentImage?.filename || "Image Viewer"}
+          </DialogTitle>
+          <div className="relative h-full flex flex-col">
+            {/* Top controls */}
+            <div className="flex items-center justify-between p-4 bg-black/80">
+              <div className="text-white text-sm truncate max-w-md">
+                {currentImage?.filename}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    handleDownload(
+                      currentImage?.url || "",
+                      currentImage?.filename || "image.jpg"
+                    )
+                  }
+                  className="p-2 rounded-full hover:bg-white/20 text-white"
+                  disabled={downloading === currentImage?.filename}
+                >
+                  {downloading === currentImage?.filename ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Download className="h-5 w-5" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() =>
+                    setImageViewerZoom((z) => Math.min(z + 0.5, 3))
+                  }
+                  className="p-2 rounded-full hover:bg-white/20 text-white"
+                >
+                  <ZoomIn className="h-5 w-5" />
+                </button>
+
+                <button
+                  onClick={() =>
+                    setImageViewerZoom((z) => Math.max(z - 0.5, 0.5))
+                  }
+                  className="p-2 rounded-full hover:bg-white/20 text-white"
+                >
+                  <ZoomOut className="h-5 w-5" />
+                </button>
+
+                <button
+                  onClick={() => setImageRotation((r) => r + 90)}
+                  className="p-2 rounded-full hover:bg-white/20 text-white"
+                >
+                  <RotateCw className="h-5 w-5" />
+                </button>
+
+                <DialogClose className="p-2 rounded-full hover:bg-white/20 text-white">
+                  <X className="h-5 w-5" />
+                </DialogClose>
+              </div>
+            </div>
+
+            {/* Image container */}
+            <div className="flex-1 flex items-center justify-center overflow-auto">
+              {currentImage && (
+                <div className="relative h-full w-full flex items-center justify-center">
+                  <img
+                    src={currentImage.url}
+                    alt={currentImage.filename}
+                    className="max-h-full max-w-full object-contain transition-all duration-200"
+                    style={{
+                      transform: `scale(${imageViewerZoom}) rotate(${imageRotation}deg)`,
+                    }}
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      img.src = "/placeholder-image.jpg";
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
