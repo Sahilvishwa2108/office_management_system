@@ -1063,21 +1063,17 @@ export default function ChatPage() {
               </div>
             )}
           </CardHeader>
-
-          <CardContent className="flex-1 p-0 relative bg-card/10">
+          <CardContent className="flex-1 p-0 relative">
             {/* Virtual list for messages */}
             <div
               ref={messageContainerRef}
-              className="h-full overflow-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent hover:scrollbar-thumb-muted/80"
-              style={{
-                contain: "strict",
-                scrollbarWidth: "thin", // For Firefox
-              }}
+              className="h-full overflow-auto scrollbar-thin scrollbar-thumb-muted/50 scrollbar-track-transparent hover:scrollbar-thumb-muted/70 bg-gradient-to-b from-card/40 to-background/80"
+              style={{ contain: "strict", scrollbarWidth: "thin" }}
             >
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-12">
-                  <div className="bg-muted p-4 rounded-full mb-4">
-                    <MessageCircle className="h-12 w-12 text-muted-foreground opacity-70" />
+                  <div className="bg-primary/5 p-4 rounded-full mb-4 border border-primary/10">
+                    <MessageCircle className="h-12 w-12 text-primary/40" />
                   </div>
                   <h3 className="font-medium">No messages yet</h3>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -1098,144 +1094,173 @@ export default function ChatPage() {
                     const showDateDivider =
                       virtualRow.index === 0 ||
                       getMessageDate(messageDate) !==
-                        getMessageDate(
-                          new Date(messages[virtualRow.index - 1].sentAt)
-                        );
-
+                        getMessageDate(new Date(messages[virtualRow.index - 1].sentAt));
+          
+                    // Check if this is first message from a user or if previous message is from someone else
                     const isNewSender =
-                      virtualRow.index === 0 ||
-                      messages[virtualRow.index - 1].name !== message.name;
-
+                      virtualRow.index === 0 || messages[virtualRow.index - 1].name !== message.name;
+                    
+                    const isUserMessage = message.name === session?.user?.name;
+          
                     return (
                       <div
                         key={message.id}
-                        data-index={virtualRow.index}
-                        className="absolute top-0 left-0 w-full"
                         style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
                           transform: `translateY(${virtualRow.start}px)`,
                         }}
                       >
+                        {/* Date separator */}
                         {showDateDivider && (
-                          <div className="flex justify-center my-3">
-                            <div className="bg-muted px-3 py-1 rounded-full text-xs text-muted-foreground">
+                          <div className="flex justify-center my-4">
+                            <div className="bg-background/70 backdrop-blur-sm px-4 py-1.5 rounded-full text-xs font-medium text-muted-foreground border shadow-sm">
                               {getMessageDate(messageDate)}
                             </div>
                           </div>
                         )}
-
+                        
+                        {/* Message container */}
                         <div
                           className={cn(
-                            "flex gap-3 max-w-[85%] mb-1 mx-2 group",
-                            message.name === session?.user?.name
-                              ? "ml-auto flex-row-reverse"
-                              : "",
-                            !isNewSender && message.name !== session?.user?.name
-                              ? "pl-12"
-                              : ""
+                            "group flex gap-3 max-w-[85%] mb-2",
+                            isUserMessage ? "ml-auto flex-row-reverse" : "",
+                            !isNewSender && !isUserMessage ? "pl-12" : ""
                           )}
                         >
-                          {message.name !== session?.user?.name &&
-                            isNewSender && (
-                              <Avatar className="h-9 w-9 mt-1">
+                          {/* User avatar - only show on new sender and not user's own message */}
+                          {message.name !== session?.user?.name && isNewSender && (
+                            <div className="mt-1 relative">
+                              <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
                                 <AvatarImage
                                   src={`https://api.dicebear.com/7.x/initials/svg?seed=${message.name}`}
                                   alt={message.name}
                                 />
-                                <AvatarFallback>
+                                <AvatarFallback className="bg-primary/10 text-primary font-medium">
                                   {message.name.substring(0, 2).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
-                            )}
-                          <div
-                            className={cn(
-                              "rounded-lg p-3 min-w-[120px] animate-in fade-in",
-                              message.name === session?.user?.name
-                                ? "bg-primary text-primary-foreground rounded-tr-none"
-                                : "bg-muted rounded-tl-none"
-                            )}
-                          >
-                            {isNewSender && (
-                              <div className="flex gap-2 items-center mb-1">
-                                <p className="text-sm font-medium truncate">
-                                  {message.name === session?.user?.name
-                                    ? "You"
-                                    : message.name}
-                                </p>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <time className="text-xs opacity-70">
-                                        {format(messageDate, "h:mm a")}
-                                      </time>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      {format(messageDate, "PPP p")}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                {message.edited && (
-                                  <span className="text-xs opacity-70">
-                                    (edited)
-                                  </span>
+                              <span
+                                className={cn(
+                                  "absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-background",
+                                  onlineUsers.find((u) => u.name === message.name)?.isOnline
+                                    ? "bg-green-500"
+                                    : "bg-gray-400"
                                 )}
-                              </div>
-                            )}
-
-                            {editingMessage === message.id ? (
-                              <div className="space-y-2">
-                                <Input
-                                  value={editText}
-                                  onChange={(e) =>
-                                    setEditText(e.target.value)
-                                  }
-                                  className="bg-background/70"
-                                  autoFocus
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter" && !e.shiftKey) {
-                                      e.preventDefault();
-                                      saveEditedMessage();
-                                    } else if (e.key === "Escape") {
-                                      cancelEditing();
-                                    }
-                                  }}
-                                />
-                                <div className="flex gap-2 justify-end">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={cancelEditing}
-                                    className="h-7 px-2"
-                                  >
-                                    Cancel
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    onClick={saveEditedMessage}
-                                    className="h-7 px-2"
-                                  >
-                                    Save
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                {message.message && (
-                                  <div className="whitespace-pre-wrap break-words">
-                                    {formatMessageWithMentions(
-                                      message.message
+                              ></span>
+                            </div>
+                          )}
+          
+                          {/* Message content with edit/delete buttons */}
+                          <div className="relative group/message">
+                            {/* Message bubble with pointer */}
+                            <div
+                              className={cn(
+                                "relative rounded-2xl p-3 min-w-[120px] shadow-sm",
+                                isUserMessage
+                                  ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-tr-sm"
+                                  : "bg-card border rounded-tl-sm",
+                              )}
+                            >
+                              {/* Message pointer triangle */}
+                              <div
+                                className={cn(
+                                  "absolute top-0 w-3 h-3",
+                                  isUserMessage
+                                    ? "right-0 bg-primary rounded-bl-md"
+                                    : "left-0 bg-card rounded-br-md border-r border-b"
+                                )}
+                              ></div>
+          
+                              {/* Message sender and time */}
+                              {isNewSender && (
+                                <div className="flex gap-2 items-center mb-1.5">
+                                  <p
+                                    className={cn(
+                                      "text-sm font-medium truncate",
+                                      !isUserMessage && "text-primary"
                                     )}
+                                  >
+                                    {isUserMessage ? "You" : message.name}
+                                  </p>
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <time className="text-xs opacity-70">
+                                          {format(messageDate, "h:mm a")}
+                                        </time>
+                                      </TooltipTrigger>
+                                      <TooltipContent side={isUserMessage ? "left" : "right"}>
+                                        {format(messageDate, "PPP p")}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                  {message.edited && (
+                                    <span className="text-xs opacity-70 italic">(edited)</span>
+                                  )}
+                                </div>
+                              )}
+          
+                              {/* Message text or edit form */}
+                              {editingMessage === message.id ? (
+                                <div className="space-y-2">
+                                  <Input
+                                    value={editText}
+                                    onChange={(e) => setEditText(e.target.value)}
+                                    className="bg-background/70"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter" && !e.shiftKey) {
+                                        e.preventDefault();
+                                        saveEditedMessage();
+                                      } else if (e.key === "Escape") {
+                                        cancelEditing();
+                                      }
+                                    }}
+                                  />
+                                  <div className="flex gap-2 justify-end">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={cancelEditing}
+                                      className="h-7 px-2"
+                                    >
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={saveEditedMessage}
+                                      className="h-7 px-2"
+                                    >
+                                      Save
+                                    </Button>
                                   </div>
-                                )}
-                              </>
-                            )}
-
-                            {message.attachments &&
-                              message.attachments.length > 0 && (
+                                </div>
+                              ) : (
+                                <div
+                                  className={cn(
+                                    "whitespace-pre-wrap break-words text-[15px] leading-relaxed",
+                                    isUserMessage ? "text-primary-foreground" : "text-foreground"
+                                  )}
+                                >
+                                  {formatMessageWithMentions(message.message)}
+                                </div>
+                              )}
+          
+                              {/* Attachments */}
+                              {message.attachments && message.attachments.length > 0 && (
                                 <div className="mt-2 space-y-2">
                                   {message.attachments.map((attachment) => (
                                     <div
                                       key={attachment.id}
-                                      className="rounded border overflow-hidden"
+                                      className={cn(
+                                        "rounded-lg overflow-hidden transition-all hover:shadow-md",
+                                        isUserMessage
+                                          ? "bg-primary-foreground/10 border-primary-foreground/20"
+                                          : "bg-background border"
+                                      )}
                                     >
                                       {attachment.type === "image" ? (
                                         <a
@@ -1247,25 +1272,35 @@ export default function ChatPage() {
                                           <img
                                             src={attachment.url}
                                             alt={attachment.filename}
-                                            className="max-h-40 max-w-full object-contain"
+                                            className="max-h-40 max-w-full object-contain rounded"
                                           />
+                                          <div className="px-2 py-1 text-xs truncate border-t">
+                                            {attachment.filename}
+                                          </div>
                                         </a>
                                       ) : (
                                         <a
                                           href={attachment.url}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="p-2 flex items-center gap-2 hover:bg-muted/60"
+                                          className="p-2 flex items-center gap-2 hover:bg-muted/20"
                                         >
-                                          <FileText className="h-5 w-5" />
+                                          <div
+                                            className={cn(
+                                              "p-2 rounded",
+                                              isUserMessage
+                                                ? "bg-primary-foreground/20"
+                                                : "bg-muted"
+                                            )}
+                                          >
+                                            <FileText className="h-5 w-5" />
+                                          </div>
                                           <div className="overflow-hidden">
-                                            <p className="truncate text-sm">
+                                            <p className="truncate text-sm font-medium">
                                               {attachment.filename}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
-                                              {formatFileSize(
-                                                attachment.size
-                                              )}
+                                              {formatFileSize(attachment.size)}
                                             </p>
                                           </div>
                                         </a>
@@ -1274,40 +1309,51 @@ export default function ChatPage() {
                                   ))}
                                 </div>
                               )}
-
-                            {/* Message actions (only show for current user's messages) */}
-                            {message.name === session?.user?.name &&
-                              !editingMessage && (
-                                <div
-                                  className={cn(
-                                    "flex gap-1 justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity",
-                                    message.name === session?.user?.name
-                                      ? "justify-end"
-                                      : "justify-start"
-                                  )}
+                            </div>
+          
+                            {/* Time for non-new messages - subtle timestamp on hover */}
+                            {!isNewSender && (
+                              <div
+                                className={cn(
+                                  "text-[10px] opacity-0 group-hover/message:opacity-70 text-muted-foreground mt-1 transition-opacity",
+                                  isUserMessage ? "text-right mr-1" : "ml-1"
+                                )}
+                              >
+                                {format(messageDate, "h:mm a")}
+                                {message.edited && " (edited)"}
+                              </div>
+                            )}
+          
+                            {/* Edit/delete buttons that appear on hover - but only for user's own messages */}
+                            {isUserMessage && !editingMessage && (
+                              <div 
+                                className={cn(
+                                  "absolute scale-90 opacity-0 group-hover/message:scale-100 group-hover/message:opacity-100 transition-all duration-150",
+                                  "top-0 shadow-md rounded-full border bg-background/95 backdrop-blur-sm z-10",
+                                  // Position on the opposite side of the message for better visibility
+                                  "left-0 transform -translate-x-[110%] flex"
+                                )}
+                              >
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:text-foreground"
+                                  onClick={() => startEditingMessage(message)}
+                                  title="Edit message"
                                 >
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-6 w-6 p-0 rounded-full"
-                                    onClick={() =>
-                                      startEditingMessage(message)
-                                    }
-                                  >
-                                    <Pencil className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-6 w-6 p-0 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onClick={() =>
-                                      deleteMessage(message.id)
-                                    }
-                                  >
-                                    <X className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              )}
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:text-destructive"
+                                  onClick={() => deleteMessage(message.id)}
+                                  title="Delete message"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1317,53 +1363,33 @@ export default function ChatPage() {
                 </div>
               )}
             </div>
-
-            {/* Always visible Jump to Bottom button (shows when scrolled up) */}
-            {isScrolling && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="absolute bottom-4 right-4 shadow-lg flex items-center gap-1 bg-background/80 backdrop-blur-sm transition-all duration-200 border"
-                onClick={scrollToBottom}
-              >
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            )}
-
-            {/* New message indicator */}
+          
+            {/* New messages indicator */}
             {isScrolling && unreadCount > 0 && (
               <Button
                 size="sm"
-                className="absolute bottom-16 right-4 shadow-lg animate-in fade-in slide-in-from-bottom-3"
+                className="absolute bottom-4 right-4 shadow-lg animate-in fade-in slide-in-from-bottom-3 bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={scrollToBottom}
               >
                 {unreadCount} new {unreadCount === 1 ? "message" : "messages"}
                 <ChevronDown className="ml-1 h-4 w-4" />
               </Button>
             )}
-
+          
             {/* Users typing indicator */}
-            {onlineUsers.some(
-              (u) => u.status === "typing" && u.id !== session?.user?.id
-            ) && (
-              <div className="absolute bottom-0 left-4 py-1 px-3 rounded-t-lg bg-background text-xs text-muted-foreground border border-b-0 flex items-center gap-2 z-10">
+            {onlineUsers.some((u) => u.status === "typing" && u.id !== session?.user?.id) && (
+              <div className="absolute bottom-0 left-4 py-1 px-3 rounded-t-lg bg-background border border-b-0 flex items-center gap-2 z-10 shadow-md">
                 <div className="flex space-x-1">
-                  <span className="animate-bounce delay-0 h-1.5 w-1.5 bg-muted-foreground rounded-full"></span>
-                  <span className="animate-bounce delay-150 h-1.5 w-1.5 bg-muted-foreground rounded-full"></span>
-                  <span className="animate-bounce delay-300 h-1.5 w-1.5 bg-muted-foreground rounded-full"></span>
+                  <span className="animate-bounce delay-0 h-1.5 w-1.5 bg-primary rounded-full"></span>
+                  <span className="animate-bounce delay-150 h-1.5 w-1.5 bg-primary/80 rounded-full"></span>
+                  <span className="animate-bounce delay-300 h-1.5 w-1.5 bg-primary/60 rounded-full"></span>
                 </div>
-                <span>
+                <span className="text-xs font-medium">
                   {onlineUsers
-                    .filter(
-                      (u) =>
-                        u.status === "typing" && u.id !== session?.user?.id
-                    )
+                    .filter((u) => u.status === "typing" && u.id !== session?.user?.id)
                     .map((u) => u.name)
                     .join(", ")}{" "}
-                  {onlineUsers.filter(
-                    (u) =>
-                      u.status === "typing" && u.id !== session?.user?.id
-                  ).length === 1
+                  {onlineUsers.filter((u) => u.status === "typing" && u.id !== session?.user?.id).length === 1
                     ? "is"
                     : "are"}{" "}
                   typing...
