@@ -1200,10 +1200,8 @@ export default function ChatPage() {
                                     <div
                                       key={attachment.id}
                                       className={cn(
-                                        "rounded-lg overflow-hidden transition-all hover:shadow-md",
-                                        isUserMessage
-                                          ? "bg-primary-foreground/10 border-primary-foreground/20"
-                                          : "bg-background border"
+                                        "rounded-lg overflow-hidden border transition-all hover:shadow-md",
+                                        isUserMessage ? "bg-primary-foreground/10 border-primary-foreground/20" : "bg-background border-border"
                                       )}
                                     >
                                       {attachment.type === "image" ? (
@@ -1218,7 +1216,7 @@ export default function ChatPage() {
                                             alt={attachment.filename}
                                             className="max-h-40 max-w-full object-contain rounded"
                                           />
-                                          <div className="px-2 py-1 text-xs truncate border-t">
+                                          <div className="px-2 py-1 text-xs truncate">
                                             {attachment.filename}
                                           </div>
                                         </a>
@@ -1229,14 +1227,7 @@ export default function ChatPage() {
                                           rel="noopener noreferrer"
                                           className="p-2 flex items-center gap-2 hover:bg-muted/20"
                                         >
-                                          <div
-                                            className={cn(
-                                              "p-2 rounded",
-                                              isUserMessage
-                                                ? "bg-primary-foreground/20"
-                                                : "bg-muted"
-                                            )}
-                                          >
+                                          <div className="p-2 rounded bg-muted/30">
                                             <FileText className="h-5 w-5" />
                                           </div>
                                           <div className="overflow-hidden">
