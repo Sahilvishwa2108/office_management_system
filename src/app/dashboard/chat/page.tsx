@@ -101,21 +101,44 @@ const DocumentPreview = memo(({ attachment }: { attachment: Attachment }) => {
     // Function to handle PDF downloads
     const handleDownload = async (url: string, filename: string) => {
       try {
-        // Show loading state
-        const downloadingFile = filename;
+        // Show loading state if needed
 
-        // Fetch the file
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Download failed');
+        console.log("Attempting to download from URL:", url);
+
+        // Modify URL for proper resource type if needed
+        let downloadUrl = url;
+
+        // Check if it's a Cloudinary URL and not an image
+        if (url.includes('cloudinary.com') &&
+          !url.includes('/image/upload/')) {
+          // For non-image files, ensure we're using the raw resource type
+          downloadUrl = url.replace(/\/upload\//, '/raw/upload/');
+        }
+
+        console.log("Using download URL:", downloadUrl);
+
+        // Try to download using a signed URL approach
+        const response = await fetch("/api/chat/download", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: downloadUrl,
+            filename
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Download failed with status ${response.status}`);
+        }
 
         const blob = await response.blob();
 
         // Create a temporary URL for the blob
-        const downloadUrl = window.URL.createObjectURL(blob);
+        const blobUrl = window.URL.createObjectURL(blob);
 
         // Create a temporary anchor element to trigger download
         const link = document.createElement('a');
-        link.href = downloadUrl;
+        link.href = blobUrl;
         link.download = filename;
 
         // Append to body, click and remove
@@ -124,13 +147,13 @@ const DocumentPreview = memo(({ attachment }: { attachment: Attachment }) => {
         document.body.removeChild(link);
 
         // Clean up the URL object
-        window.URL.revokeObjectURL(downloadUrl);
+        window.URL.revokeObjectURL(blobUrl);
 
         // Show success notification
         toast.success(`Downloaded ${filename}`);
       } catch (error) {
         console.error('Download error:', error);
-        toast.error('Failed to download file');
+        toast.error(`Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     };
 
@@ -1091,6 +1114,7 @@ export default function ChatPage() {
         user.name.toLowerCase().includes(query.toLowerCase())
       );
       setMentionUsers(filteredUsers);
+      setShowMentions(true);
     } else {
       setShowMentions(false);
       mentionStartPosition.current = -1;
@@ -1879,7 +1903,44 @@ export default function ChatPage() {
                     }
                   }}
                 />
-
+                {/* Mention suggestions dropdown */}
+                {showMentions && (
+                  <div className="absolute left-0 bottom-full mb-2 bg-card border rounded-md shadow-md w-64 max-h-[200px] overflow-y-auto z-50">
+                    {mentionUsers.length > 0 ? (
+                      mentionUsers.map((user) => (
+                        <div
+                          key={user.id}
+                          className="flex items-center gap-2 p-2 hover:bg-muted cursor-pointer"
+                          onClick={() => selectMention(user)}
+                        >
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage
+                              src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
+                              alt={user.name}
+                            />
+                            <AvatarFallback>
+                              {user.name.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-medium">{user.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {user.role.replace(/_/g, " ")}
+                            </p>
+                          </div>
+                          <div className="ml-auto">
+                            <div className={`h-2 w-2 rounded-full ${user.isOnline ? "bg-green-500" : "bg-gray-400"
+                              }`}></div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-2 text-center text-sm text-muted-foreground">
+                        No matching users found
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-background/50 backdrop-blur-sm px-1 py-1 rounded-full">
                   {/* Emoji button */}
                   <div className="relative" ref={emojiRef}>
@@ -2026,7 +2087,7 @@ export default function ChatPage() {
           </CardContent>
         </Card>
       </div>
-
+      
       {/* Image Viewer Dialog */}
       <Dialog open={imageViewerOpen} onOpenChange={setImageViewerOpen}>
         <DialogContent className="sm:max-w-[80vw] max-h-[90vh] flex flex-col p-0 gap-0 border-none bg-background/70 backdrop-blur-xl">
@@ -2071,11 +2132,14 @@ export default function ChatPage() {
                 )}
                 Save
               </Button>
-              <DialogClose asChild>
-                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                  <X className="h-4 w-4" />
-                </Button>
-              </DialogClose>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setImageViewerOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </div>
           <div className="flex-1 overflow-hidden flex items-center justify-center p-4">
