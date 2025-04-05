@@ -2,8 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redis, pubRedis } from "@/lib/redis";
+import { v2 as cloudinary } from "cloudinary";
 
 const CHAT_HISTORY_KEY = "group_chat";
+
+// Configure Cloudinary with your environment variables
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,11 +56,40 @@ export async function POST(req: NextRequest) {
       }
     }
     
-    if (!messageFound) {
+    if (!messageFound || !deletedMessage) {
       return NextResponse.json(
         { error: "Message not found" },
         { status: 404 }
       );
+    }
+    
+    // Delete Cloudinary resources if the message has attachments
+    if (deletedMessage.attachments && deletedMessage.attachments.length > 0) {
+      // First delete individual files (just in case folder deletion fails)
+      for (const attachment of deletedMessage.attachments) {
+        if (attachment.publicId) {
+          try {
+            console.log(`Deleting Cloudinary resource with ID: ${attachment.publicId}`);
+            await cloudinary.uploader.destroy(attachment.publicId);
+          } catch (cloudinaryError) {
+            console.error('Error deleting from Cloudinary:', cloudinaryError);
+            // Continue with message deletion even if Cloudinary delete fails
+          }
+        }
+      }
+      
+      // Then delete the entire folder for this message
+      try {
+        // The folder path should match what you used in upload route
+        const folderPath = `office_management/chat/${messageId}`;
+        console.log(`Deleting Cloudinary folder: ${folderPath}`);
+        
+        // Use Cloudinary Admin API to delete folder
+        await cloudinary.api.delete_folder(folderPath);
+      } catch (folderDeleteError) {
+        console.error('Error deleting Cloudinary folder:', folderDeleteError);
+        // Continue with message deletion even if folder deletion fails
+      }
     }
     
     // Delete all messages and reinsert the remaining ones
