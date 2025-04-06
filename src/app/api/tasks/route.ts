@@ -48,8 +48,11 @@ export async function GET(request: NextRequest) {
     if (currentUser.role === "ADMIN") {
       // Admin sees all tasks
     } else if (currentUser.role === "PARTNER") {
-      // Partner sees tasks they created
-      where.assignedById = currentUser.id;
+      // Partner sees tasks they created OR tasks assigned to them
+      where.OR = [
+        { assignedById: currentUser.id },
+        { assignedToId: currentUser.id }
+      ];
     } else {
       // Other users only see tasks they're assigned to
       where.assignedToId = currentUser.id;

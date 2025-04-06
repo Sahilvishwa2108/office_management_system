@@ -32,7 +32,15 @@ export async function PATCH(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get task
+    // Permission check: Only admin or partner can reassign
+    if (currentUser.role !== "ADMIN" && currentUser.role !== "PARTNER") {
+      return NextResponse.json(
+        { error: "You don't have permission to reassign tasks" },
+        { status: 403 }
+      );
+    }
+
+    // Get the task to check ownership
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: {
@@ -43,6 +51,14 @@ export async function PATCH(
 
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    // Permission check: Only admin or task creator can edit
+    if (currentUser.role !== "ADMIN" && task.assignedById !== currentUser.id) {
+      return NextResponse.json(
+        { error: "You don't have permission to edit this task" },
+        { status: 403 }
+      );
     }
 
     // Check if user has permission to reassign this task

@@ -32,10 +32,11 @@ import {
   PencilIcon,
   TrashIcon,
   Loader2 as SpinnerIcon,
+  UserPlus as UserPlusIcon,
+  Trash2 as Trash2Icon,
 } from "lucide-react";
 import { TaskComments } from "@/components/tasks/task-comments";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { canEditTask, canDeleteTask, canReassignTask } from "@/lib/permissions";
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent } from "@/components/ui/alert-dialog";
 
 interface User {
   id: string;
@@ -78,6 +79,17 @@ interface Comment {
   createdAt: string;
   user: User;
 }
+
+// Add these helper functions to control permissions
+const canEditTask = (task: Task, currentUser: any) => {
+  if (!task || !currentUser) return false;
+  return currentUser.role === "ADMIN" || task.assignedBy.id === currentUser.id;
+};
+
+const canReassignTask = (currentUser: any) => {
+  if (!currentUser) return false;
+  return currentUser.role === "ADMIN" || currentUser.role === "PARTNER";
+};
 
 export default function TaskDetailPage() {
   const router = useRouter();
@@ -224,190 +236,170 @@ export default function TaskDetailPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left side: Task information and actions */}
-        <div className="lg:col-span-7">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl">{task.title}</CardTitle>
-                <CardDescription>
-                  Created {format(new Date(task.createdAt), "PPP")}
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className={getPriorityColor(task.priority)}>
-                  {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
-                </Badge>
-                <Badge className={getStatusColor(task.status)}>
-                  {task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Task description */}
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Description</h3>
-                <div className="p-4 bg-muted rounded-md min-h-[100px]">
-                  {task.description || "No description provided"}
-                </div>
-              </div>
-
-              {/* Task metadata */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Due Date:</span>
-                  <span>
-                    {task.dueDate 
-                      ? format(new Date(task.dueDate), "PPP") 
-                      : "No due date"}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <UserIcon className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Assigned By:</span>
-                  <span>{task.assignedBy.name}</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <UserIcon className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Assigned To:</span>
-                  <span>
-                    {task.assignedTo ? task.assignedTo.name : "Unassigned"}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <BuildingIcon className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Client:</span>
-                  <span>
-                    {task.client 
-                      ? `${task.client.contactPerson}${task.client.companyName ? ` (${task.client.companyName})` : ''}`
-                      : "No client associated"}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Task actions */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Task Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Update status */}
-              <div className="space-y-2">
-                <h4 className="font-medium">Update Status</h4>
-                <Select value={newStatus || undefined} onValueChange={setNewStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
-                    <SelectItem value="review">Review</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button 
-                  className="w-full" 
-                  disabled={updating || newStatus === task.status}
-                  onClick={updateTaskStatus}
-                >
-                  {updating ? (
-                    <>
-                      <SpinnerIcon className="mr-2 h-4 w-4 animate-spin" />
-                      Updating...
-                    </>
-                  ) : (
-                    "Update Status"
-                  )}
-                </Button>
-              </div>
-
-              <Separator />
-
-              {/* Task Reassignment */}
-              <div className="space-y-2">
-                <h4 className="font-medium">Manage Task</h4>
-                <Button 
-                  variant="outline" 
-                  className="w-full flex items-center justify-center gap-2"
-                  onClick={() => router.push(`/dashboard/tasks/${taskId}/reassign`)}
-                >
-                  <UserIcon className="h-4 w-4" />
-                  Reassign Task
-                </Button>
-              </div>
-
-              <Separator />
-
-              {/* Edit task */}
-              <Button 
-                variant="outline" 
-                className="w-full flex items-center justify-center gap-2"
-                onClick={() => router.push(`/dashboard/tasks/${taskId}/edit`)}
-              >
-                <PencilIcon className="h-4 w-4" />
-                Edit Task Details
-              </Button>
-
-              {/* Delete task */}
-              <Button 
-                variant="destructive" 
-                className="w-full flex items-center justify-center gap-2"
-                onClick={async () => {
-                  const confirmed = window.confirm("Are you sure you want to delete this task? This action cannot be undone.");
-                  if (!confirmed) return;
-
-                  try {
-                    await axios.delete(`/api/tasks/${taskId}`);
-                    toast.success("Task deleted successfully");
-                    router.push("/dashboard/tasks");
-                  } catch (error) {
-                    console.error("Error deleting task:", error);
-                    toast.error("Failed to delete task");
-                  }
-                }}
-              >
-                <TrashIcon className="h-4 w-4" />
-                Delete Task
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right side: Comments */}
-        <div className="lg:col-span-5 h-[calc(100vh-200px)]">
-          <Card className="h-full flex flex-col">
-            <CardHeader>
-              <CardTitle>Discussion</CardTitle>
+      <div className="grid grid-cols-1 gap-6">
+        {/* Task information card - now spans full width */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl">{task.title}</CardTitle>
               <CardDescription>
-                Comments and activity for this task
+                Created {format(new Date(task.createdAt), "PPP")}
               </CardDescription>
-            </CardHeader>
-            <div className="flex-grow overflow-hidden">
-              <ScrollArea className="h-[calc(100vh-320px)] p-6">
-                {commentsLoading ? (
-                  <div className="flex flex-col items-center justify-center">
-                    <SpinnerIcon className="h-8 w-8 animate-spin text-primary mb-2" />
-                    <p className="text-sm text-muted-foreground">Loading comments...</p>
-                  </div>
-                ) : currentUser ? (
-                  <TaskComments 
-                    taskId={taskId} 
-                    comments={comments}
-                    currentUser={currentUser}
-                  />
-                ) : null}
-              </ScrollArea>
             </div>
-          </Card>
-        </div>
+            <div className="flex items-center gap-2">
+              <Badge className={getPriorityColor(task.priority)}>
+                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
+              </Badge>
+              <Badge className={getStatusColor(task.status)}>
+                {task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Task description */}
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold">Description</h3>
+              <div className="p-4 bg-muted rounded-md min-h-[100px]">
+                {task.description || "No description provided"}
+              </div>
+            </div>
+
+            {/* Task metadata */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                <span className="font-medium">Due Date:</span>
+                <span>
+                  {task.dueDate 
+                    ? format(new Date(task.dueDate), "PPP") 
+                    : "No due date"}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <UserIcon className="h-5 w-5 text-muted-foreground" />
+                <span className="font-medium">Assigned By:</span>
+                <span>{task.assignedBy.name}</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <UserIcon className="h-5 w-5 text-muted-foreground" />
+                <span className="font-medium">Assigned To:</span>
+                <span>
+                  {task.assignedTo ? task.assignedTo.name : "Unassigned"}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <BuildingIcon className="h-5 w-5 text-muted-foreground" />
+                <span className="font-medium">Client:</span>
+                <span>
+                  {task.client 
+                    ? `${task.client.contactPerson}${task.client.companyName ? ` (${task.client.companyName})` : ''}`
+                    : "No client associated"}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Task actions card - also spans full width */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Task Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              {/* Edit button - only for admin or creator */}
+              {canEditTask(task, currentUser) && (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(`/dashboard/tasks/${taskId}/edit`)}
+                  className="flex items-center gap-2"
+                >
+                  <PencilIcon className="h-4 w-4" /> Edit Task
+                </Button>
+              )}
+
+              {/* Reassign button - only for admin or partner */}
+              {canReassignTask(currentUser) && (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(`/dashboard/tasks/${taskId}/reassign`)}
+                  className="flex items-center gap-2"
+                >
+                  <UserPlusIcon className="h-4 w-4" /> Reassign Task
+                </Button>
+              )}
+
+              {/* Delete button - only for admin or creator */}
+              {canEditTask(task, currentUser) && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      className="flex items-center gap-2"
+                    >
+                      <Trash2Icon className="h-4 w-4" /> Delete Task
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <div className="p-4">
+                      <h4 className="text-lg font-semibold">Confirm Deletion</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Are you sure you want to delete this task? This action cannot be undone.
+                      </p>
+                      <div className="mt-4 flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => {}}>
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={async () => {
+                            try {
+                              await axios.delete(`/api/tasks/${taskId}`);
+                              toast.success("Task deleted successfully");
+                              router.push("/dashboard/tasks");
+                            } catch (error) {
+                              console.error("Error deleting task:", error);
+                              toast.error("Failed to delete task");
+                            }
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Task comments - now spans full width instead of being in a side column */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Discussion</CardTitle>
+            <CardDescription>
+              Comments and activity for this task
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {commentsLoading ? (
+              <div className="flex flex-col items-center justify-center">
+                <SpinnerIcon className="h-8 w-8 animate-spin text-primary mb-2" />
+                <p className="text-sm text-muted-foreground">Loading comments...</p>
+              </div>
+            ) : currentUser ? (
+              <TaskComments 
+                taskId={taskId} 
+                comments={comments}
+                currentUser={currentUser}
+              />
+            ) : null}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
