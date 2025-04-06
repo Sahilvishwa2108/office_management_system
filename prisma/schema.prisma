@@ -41,6 +41,7 @@ model User {
   notificationsReceived   Notification[] @relation("SentTo")
   activities              Activity[]
   managedClients          Client[]       // Staff who manages clients
+  taskComments            TaskComment[]
 }
 
 model Client {
@@ -84,6 +85,7 @@ model Task {
   
   clientId     String?   // Tasks can optionally be associated with a client
   client       Client?   @relation(fields: [clientId], references: [id])
+  comments     TaskComment[]
   
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -150,4 +152,18 @@ model Activity {
   @@index([type])
   @@index([userId])
   @@index([createdAt])
+}
+
+model TaskComment {
+  id        String   @id @default(uuid())
+  content   String
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([taskId])
+  @@index([userId])
 }

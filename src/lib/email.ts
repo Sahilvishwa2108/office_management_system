@@ -1,4 +1,12 @@
 import nodemailer from 'nodemailer';
+import { 
+  getPasswordSetupTemplate, 
+  getPasswordResetTemplate, 
+  getActivityNotificationTemplate,
+  getActivityIcon,
+  getTaskAssignmentTemplate,
+  getTaskReassignedTemplate
+} from '../../emails/templates';
 
 // Create reusable transporter object using SMTP transport
 const transporter = nodemailer.createTransport({
@@ -21,6 +29,34 @@ transporter.verify((error: Error | null) => {
   }
 });
 
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  from = process.env.EMAIL_FROM || 'noreply@officemanagement.com'
+}: {
+  to: string;
+  subject: string;
+  html: string;
+  from?: string;
+}) {
+  try {
+    // Ensure environment variables are set
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.error('Missing email credentials in .env file');
+      return { success: false, error: 'Email configuration missing' };
+    }
+
+    const mailOptions = { from, to, subject, html };
+    await transporter.sendMail(mailOptions);
+    console.log(`Email sent to ${to}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return { success: false, error };
+  }
+}
+
 export async function sendPasswordSetupEmail(
   email: string,
   name: string,
@@ -28,35 +64,14 @@ export async function sendPasswordSetupEmail(
 ) {
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
   const setupUrl = `${baseUrl}/set-password?token=${token}`;
+  
+  const html = getPasswordSetupTemplate(name, setupUrl);
 
-  const mailOptions = {
-    from: process.env.EMAIL_FROM,
+  return sendEmail({
     to: email,
     subject: 'Set Up Your Password - Office Management System',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2>Welcome to the Office Management System, ${name}!</h2>
-        <p>An account has been created for you. Please set up your password by clicking the button below:</p>
-        <div style="margin: 30px 0;">
-          <a href="${setupUrl}" style="background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
-            Set Up Your Password
-          </a>
-        </div>
-        <p>This link will expire in 24 hours.</p>
-        <p>If you didn't request this account, please ignore this email.</p>
-        <p>Thank you,<br>Office Management Team</p>
-      </div>
-    `
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log(`Password setup email sent to ${email}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending email:', error);
-    return { success: false, error };
-  }
+    html
+  });
 }
 
 export async function sendPasswordResetEmail(
@@ -66,36 +81,14 @@ export async function sendPasswordResetEmail(
 ) {
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
   const resetUrl = `${baseUrl}/set-password?token=${token}`;
+  
+  const html = getPasswordResetTemplate(name, resetUrl);
 
-  const mailOptions = {
-    from: process.env.EMAIL_FROM,
+  return sendEmail({
     to: email,
     subject: 'Password Reset - Office Management System',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2>Password Reset Request</h2>
-        <p>Hello ${name},</p>
-        <p>We received a request to reset your password for the Office Management System. Click the button below to reset your password:</p>
-        <div style="margin: 30px 0;">
-          <a href="${resetUrl}" style="background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
-            Reset Your Password
-          </a>
-        </div>
-        <p>This link will expire in 24 hours.</p>
-        <p>If you didn't request a password reset, you can safely ignore this email.</p>
-        <p>Thank you,<br>Office Management Team</p>
-      </div>
-    `
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log(`Password reset email sent to ${email}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending password reset email:', error);
-    return { success: false, error };
-  }
+    html
+  });
 }
 
 export async function sendActivityNotificationEmail(
@@ -110,49 +103,63 @@ export async function sendActivityNotificationEmail(
   
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
   const dashboardUrl = `${baseUrl}/dashboard`;
+  const activityIcon = getActivityIcon(activityType);
 
-  // Icon based on activity type
-  let activityIcon = "📝";
-  switch(activityType) {
-    case 'user': activityIcon = "👤"; break;
-    case 'task': activityIcon = "✅"; break;
-    case 'client': activityIcon = "🏢"; break;
-    case 'document': activityIcon = "📄"; break;
-    case 'message': activityIcon = "💬"; break;
-  }
+  const html = getActivityNotificationTemplate(
+    name,
+    activityTitle,
+    activityDetails,
+    activityIcon,
+    dashboardUrl
+  );
 
-  const mailOptions = {
-    from: process.env.EMAIL_FROM || 'noreply@officemanagement.com',
+  return sendEmail({
     to: email,
     subject: `New Activity: ${activityTitle} - Office Management System`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2>${activityIcon} Activity Update</h2>
-        <p>Hello ${name},</p>
-        <p><strong>${activityTitle}</strong></p>
-        <p>${activityDetails}</p>
-        <div style="margin: 30px 0;">
-          <a href="${dashboardUrl}" style="background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
-            View in Dashboard
-          </a>
-        </div>
-        <p>Thank you,<br>Office Management Team</p>
-      </div>
-    `
-  };
+    html
+  });
+}
 
-  try {
-    // Ensure environment variables are set
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      console.error('Missing email credentials in .env file');
-      return { success: false, error: 'Email configuration missing' };
-    }
+export async function sendTaskAssignmentEmail(
+  email: string,
+  name: string,
+  taskTitle: string,
+  assignerName: string,
+  note?: string,
+  dueDate?: Date
+) {
+  console.log(`Sending task assignment email to ${email} for task: ${taskTitle}`);
+  
+  const html = getTaskAssignmentTemplate(
+    taskTitle,
+    assignerName,
+    note,
+    dueDate
+  );
 
-    await transporter.sendMail(mailOptions);
-    console.log(`Activity notification email sent to ${email}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending activity notification email:', error);
-    return { success: false, error };
-  }
+  return sendEmail({
+    to: email,
+    subject: `Task Assigned: ${taskTitle} - Office Management System`,
+    html
+  });
+}
+
+export async function sendTaskReassignedEmail(
+  email: string,
+  name: string,
+  taskTitle: string,
+  newAssigneeName: string
+) {
+  console.log(`Sending task reassignment email to ${email} for task: ${taskTitle}`);
+  
+  const html = getTaskReassignedTemplate(
+    taskTitle,
+    newAssigneeName
+  );
+
+  return sendEmail({
+    to: email,
+    subject: `Task Reassigned: ${taskTitle} - Office Management System`,
+    html
+  });
 }

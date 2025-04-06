@@ -10,15 +10,15 @@ const upcomingFeatures: Record<string, {
   featureName: string;
   estimatedRelease?: string;
 }> = {
-  "tasks": {
-    title: "Task Management",
-    featureName: "Comprehensive task tracking system",
-    estimatedRelease: "Q1 2025"
+  "analytics": {
+    title: "Advanced Analytics",
+    featureName: "In-depth data insights and reporting",
+    estimatedRelease: "Q3 2025"
   },
-  "team-chat": {
-    title: "Team Communication",
-    featureName: "Real-time messaging and collaboration",
-    estimatedRelease: "Q2 2025"
+  "customization": {
+    title: "User Customization",
+    featureName: "Personalize your dashboard experience",
+    estimatedRelease: "Q4 2025"
   }
 };
 

@@ -1,85 +1,96 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    // Get authenticated user session
     const session = await getServerSession(authOptions);
 
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get("limit") || "20");
-    const type = searchParams.get("type"); // Optional filter by activity type
-    const action = searchParams.get("action"); // Optional filter by action
-    const userId = searchParams.get("userId"); // Optional filter by user
-    const forCurrentUser = searchParams.get("forCurrentUser") === "true";
-    const includeLoginLogout = searchParams.get("includeLoginLogout") === "true"; // New parameter
-    
-    // Default pagination to prevent massive queries
-    const take = Math.min(limit, 100);
+    // Get current user
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user.email as string },
+    });
 
-    // Build the where clause dynamically
-    const where: any = {
-      // Default: exclude login/logout actions unless explicitly requested
-      action: includeLoginLogout ? undefined : { notIn: ["login", "logout"] }
-    };
-    
-    if (type) {
-      where.type = type;
-    }
-    
-    if (action) {
-      // If specific action is requested, override the default exclusion
-      where.action = action;
-    }
-    
-    if (userId) {
-      where.userId = userId;
-    }
-    
-    if (forCurrentUser) {
-      where.userId = session.user.id;
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Retrieve activities
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const page = parseInt(searchParams.get("page") || "1");
+    const skip = (page - 1) * limit;
+
+    // Fetch activities with different filtering based on role
+    let whereCondition = {};
+    
+    // Admin can see all activities
+    if (currentUser.role !== "ADMIN") {
+      if (currentUser.role === "PARTNER") {
+        // Partners can see their own activities and activities of users they manage
+        const managedUsers = await prisma.user.findMany({
+          where: {
+            OR: [
+              { role: "BUSINESS_EXECUTIVE" },
+              { role: "BUSINESS_CONSULTANT" }
+            ]
+          },
+          select: { id: true }
+        });
+        
+        const managedUserIds = managedUsers.map(user => user.id);
+        
+        whereCondition = {
+          OR: [
+            { userId: currentUser.id },
+            { userId: { in: managedUserIds } }
+          ]
+        };
+      } else {
+        // Junior staff can only see their own activities
+        whereCondition = { userId: currentUser.id };
+      }
+    }
+
+    // Fetch activities
     const activities = await prisma.activity.findMany({
-      where,
-      take,
-      orderBy: {
-        createdAt: "desc",
-      },
+      where: whereCondition,
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            role: true,
+            email: true,
           },
         },
       },
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip,
+      take: limit,
     });
 
-    // Transform activities for frontend consumption
-    const transformedActivities = activities.map((activity) => ({
-      id: activity.id,
-      type: activity.type,
-      user: {
-        id: activity.user.id,
-        name: activity.user.name,
-        role: activity.user.role,
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${activity.user.name}`,
-      },
-      action: activity.action,
-      target: activity.target,
-      details: activity.details,
-      timestamp: activity.createdAt.toISOString(),
-    }));
+    // Count total for pagination
+    const total = await prisma.activity.count({
+      where: whereCondition,
+    });
 
-    return NextResponse.json(transformedActivities);
+    return NextResponse.json({
+      data: activities,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching activities:", error);
     return NextResponse.json(

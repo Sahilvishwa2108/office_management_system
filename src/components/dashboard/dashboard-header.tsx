@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,49 +15,12 @@ import {
 import { signOut } from "next-auth/react";
 import { format } from "date-fns";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { NotificationPanel } from "@/components/dashboard/notification-panel";
+import { NotificationBell } from "@/components/notifications/notification-system";
 import { useRouter } from "next/navigation";
-
-interface Notification {
-  id: string;
-  title: string;
-  description?: string;
-  type: "info" | "success" | "warning" | "error";
-  read: boolean;
-  timestamp: Date;
-}
 
 export function DashboardHeader() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const response = await fetch("/api/notifications/dashboard");
-        if (response.ok) {
-          const data = await response.json();
-          setNotifications(data.notifications || []);
-        }
-      } catch (error) {
-        console.error("Failed to fetch notifications:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Initial fetch
-    fetchNotifications();
-
-    // Set up interval for periodic fetching (every 30 seconds)
-    const intervalId = setInterval(fetchNotifications, 30000);
-
-    // Clean up on unmount
-    return () => clearInterval(intervalId);
-  }, []);
 
   // Get user initials for avatar fallback
   const getInitials = (name?: string) => {
@@ -67,50 +30,6 @@ export function DashboardHeader() {
       .join("")
       .toUpperCase()
       .substring(0, 2) || "U";
-  };
-
-  const handleMarkNotificationRead = async (id: string) => {
-    try {
-      const response = await fetch(`/api/notifications/${id}/read`, {
-        method: "PUT",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error marking notification as read: ${response.status}`);
-      }
-
-      // Update local state using the isRead property
-      setNotifications((prev) =>
-        prev.map((notification) =>
-          notification.id === id ? { ...notification, read: true } : notification
-        )
-      );
-    } catch (err) {
-      console.error("Failed to mark notification as read:", err);
-    }
-  };
-
-  const handleMarkAllNotificationsRead = async () => {
-    try {
-      const response = await fetch("/api/notifications/read-all", {
-        method: "PUT",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error marking all notifications as read: ${response.status}`);
-      }
-
-      // Update local state
-      setNotifications((prev) =>
-        prev.map((notification) => ({ ...notification, read: true }))
-      );
-    } catch (err) {
-      console.error("Failed to mark all notifications as read:", err);
-    }
-  };
-
-  const handleViewAllNotifications = () => {
-    router.push("/dashboard/notifications");
   };
 
   return (
@@ -125,13 +44,7 @@ export function DashboardHeader() {
 
         <ThemeToggle />
 
-        <NotificationPanel
-          notifications={notifications}
-          loading={loading}
-          onMarkAsRead={handleMarkNotificationRead}
-          onMarkAllAsRead={handleMarkAllNotificationsRead}
-          onViewAll={handleViewAllNotifications}
-        />
+        <NotificationBell />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

@@ -1,140 +1,184 @@
 import { NextRequest, NextResponse } from "next/server";
- import { getServerSession } from "next-auth";
- import { authOptions } from "../../auth/[...nextauth]/route";
- import { prisma } from "@/lib/prisma"; // Fixed import
- 
- export async function GET(_req: NextRequest) {
-   try {
-     // Get the session to check if user is authenticated and has junior role
-     const session = await getServerSession(authOptions);
- 
-     // Check if user is authenticated and has appropriate role
-     if (!session || !["BUSINESS_CONSULTANT", "BUSINESS_EXECUTIVE"].includes(session.user.role)) {
-       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-     }
- 
-     const juniorId = session.user.id;
- 
-     // Fetch tasks assigned to this junior staff
-     const tasks = await prisma.task.findMany({
-       where: {
-         assignedToId: juniorId
-       },
-       orderBy: {
-         dueDate: 'asc'
-       }
-     });
- 
-     // Fetch activities by this junior staff
-     const recentActivities = await prisma.activity.findMany({
-       where: {
-         userId: juniorId
-       },
-       take: 20,
-       orderBy: {
-         createdAt: "desc"
-       }
-     });
-     
-     // Calculate today and upcoming dates for deadline filtering
-     const today = new Date();
-     today.setHours(0, 0, 0, 0);
-     
-     const nextWeek = new Date(today);
-     nextWeek.setDate(nextWeek.getDate() + 7);
-     
-     // Filter tasks into different categories
-     const activeTasks = tasks.filter(t => t.status !== "completed" && t.status !== "cancelled");
-     const completedTasks = tasks.filter(t => t.status === "completed");
-     const upcomingDeadlineTasks = tasks.filter(t => {
-       if (!t.dueDate || t.status === "completed" || t.status === "cancelled") return false;
-       const dueDate = new Date(t.dueDate);
-       return dueDate >= today && dueDate <= nextWeek;
-     });
-     
-     // Calculate tasks that are overdue
-     const overdueTasks = tasks.filter(t => {
-       if (!t.dueDate || t.status === "completed" || t.status === "cancelled") return false;
-       const dueDate = new Date(t.dueDate);
-       return dueDate < today;
-     });
-     
-     // Calculate completion rate (tasks completed on time)
-     const tasksWithDueDate = tasks.filter(t => t.dueDate && t.status === "completed");
-     const tasksCompletedOnTime = tasksWithDueDate.filter(t => {
-       const completedAt = t.updatedAt;
-       const dueDate = t.dueDate;
-       return dueDate && completedAt <= dueDate;
-     });
-     
-     const completionRate = tasksWithDueDate.length > 0
-       ? Math.round((tasksCompletedOnTime.length / tasksWithDueDate.length) * 100)
-       : 100; // If no tasks with due dates, default to 100%
-     
-     // Format deadlines for the frontend
-     const deadlines = upcomingDeadlineTasks.map(task => ({
-       id: task.id,
-       title: task.title,
-       dueDate: task.dueDate!.toISOString(), // We filtered for tasks with dueDate
-       status: task.status,
-       priority: task.priority,
-       isOverdue: overdueTasks.some(t => t.id === task.id)
-     }));
-     
-     // Process tasks to include progress percentage
-     const processedTasks = tasks.map(task => ({
-       id: task.id,
-       title: task.title,
-       description: task.description,
-       status: task.status,
-       priority: task.priority,
-       dueDate: task.dueDate?.toISOString(),
-       progress: calculateTaskProgress(task.status)
-     }));
- 
-     // Transform activities for the frontend
-     const transformedActivities = recentActivities.map(activity => ({
-       id: activity.id,
-       type: activity.type,
-       action: activity.action,
-       target: activity.target,
-       timestamp: activity.createdAt.toISOString()
-     }));
- 
-     // Return the dashboard data
-     return NextResponse.json({
-       stats: {
-         activeTasks: activeTasks.length,
-         completedTasks: completedTasks.length,
-         completionRate: completionRate,
-         upcomingDeadlines: upcomingDeadlineTasks.length,
-         overdueTasksCount: overdueTasks.length
-       },
-       tasks: processedTasks,
-       recentActivities: transformedActivities,
-       deadlines: deadlines
-     });
-   } catch (error) {
-     console.error("Error fetching junior dashboard data:", error);
-     return NextResponse.json(
-       { error: "Failed to fetch dashboard data" },
-       { status: 500 }
-     );
-   }
- }
- 
- // Helper function to calculate task progress based on status
- function calculateTaskProgress(status: string): number {
-   switch (status) {
-     case "pending":
-       return 0;
-     case "in-progress":
-       return 50;
-     case "review":
-       return 80;
-     case "completed":
-       return 100;
-     default:
-       return 0;
-   }
- }
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { prisma } from "@/lib/prisma";
+
+export async function GET(request: NextRequest) {
+  try {
+    // Get authenticated user
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get current user
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user.email as string },
+    });
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check if user is junior staff (BUSINESS_EXECUTIVE or BUSINESS_CONSULTANT)
+    if (
+      currentUser.role !== "BUSINESS_EXECUTIVE" && 
+      currentUser.role !== "BUSINESS_CONSULTANT"
+    ) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
+    // Current date for deadline calculations
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // Get all tasks assigned to the current user
+    const tasks = await prisma.task.findMany({
+      where: {
+        assignedToId: currentUser.id,
+      },
+      include: {
+        assignedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+    // Calculate basic task metrics
+    const completedTasks = tasks.filter(task => task.status === "completed");
+    const activeTasks = tasks.filter(task => task.status !== "completed" && task.status !== "cancelled");
+    const pendingTasks = tasks.filter(task => task.status === "pending");
+    const inProgressTasks = tasks.filter(task => task.status === "in-progress");
+    
+    // Calculate overdue tasks (not completed and past due date)
+    const overdueTasks = tasks.filter(
+      task => 
+        task.status !== "completed" && 
+        task.status !== "cancelled" && 
+        task.dueDate && 
+        new Date(task.dueDate) < now
+    );
+
+    // Calculate completion rate (completed tasks / total tasks with due dates that have passed)
+    const tasksWithDueDatePassed = tasks.filter(
+      task => task.dueDate && new Date(task.dueDate) < now
+    );
+    
+    const completionRate = tasksWithDueDatePassed.length > 0
+      ? Math.round((completedTasks.filter(
+          task => task.dueDate && new Date(task.dueDate) < now
+        ).length / tasksWithDueDatePassed.length) * 100)
+      : 100; // If no tasks with due dates, completion rate is 100%
+
+    // Get upcoming deadlines
+    const upcomingDeadlines = tasks
+      .filter(task => 
+        task.dueDate && 
+        task.status !== "completed" && 
+        task.status !== "cancelled"
+      )
+      .map(task => ({
+        id: task.id,
+        title: task.title,
+        dueDate: task.dueDate?.toISOString() || "",
+        status: task.status,
+        priority: task.priority,
+        isOverdue: task.dueDate && new Date(task.dueDate) < now,
+      }))
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+    // Get recent activities for this user
+    const recentActivities = await prisma.activity.findMany({
+      where: {
+        OR: [
+          { userId: currentUser.id },
+          { 
+            type: "task", 
+            details: {
+              path: ["taskId"],
+              array_contains: tasks.map(t => t.id)
+            }
+          }
+        ]
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 10,
+    });
+
+    // Format tasks for dashboard
+    const formattedTasks = tasks.map(task => {
+      // Calculate progress based on status
+      let progress = 0;
+      switch (task.status) {
+        case "pending": progress = 0; break;
+        case "in-progress": progress = 50; break;
+        case "review": progress = 75; break;
+        case "completed": progress = 100; break;
+        default: progress = 0;
+      }
+
+      return {
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate?.toISOString(),
+        progress,
+        assignedBy: task.assignedBy ? {
+          id: task.assignedBy.id,
+          name: task.assignedBy.name,
+        } : null,
+      };
+    });
+
+    // Format activities for display
+    const formattedActivities = recentActivities.map(activity => ({
+      id: activity.id,
+      type: activity.type,
+      action: activity.action,
+      target: activity.target,
+      timestamp: activity.createdAt.toISOString(),
+    }));
+
+    // Calculate dashboard stats
+    const stats = {
+      activeTasks: activeTasks.length,
+      completedTasks: completedTasks.length,
+      pendingTasks: pendingTasks.length,
+      inProgressTasks: inProgressTasks.length,
+      completionRate: completionRate,
+      upcomingDeadlines: upcomingDeadlines.length,
+      overdueTasksCount: overdueTasks.length,
+      completedThisMonth: completedTasks.filter(
+        task => task.updatedAt >= thirtyDaysAgo
+      ).length,
+      // Add more metrics as needed
+    };
+
+    return NextResponse.json({
+      stats,
+      tasks: formattedTasks,
+      recentActivities: formattedActivities,
+      deadlines: upcomingDeadlines,
+    });
+
+  } catch (error) {
+    console.error("Error fetching junior dashboard data:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch dashboard data" },
+      { status: 500 }
+    );
+  }
+}

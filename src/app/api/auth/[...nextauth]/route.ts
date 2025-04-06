@@ -72,7 +72,11 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user || !user.isActive) {
-          throw new Error("User is inactive or not found");
+          // Instead of throwing an error, set a blocked flag
+          return {
+            ...token,
+            blocked: true,
+          };
         }
 
         return token;

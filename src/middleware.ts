@@ -26,6 +26,14 @@ const routePermissions = {
   "/dashboard/clients": ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"],
   "/dashboard/clients/create": ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE"],
   "/dashboard/clients/guest/create": ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE"],
+  // Task management routes - admin only
+  "/dashboard/tasks/create": ["ADMIN"],
+  "/dashboard/tasks/[id]/edit": ["ADMIN"],
+  // Task viewing - all staff
+  "/dashboard/tasks": ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"],
+  "/dashboard/tasks/[id]": ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"],
+  // Task reassignment - partner only
+  "/dashboard/tasks/[id]/reassign": ["ADMIN", "PARTNER"],
   // All authenticated users
   "/dashboard": ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"],
 };

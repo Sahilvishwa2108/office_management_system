@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { 
   BarChart, 
@@ -12,11 +13,28 @@ import {
   Briefcase, 
   Activity, 
   ArrowRight,
-  Plus
+  Plus,
+  CheckCircle,
+  ClipboardList
 } from "lucide-react";
 import { OverviewStats } from "@/components/dashboard/overview-stats";
-import { RecentActivity } from "@/components/dashboard/recent-activity";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { DashboardCard } from "@/components/ui/dashboard-card";
+import { TaskMetrics } from "@/components/dashboard/task-metrics";
+import { TaskSummary } from "@/components/dashboard/task-summary"; 
+import { TaskProgress } from "@/components/dashboard/task-progress";
+import { useRouter } from "next/navigation";
+
+interface Task {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  dueDate: string | null;
+  assignedTo?: {
+    name: string;
+  } | null;
+}
 
 interface DashboardData {
   stats: {
@@ -24,6 +42,10 @@ interface DashboardData {
     activeUsers: number;
     totalClients: number;
     totalTasks: number;
+    completedTasks: number;
+    pendingTasks: number;
+    inProgressTasks: number;
+    overdueTasksCount: number;
   };
   recentActivities: Array<{
     id: string;
@@ -37,12 +59,14 @@ interface DashboardData {
     target: string;
     timestamp: string;
   }>;
+  tasks: Task[];
 }
 
 export default function AdminDashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -75,7 +99,11 @@ export default function AdminDashboard() {
     totalUsers: 0,
     activeUsers: 0,
     totalClients: 0,
-    totalTasks: 0
+    totalTasks: 0,
+    completedTasks: 0,
+    pendingTasks: 0,
+    inProgressTasks: 0,
+    overdueTasksCount: 0
   };
 
   // Calculate percentage of active users
@@ -126,6 +154,110 @@ export default function AdminDashboard() {
             />
           </div>
           
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="col-span-3 lg:col-span-1">
+              <CardHeader>
+                <CardTitle>Task Status</CardTitle>
+                <CardDescription>Overall task distribution</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="space-y-3">
+                    <div className="h-4 w-2/3 bg-muted rounded animate-pulse"></div>
+                    <div className="h-8 w-full bg-muted rounded animate-pulse"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <TaskProgress 
+                      items={[
+                        { label: "Completed", value: stats.completedTasks || 0, color: "bg-green-500" },
+                        { label: "In Progress", value: stats.inProgressTasks || 0, color: "bg-blue-500" },
+                        { label: "Pending", value: stats.pendingTasks || 0, color: "bg-amber-500" },
+                        { label: "Overdue", value: stats.overdueTasksCount || 0, color: "bg-red-500" }
+                      ]}
+                      size="md"
+                      showLabels={true}
+                      showPercentages={true}
+                    />
+                    
+                    <Button asChild variant="outline" className="w-full mt-4">
+                      <Link href="/dashboard/admin/tasks">
+                        View All Tasks
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {dashboardData?.tasks && dashboardData.tasks.length > 0 ? (
+              <Card className="col-span-3 lg:col-span-2">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Priority Tasks</CardTitle>
+                    <CardDescription>Tasks that need immediate attention</CardDescription>
+                  </div>
+                  <Button size="sm" onClick={() => router.push('/dashboard/admin/tasks/create')}>
+                    <Plus className="mr-2 h-3 w-3" />
+                    New Task
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {dashboardData.tasks
+                      .filter(task => task.priority === 'high' && task.status !== 'completed')
+                      .slice(0, 3)
+                      .map(task => (
+                        <div 
+                          key={task.id} 
+                          className="border rounded-md p-3 hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => router.push(`/dashboard/admin/tasks/${task.id}`)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-medium">{task.title}</h3>
+                            <Badge className="bg-red-500">{task.priority}</Badge>
+                          </div>
+                          <div className="flex items-center justify-between mt-2 text-sm">
+                            <span className="text-muted-foreground">
+                              {task.assignedTo ? `Assigned to: ${task.assignedTo.name}` : "Unassigned"}
+                            </span>
+                            <Badge variant="outline" className="bg-muted">
+                              {task.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    
+                    {dashboardData.tasks.filter(task => task.priority === 'high' && task.status !== 'completed').length === 0 && (
+                      <div className="text-center py-6">
+                        <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2 opacity-50" />
+                        <p className="text-muted-foreground">No high priority tasks</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="col-span-3 lg:col-span-2">
+                <CardContent className="flex items-center justify-center h-64">
+                  {loading ? (
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  ) : (
+                    <div className="text-center">
+                      <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-2" />
+                      <p className="text-muted-foreground mb-4">No tasks created yet</p>
+                      <Button onClick={() => router.push('/dashboard/admin/tasks/create')}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create First Task
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <DashboardCard title="Recent Activity" className="col-span-4" loading={loading}>
               {error ? (
@@ -141,9 +273,12 @@ export default function AdminDashboard() {
                   </Button>
                 </div>
               ) : (
-                <RecentActivity 
-                  activities={dashboardData?.recentActivities || []}
+                <ActivityFeed 
+                  activities={dashboardData?.recentActivities}
                   loading={loading}
+                  viewAllUrl="/dashboard/activities"
+                  showUserInfo={true}
+                  showRoleInfo={true}
                 />
               )}
             </DashboardCard>
@@ -182,20 +317,55 @@ export default function AdminDashboard() {
           </div>
         </TabsContent>
         <TabsContent value="analytics" className="space-y-4">
-          <DashboardCard title="User Analytics" loading={loading}>
-            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-              {loading ? (
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              ) : error ? (
-                <p>Failed to load analytics data.</p>
-              ) : (
-                <div className="text-center">
-                  <BarChart className="h-16 w-16 mx-auto text-muted-foreground opacity-50" />
-                  <p className="mt-2">Analytics will be available in the next update</p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <DashboardCard title="Task Performance" loading={loading} className="col-span-3 lg:col-span-1">
+              {!loading && !error && (
+                <div className="space-y-6">
+                  <TaskMetrics metrics={[
+                    {
+                      label: "Completion Rate",
+                      value: Math.round((stats.completedTasks / (stats.totalTasks || 1)) * 100),
+                      change: 5,  // This would ideally come from the API comparing to previous period
+                      changeType: "increase"
+                    },
+                    {
+                      label: "On-time Delivery",
+                      value: Math.round(((stats.completedTasks - (stats.overdueTasksCount || 0)) / (stats.completedTasks || 1)) * 100),
+                      change: -2, 
+                      changeType: "decrease"
+                    },
+                    {
+                      label: "Tasks per User",
+                      value: Math.round(stats.totalTasks / (stats.activeUsers || 1) * 10) / 10,
+                      change: 0.2,
+                      changeType: "increase"
+                    },
+                    {
+                      label: "Overdue Tasks",
+                      value: stats.overdueTasksCount || 0,
+                      change: stats.overdueTasksCount > 0 ? 10 : -5,
+                      changeType: stats.overdueTasksCount > 0 ? "increase" : "decrease"
+                    }
+                  ]} />
                 </div>
               )}
-            </div>
-          </DashboardCard>
+            </DashboardCard>
+            
+            <DashboardCard title="User Analytics" loading={loading} className="col-span-3 lg:col-span-2">
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                {loading ? (
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                ) : error ? (
+                  <p>Failed to load analytics data.</p>
+                ) : (
+                  <div className="text-center">
+                    <BarChart className="h-16 w-16 mx-auto text-muted-foreground opacity-50" />
+                    <p className="mt-2">Detailed analytics will be available soon</p>
+                  </div>
+                )}
+              </div>
+            </DashboardCard>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

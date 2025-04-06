@@ -36,6 +36,41 @@ export async function GET(req: NextRequest) {
       })
     ]);
 
+    const [
+      completedTasks,
+      pendingTasks,
+      inProgressTasks,
+      overdueTasks,
+      highPriorityTasks
+    ] = await Promise.all([
+      prisma.task.count({
+        where: { status: "completed" }
+      }),
+      prisma.task.count({
+        where: { status: "pending" }
+      }),
+      prisma.task.count({
+        where: { status: "in-progress" }
+      }),
+      prisma.task.count({
+        where: {
+          status: { not: "completed" },
+          dueDate: { lt: new Date() }
+        }
+      }),
+      prisma.task.findMany({
+        where: { 
+          priority: "high",
+          status: { not: "completed" }
+        },
+        take: 5,
+        orderBy: { dueDate: "asc" },
+        include: {
+          assignedTo: { select: { name: true } }
+        }
+      })
+    ]);
+
     // Fetch recent activities with filtering out login/logout actions
     const recentActivities = await prisma.activity.findMany({
       where: {
@@ -78,8 +113,20 @@ export async function GET(req: NextRequest) {
         totalUsers,
         activeUsers,
         totalClients,
-        totalTasks
+        totalTasks,
+        completedTasks,
+        pendingTasks,
+        inProgressTasks,
+        overdueTasksCount: overdueTasks
       },
+      tasks: highPriorityTasks.map(task => ({
+        id: task.id,
+        title: task.title,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate?.toISOString() || null,
+        assignedTo: task.assignedTo
+      })),
       recentActivities: transformedActivities
     });
   } catch (error) {

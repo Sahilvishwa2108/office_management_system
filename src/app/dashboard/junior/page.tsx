@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,13 +13,26 @@ import {
   Calendar, 
   AlertTriangle, 
   FileText,
-  BarChart
+  BarChart,
+  BadgePlus,
+  Filter,
+  ListFilter
 } from "lucide-react";
 import { TaskCard } from "@/components/dashboard/task-card";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import { StatsCard } from "@/components/dashboard/stats-card";
-import { JuniorActivity } from "@/components/dashboard/junior-activity";
 import { UpcomingDeadlines } from "@/components/dashboard/upcoming-deadlines";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { TaskProgress } from "@/components/dashboard/task-progress";
+import { TaskMetrics } from "@/components/dashboard/task-metrics";
+import { 
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface JuniorDashboardData {
   stats: {
@@ -53,8 +67,8 @@ interface JuniorDashboardData {
     isOverdue: boolean;
   }>;
 }
-
 export default function JuniorDashboard() {
+  const router = useRouter();
   const [dashboardData, setDashboardData] = useState<JuniorDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -207,6 +221,48 @@ export default function JuniorDashboard() {
                 ) : (
                   <UpcomingDeadlines deadlines={dashboardData?.deadlines || []} />
                 )}
+                <div className="mt-4">
+                  {dashboardData?.deadlines && dashboardData.deadlines.length > 0 && (
+                    <div className="pt-2 space-y-3">
+                      <h3 className="text-sm font-medium">Task Completion Progress</h3>
+                      <TaskProgress 
+                        items={[
+                          { 
+                            label: "Completed", 
+                            value: stats.completedTasks, 
+                            color: "bg-green-500" 
+                          },
+                          { 
+                            label: "In Progress", 
+                            value: stats.activeTasks - (stats.overdueTasksCount || 0), 
+                            color: "bg-blue-500" 
+                          },
+                          { 
+                            label: "Overdue", 
+                            value: stats.overdueTasksCount || 0, 
+                            color: "bg-red-500" 
+                          }
+                        ]}
+                        showLabels={true}
+                        showPercentages={true}
+                      />
+                      
+                      <div className="flex justify-between items-center pt-2">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href="/dashboard/junior/deadlines">
+                            View All Deadlines
+                          </Link>
+                        </Button>
+                        <Button asChild size="sm">
+                          <Link href="/dashboard/junior/tasks/create">
+                            <BadgePlus className="h-4 w-4 mr-1" />
+                            Create Task
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -217,15 +273,48 @@ export default function JuniorDashboard() {
                 <p className="text-sm text-muted-foreground">{error}</p>
               </div>
             ) : (
-              <JuniorActivity 
-                activities={dashboardData?.recentActivities || []}
+              <ActivityFeed 
+                activities={dashboardData?.recentActivities}
                 loading={loading}
+                currentUserMode={true}
+                expanded={false}
               />
             )}
           </DashboardCard>
         </TabsContent>
         
         <TabsContent value="tasks" className="space-y-4">
+          <div className="flex justify-between mb-4">
+            <h2 className="text-lg font-semibold">My Assigned Tasks</h2>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <ListFilter className="h-4 w-4 mr-1" />
+                  Filter
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Filter Tasks</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push("/dashboard/junior/tasks?filter=all")}>
+                  All Tasks
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/junior/tasks?filter=pending")}>
+                  Pending
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/junior/tasks?filter=in-progress")}>
+                  In Progress
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/junior/tasks?filter=high")}>
+                  High Priority
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/junior/tasks?filter=overdue")}>
+                  Overdue
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {loading ? (
               // Loading placeholders for task cards
@@ -284,10 +373,12 @@ export default function JuniorDashboard() {
                 <p className="text-sm text-muted-foreground">{error}</p>
               </div>
             ) : (
-              <JuniorActivity 
-                activities={dashboardData?.recentActivities || []}
+              <ActivityFeed 
+                activities={dashboardData?.recentActivities}
                 loading={loading}
+                currentUserMode={true}
                 expanded={true}
+                maxHeight="500px"
               />
             )}
           </DashboardCard>

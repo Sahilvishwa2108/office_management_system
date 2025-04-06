@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import {
   BarChart,
@@ -19,7 +20,11 @@ import { StaffCard } from "@/components/dashboard/staff-card";
 import { TaskCard } from "@/components/dashboard/task-card";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import { StatsCard } from "@/components/dashboard/stats-card";
-import { PartnerActivity } from "@/components/dashboard/partner-activity";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { TaskProgress } from "@/components/dashboard/task-progress";
+import { TaskMetrics } from "@/components/dashboard/task-metrics";
+import { TaskSummary } from "@/components/dashboard/task-summary";
+import { useRouter } from "next/navigation";
 
 interface PartnerDashboardData {
   stats: {
@@ -73,6 +78,7 @@ export default function PartnerDashboard() {
     useState<PartnerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -166,6 +172,98 @@ export default function PartnerDashboard() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="col-span-4 lg:col-span-3">
+              <CardHeader>
+                <CardTitle>Task Distribution</CardTitle>
+                <CardDescription>Overview of task allocation and progress</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="space-y-3">
+                    <div className="h-4 w-2/3 bg-muted rounded animate-pulse"></div>
+                    <div className="h-8 w-full bg-muted rounded animate-pulse"></div>
+                    <div className="h-4 w-1/2 bg-muted rounded animate-pulse"></div>
+                  </div>
+                ) : error ? (
+                  <div className="text-center text-muted-foreground">
+                    Failed to load task distribution
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <TaskProgress 
+                      items={[
+                        { label: "Completed", value: stats.completedTasks, color: "bg-green-500" },
+                        { label: "In Progress", value: stats.activeTasks - stats.pendingTasks, color: "bg-blue-500" },
+                        { label: "Pending", value: stats.pendingTasks, color: "bg-amber-500" }
+                      ]}
+                      size="lg"
+                      showLabels={true}
+                      showPercentages={true}
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <Button 
+                        onClick={() => router.push("/dashboard/partner/tasks/create")}
+                        className="w-full"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Task
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => router.push("/dashboard/partner/tasks/assign")}
+                        className="w-full"
+                      >
+                        Assign Tasks
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            <DashboardCard title="Team Performance" className="col-span-4" loading={loading}>
+              {!loading && !error && dashboardData?.staff && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Staff with tasks</p>
+                      <p className="text-2xl font-bold">
+                        {dashboardData.staff.filter(s => s.activeTasks > 0).length}/{dashboardData.staff.length}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Average completion</p>
+                      <p className="text-2xl font-bold">{stats.taskCompletionRate}%</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Top Performers</h3>
+                    <div className="space-y-2">
+                      {dashboardData.staff
+                        .sort((a, b) => b.completedTasks - a.completedTasks)
+                        .slice(0, 3)
+                        .map((staff) => (
+                          <div key={staff.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-7 w-7">
+                                <AvatarImage src={staff.image || `https://api.dicebear.com/7.x/initials/svg?seed=${staff.name}`} />
+                                <AvatarFallback>{staff.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{staff.name}</span>
+                            </div>
+                            <span className="text-sm">{staff.completedTasks} completed</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </DashboardCard>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <DashboardCard
               title="Recent Activity"
               className="col-span-4"
@@ -184,9 +282,12 @@ export default function PartnerDashboard() {
                   </Button>
                 </div>
               ) : (
-                <PartnerActivity
-                  activities={dashboardData?.recentActivities || []}
+                <ActivityFeed
+                  activities={dashboardData?.recentActivities}
                   loading={loading}
+                  viewAllUrl="/dashboard/activities"
+                  showUserInfo={true}
+                  showRoleInfo={true}
                 />
               )}
             </DashboardCard>
@@ -338,67 +439,76 @@ export default function PartnerDashboard() {
           )}
         </TabsContent>
         <TabsContent value="tasks" className="space-y-4">
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {loading ? (
-              // Loading placeholders for task cards
-              [...Array(6)].map((_, i) => (
-                <div key={i} className="animate-pulse border rounded-lg p-4">
-                  <div className="space-y-2">
-                    <div className="h-4 w-2/3 bg-muted rounded"></div>
-                    <div className="h-3 w-full bg-muted rounded"></div>
-                    <div className="h-3 w-full bg-muted rounded"></div>
-                  </div>
-                  <div className="mt-4 flex justify-between">
-                    <div className="h-6 w-16 bg-muted rounded"></div>
-                    <div className="h-6 w-16 bg-muted rounded"></div>
-                  </div>
-                </div>
-              ))
-            ) : error ? (
-              <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
-                <AlertTriangle className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
-                <p className="text-muted-foreground">{error}</p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => window.location.reload()}
-                >
-                  Retry
-                </Button>
-              </div>
-            ) : dashboardData?.tasks && dashboardData.tasks.length > 0 ? (
-              dashboardData.tasks
-                .slice(0, 6)
-                .map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    id={task.id}
-                    title={task.title}
-                    description={task.description}
-                    status={task.status}
-                    priority={task.priority}
-                    dueDate={task.dueDate}
-                    assignee={task.assignedTo}
-                    progress={task.progress}
-                  />
-                ))
-            ) : (
-              <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
-                <CheckCircle className="h-12 w-12 text-green-500 mb-2 opacity-50" />
-                <p className="text-sm text-muted-foreground">No tasks found</p>
-              </div>
-            )}
-          </div>
-          {dashboardData?.tasks && dashboardData.tasks.length > 0 && (
-            <div className="flex justify-end">
-              <Button asChild variant="outline">
-                <Link href="/dashboard/partner/tasks">
-                  View All Tasks
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold">Task Management</h2>
+              <p className="text-sm text-muted-foreground">Overview and management of all team tasks</p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => router.push("/dashboard/partner/tasks?filter=overdue")}
+              >
+                {stats.pendingTasks > 0 && (
+                  <span className="h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center mr-2">
+                    {stats.pendingTasks}
+                  </span>
+                )}
+                Overdue
+              </Button>
+              
+              <Button onClick={() => router.push("/dashboard/partner/tasks/create")}>
+                <Plus className="mr-2 h-4 w-4" />
+                New Task
               </Button>
             </div>
-          )}
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <TaskSummary
+              title="High Priority"
+              description="Tasks requiring immediate attention"
+              tasks={(dashboardData?.tasks?.filter(t => t.priority === 'high') || []).map(task => ({
+                ...task,
+                dueDate: task.dueDate || null
+              }))}
+              limit={5}
+              showAssignee={true}
+              onTaskClick={(taskId) => router.push(`/dashboard/partner/tasks/${taskId}`)}
+            />
+            <TaskSummary
+              title="In Progress"
+              description="Tasks currently being worked on"
+              tasks={(dashboardData?.tasks?.filter(t => t.status === 'in-progress') || []).map(task => ({
+                ...task,
+                dueDate: task.dueDate || null
+              }))}
+              limit={5}
+              showAssignee={true}
+              onTaskClick={(taskId) => router.push(`/dashboard/partner/tasks/${taskId}`)}
+            />
+            <TaskSummary
+              title="Recently Completed"
+              description="Tasks completed in the last 7 days"
+              tasks={(dashboardData?.tasks?.filter(t => t.status === 'completed') || []).map(task => ({
+                ...task,
+                dueDate: task.dueDate || null
+              }))}
+              limit={5}
+              showAssignee={true}
+              onTaskClick={(taskId) => router.push(`/dashboard/partner/tasks/${taskId}`)}
+            />
+          </div>
+          
+          <div className="flex justify-end">
+            <Button asChild variant="outline">
+              <Link href="/dashboard/partner/tasks">
+                View All Tasks
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

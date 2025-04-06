@@ -22,8 +22,12 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session) {
+      console.log("API Clients - Unauthorized access attempt");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Log user role for debugging
+    console.log(`API Clients - Request from user role: ${session.user.role}`);
 
     // Parse URL search params
     const searchParams = req.nextUrl.searchParams;
@@ -108,6 +112,9 @@ export async function GET(req: NextRequest) {
       };
     });
 
+    // Before returning the response, log what you're sending
+    console.log(`API Clients - Returning ${processedClients.length} clients`);
+
     return NextResponse.json({
       clients: processedClients,
       pagination: {
@@ -118,7 +125,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching clients:", error);
+    console.error("Error in /api/clients:", error);
     return NextResponse.json(
       { error: "Failed to fetch clients" },
       { status: 500 }
