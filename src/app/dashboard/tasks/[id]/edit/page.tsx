@@ -67,30 +67,30 @@ export default function EditTaskPage() {
   const router = useRouter();
   const params = useParams();
   const taskId = params.id as string;
-  
+
   const [users, setUsers] = useState<User[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  
+
   // Improve the fetchClients function
   const fetchClients = async () => {
     try {
       const response = await axios.get("/api/clients");
-      
-      // Handle different response formats
-      if (response.data && response.data.clients && Array.isArray(response.data.clients)) {
-        setClients(response.data.clients);
-      } else if (Array.isArray(response.data)) {
+      console.log("Clients response:", response.data); // Debug the actual response
+
+      if (Array.isArray(response.data)) {
         setClients(response.data);
+      } else if (response.data?.clients && Array.isArray(response.data.clients)) {
+        setClients(response.data.clients);
       } else {
-        console.error("Invalid client data format:", response.data);
+        console.warn("Unexpected clients data format:", response.data);
         setClients([]);
+        toast.warning("Could not load client data properly");
       }
     } catch (error) {
       console.error("Error fetching clients:", error);
       setClients([]);
-      // Optionally show an error message to the user
       toast.error("Failed to load clients");
     }
   };
@@ -114,20 +114,20 @@ export default function EditTaskPage() {
     const fetchData = async () => {
       try {
         setIsFetching(true);
-        
+
         // Fetch task data
         const taskResponse = await axios.get(`/api/tasks/${taskId}`);
         const taskData = taskResponse.data;
-        
+
         // Fetch users (only staff who can be assigned tasks)
         const usersResponse = await axios.get('/api/users');
-        setUsers(usersResponse.data.filter((user: User) => 
+        setUsers(usersResponse.data.filter((user: User) =>
           ['BUSINESS_EXECUTIVE', 'BUSINESS_CONSULTANT', 'PARTNER'].includes(user.role)
         ));
-        
+
         // Fetch clients
         await fetchClients();
-        
+
         // Format the data for the form
         form.reset({
           title: taskData.title,
@@ -146,28 +146,32 @@ export default function EditTaskPage() {
         setIsFetching(false);
       }
     };
-    
+
     if (taskId) {
       fetchData();
     }
   }, [taskId, form, router]);
-  
+
   // Form submission handler
   const onSubmit = async (data: TaskFormValues) => {
+    // Convert "null" string to actual null
+    const clientId = data.clientId === "null" ? null : data.clientId;
+
     try {
       setIsLoading(true);
-      
+
       // Format data as needed
       const taskData = {
         ...data,
         dueDate: data.dueDate ? data.dueDate.toISOString() : null,
+        clientId, // Use the converted clientId
       };
-      
+
       // Submit to API
       await axios.patch(`/api/tasks/${taskId}`, taskData);
-      
+
       toast.success("Task updated successfully");
-      
+
       // Redirect back to task details
       router.push(`/dashboard/tasks/${taskId}`);
     } catch (error) {
@@ -201,7 +205,7 @@ export default function EditTaskPage() {
           Back
         </Button>
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Edit Task</CardTitle>
@@ -229,7 +233,7 @@ export default function EditTaskPage() {
                   </FormItem>
                 )}
               />
-              
+
               {/* Description Field */}
               <FormField
                 control={form.control}
@@ -238,10 +242,10 @@ export default function EditTaskPage() {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Detailed task description" 
+                      <Textarea
+                        placeholder="Detailed task description"
                         className="min-h-32"
-                        {...field} 
+                        {...field}
                         value={field.value || ""}
                       />
                     </FormControl>
@@ -252,7 +256,7 @@ export default function EditTaskPage() {
                   </FormItem>
                 )}
               />
-              
+
               {/* Priority Selection */}
               <FormField
                 control={form.control}
@@ -260,8 +264,8 @@ export default function EditTaskPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Priority</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                       value={field.value}
                     >
@@ -283,7 +287,7 @@ export default function EditTaskPage() {
                   </FormItem>
                 )}
               />
-              
+
               {/* Status Selection */}
               <FormField
                 control={form.control}
@@ -291,8 +295,8 @@ export default function EditTaskPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                       value={field.value}
                     >
@@ -316,7 +320,7 @@ export default function EditTaskPage() {
                   </FormItem>
                 )}
               />
-              
+
               {/* Due Date Picker */}
               <FormField
                 control={form.control}
@@ -324,7 +328,7 @@ export default function EditTaskPage() {
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Due Date</FormLabel>
-                    <DatePicker 
+                    <DatePicker
                       date={field.value ? new Date(field.value) : undefined}
                       setDate={field.onChange}
                     />
@@ -335,7 +339,7 @@ export default function EditTaskPage() {
                   </FormItem>
                 )}
               />
-              
+
               {/* Assigned User Selection */}
               <FormField
                 control={form.control}
@@ -343,8 +347,8 @@ export default function EditTaskPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Assign To</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value || undefined}
                       value={field.value || undefined}
                     >
@@ -368,7 +372,7 @@ export default function EditTaskPage() {
                   </FormItem>
                 )}
               />
-              
+
               {/* Client Selection */}
               <FormField
                 control={form.control}
@@ -376,8 +380,8 @@ export default function EditTaskPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Client (Optional)</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value || undefined}
                       value={field.value || undefined}
                     >
@@ -387,7 +391,7 @@ export default function EditTaskPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">No Client</SelectItem>
+                        <SelectItem value="null">No Client</SelectItem>
                         {Array.isArray(clients) && clients.length > 0 ? (
                           clients.map(client => (
                             <SelectItem key={client.id} value={client.id}>
@@ -395,7 +399,7 @@ export default function EditTaskPage() {
                             </SelectItem>
                           ))
                         ) : (
-                          <SelectItem value="no-clients" disabled>No clients available</SelectItem>
+                          <SelectItem value="no-clients-available" disabled>No clients available</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
@@ -406,7 +410,7 @@ export default function EditTaskPage() {
                   </FormItem>
                 )}
               />
-              
+
               <CardFooter className="flex justify-between px-0">
                 <Button type="button" variant="outline" onClick={() => router.back()}>
                   Cancel

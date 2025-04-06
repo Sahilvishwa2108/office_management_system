@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
@@ -66,14 +66,13 @@ interface Client {
   }>;
 }
 
-export default function ClientDetailsPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function ClientDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  // Fix: Safely get the client ID from params
-  const clientId = params.id;
+
+  // Fix: Properly access params using React.use() to handle the Promise
+  const paramData = use(Promise.resolve(params));
+  const clientId = paramData.id;
+
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +82,6 @@ export default function ClientDetailsPage({
     const fetchClientDetails = async () => {
       try {
         setLoading(true);
-        // Fix: Use clientId instead of params.id
         const response = await axios.get(`/api/clients/${clientId}`);
         setClient(response.data);
         setError(null);
@@ -97,7 +95,6 @@ export default function ClientDetailsPage({
     };
 
     fetchClientDetails();
-    // Fix: Use clientId instead of params.id in dependencies
   }, [clientId]);
 
   // Check if client is expired (for guest clients)
