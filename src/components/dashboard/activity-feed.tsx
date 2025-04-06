@@ -53,7 +53,7 @@ export function ActivityFeed({
   expanded = false,
 }: ActivityFeedProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(initialLoading || true);
+  const [loading, setLoading] = useState<boolean>(initialLoading || true);
 
   // Fetch activities from unified endpoint
   useEffect(() => {

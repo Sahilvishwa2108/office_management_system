@@ -37,9 +37,7 @@ const userFormSchema = z.object({
     "ADMIN",
     "PARTNER",
     "BUSINESS_EXECUTIVE",
-    "BUSINESS_CONSULTANT",
-    "PERMANENT_CLIENT",
-    "GUEST_CLIENT",
+    "BUSINESS_CONSULTANT"
   ]),
 });
 
@@ -160,12 +158,6 @@ export default function CreateUserPage() {
                         )}
                         <SelectItem value="BUSINESS_EXECUTIVE">Business Executive</SelectItem>
                         <SelectItem value="BUSINESS_CONSULTANT">Business Consultant</SelectItem>
-                        {isAdmin && (
-                          <>
-                            <SelectItem value="PERMANENT_CLIENT">Permanent Client</SelectItem>
-                            <SelectItem value="GUEST_CLIENT">Guest Client</SelectItem>
-                          </>
-                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />

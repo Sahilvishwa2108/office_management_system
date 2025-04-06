@@ -375,12 +375,12 @@ export default function JuniorDashboard() {
             ) : (
               <ScrollArea className="h-[320px]">
                 <ActivityFeed 
-                  activities={dashboardData?.recentActivities}
-                  loading={loading}
-                  currentUserMode={true}
-                  expanded={true}
-                  maxHeight="320px"
-                />
+                fetchUrl="/api/activities"
+                loading={loading}
+                viewAllUrl="/dashboard/activities"
+                showUserInfo={true}
+                showRoleInfo={true}
+              />
               </ScrollArea>
             )}
           </DashboardCard>

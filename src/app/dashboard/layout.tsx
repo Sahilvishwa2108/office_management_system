@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Building2,
   LayoutDashboard,
+  ArrowRight,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { toast } from "sonner";
@@ -461,6 +462,12 @@ export default function DashboardLayout({
                       </span>
                     </div>
                   </div>
+                  <Link href="/dashboard/upcoming/admin/documents">
+                    <Button variant="outline" className="w-full justify-between">
+                      Document Repository
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
                   <Button
                     variant="outline"
                     className="mt-2 w-full justify-start gap-2"

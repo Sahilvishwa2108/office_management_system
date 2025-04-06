@@ -247,7 +247,53 @@ export async function DELETE(
       );
     }
 
-    // Delete user
+    // Delete all associations in the correct order to avoid foreign key constraint errors
+    
+    // 1. Delete notifications where user is recipient
+    await prisma.notification.deleteMany({
+      where: { sentToId: userId },
+    });
+    
+    // 2. Delete notifications where user is sender
+    await prisma.notification.deleteMany({
+      where: { sentById: userId },
+    });
+    
+    // 3. Delete activities by this user
+    await prisma.activity.deleteMany({
+      where: { userId: userId },
+    });
+
+    // 4. Delete task comments by this user
+    await prisma.taskComment.deleteMany({
+      where: { userId: userId },
+    });
+
+    // 5. Delete messages sent by this user
+    await prisma.message.deleteMany({
+      where: { senderId: userId },
+    });
+    
+    // 6. Handle tasks
+    // First, update tasks assigned to this user (set assignedToId to null)
+    await prisma.task.updateMany({
+      where: { assignedToId: userId },
+      data: { assignedToId: null }
+    });
+    
+    // 7. Reassign tasks created by this user to the admin (current user) instead of deleting them
+    await prisma.task.updateMany({
+      where: { assignedById: userId },
+      data: { assignedById: session.user.id }
+    });
+    
+    // 8. Reassign clients managed by this user to the admin
+    await prisma.client.updateMany({
+      where: { managerId: userId },
+      data: { managerId: session.user.id }
+    });
+    
+    // Now we can safely delete the user
     const deletedUser = await prisma.user.delete({
       where: { id: userId },
     });
