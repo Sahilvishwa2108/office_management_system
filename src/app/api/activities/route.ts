@@ -5,20 +5,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get authenticated user session
     const session = await getServerSession(authOptions);
-
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Get current user
-    const currentUser = await prisma.user.findUnique({
-      where: { email: session.user.email as string },
-    });
-
-    if (!currentUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Parse query parameters
@@ -26,99 +15,88 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const page = parseInt(searchParams.get("page") || "1");
     const skip = (page - 1) * limit;
+    const type = searchParams.get("type"); // Allow filtering by type
 
-    // Fetch activities with different filtering based on role
-    let whereCondition = {};
+    // Define public activity types and actions
+    const publicActivities = {
+      user: ["created", "deleted", "role_changed", "updated", "name_updated", "phone_updated"],
+      client: ["created", "deleted", "updated"],
+      system: ["announcement", "maintenance", "update"]
+    };
+
+    // Exclude non-public activities
+    const excludedTypes = ["task", "login", "logout", "message"];
     
-    // Admin can see all activities
-    if (currentUser.role !== "ADMIN") {
-      if (currentUser.role === "PARTNER") {
-        // Partners can see their own activities and activities of users they manage
-        const managedUsers = await prisma.user.findMany({
-          where: {
-            OR: [
-              { role: "BUSINESS_EXECUTIVE" },
-              { role: "BUSINESS_CONSULTANT" }
-            ]
-          },
-          select: { id: true }
-        });
-        
-        const managedUserIds = managedUsers.map(user => user.id);
-        
-        whereCondition = {
-          OR: [
-            { userId: currentUser.id },
-            { userId: { in: managedUserIds } }
-          ]
-        };
-      } else {
-        // Junior staff can only see their own activities
-        whereCondition = { userId: currentUser.id };
-      }
+    // Build the where condition with proper filtering
+    let where: any = {
+      OR: [
+        { type: "user", action: { in: publicActivities.user } },
+        { type: "client", action: { in: publicActivities.client } },
+        { type: "system", action: { in: publicActivities.system } }
+      ],
+      NOT: [
+        { type: { in: excludedTypes } }
+      ]
+    };
+
+    // Add type filter if specified
+    if (type && (type === "user" || type === "client" || type === "system")) {
+      where = {
+        type,
+        action: { in: publicActivities[type as keyof typeof publicActivities] },
+        NOT: [
+          { type: { in: excludedTypes } }
+        ]
+      };
     }
 
-    // Fetch activities
+    // Fetch activities with proper filtering
     const activities = await prisma.activity.findMany({
-      where: whereCondition,
+      where,
+      orderBy: {
+        createdAt: "desc",
+      },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            email: true,
+            role: true,
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
       },
       skip,
       take: limit,
     });
 
-    // Count total for pagination
-    const total = await prisma.activity.count({
-      where: whereCondition,
+    // Count total activities for pagination
+    const totalCount = await prisma.activity.count({
+      where,
     });
 
-    // Limit total activities to 20 to save database storage
-    const totalActivities = await prisma.activity.count();
-    if (totalActivities > 20) {
-      // Get IDs of oldest activities to delete
-      const activitiesToDelete = await prisma.activity.findMany({
-        orderBy: {
-          createdAt: "asc",
-        },
-        take: totalActivities - 20,
-        select: {
-          id: true,
-        },
-      });
-      
-      // Delete oldest activities
-      if (activitiesToDelete.length > 0) {
-        await prisma.activity.deleteMany({
-          where: {
-            id: {
-              in: activitiesToDelete.map(activity => activity.id),
-            },
-          },
-        });
-      }
-    }
-
+    // Format the response
     return NextResponse.json({
-      data: activities,
+      data: activities.map(activity => ({
+        id: activity.id,
+        type: activity.type,
+        action: activity.action,
+        target: activity.target,
+        timestamp: activity.createdAt,
+        user: {
+          name: activity.user.name,
+          role: activity.user.role,
+        },
+        details: activity.details,
+      })),
       pagination: {
-        total,
+        total: totalCount,
         page,
         limit,
-        pages: Math.ceil(total / limit),
+        pages: Math.ceil(totalCount / limit),
       },
     });
   } catch (error) {
-    console.error("Error fetching activities:", error);
+    console.error("Error fetching public activities:", error);
     return NextResponse.json(
       { error: "Failed to fetch activities" },
       { status: 500 }

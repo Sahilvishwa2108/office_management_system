@@ -273,27 +273,12 @@ export default function AdminDashboard() {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <DashboardCard title="Recent Activity" className="col-span-4" loading={loading}>
-              {error ? (
-                <div className="flex flex-col items-center justify-center p-6 text-center">
-                  <p className="text-sm text-muted-foreground">{error}</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-4"
-                    onClick={() => window.location.reload()}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              ) : (
-                <ActivityFeed 
-                  activities={dashboardData?.recentActivities}
-                  loading={loading}
-                  viewAllUrl="/dashboard/activities"
-                  showUserInfo={true}
-                  showRoleInfo={true}
-                />
-              )}
+              <ActivityFeed 
+                fetchUrl="/api/activities"
+                loading={loading} 
+                showUserInfo={true}
+                showRoleInfo={true}
+              />
             </DashboardCard>
             
             <Card className="col-span-3">
@@ -347,7 +332,36 @@ export default function AdminDashboard() {
           </div>
           
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <DashboardCard title="Task Performance" loading={loading} className="col-span-3 lg:col-span-1">
+          <DashboardCard title="User Analytics" loading={loading} className="col-span-3 lg:col-span-2">
+              {loading ? (
+                <div className="h-[300px] flex items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </div>
+              ) : error ? (
+                <div className="h-[300px] flex items-center justify-center">
+                  <p>Failed to load analytics data.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="col-span-1 border rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Active Users</h3>
+                    <div className="text-2xl font-bold">{stats.activeUsers}</div>
+                    <p className="text-xs text-muted-foreground mt-1">{activeUserPercentage}% of total users</p>
+                  </div>
+                  <div className="col-span-1 border rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Average Tasks</h3>
+                    <div className="text-2xl font-bold">{Math.round(stats.totalTasks / (stats.activeUsers || 1) * 10) / 10}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Tasks per active user</p>
+                  </div>
+                  <div className="col-span-1 border rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Active Rate</h3>
+                    <div className="text-2xl font-bold">{activeUserPercentage}%</div>
+                    <p className="text-xs text-muted-foreground mt-1">{stats.activeUsers} of {stats.totalUsers} users</p>
+                  </div>
+                </div>
+              )}
+            </DashboardCard>
+            <DashboardCard title="Task Performance" loading={loading} className="col-span-9 lg:col-span-3">
               {!loading && !error && (
                 <div className="space-y-6">
                   <TaskMetrics metrics={[
@@ -376,36 +390,6 @@ export default function AdminDashboard() {
                       changeType: stats.overdueTasksCount > 0 ? "increase" : "decrease"
                     }
                   ]} />
-                </div>
-              )}
-            </DashboardCard>
-            
-            <DashboardCard title="User Analytics" loading={loading} className="col-span-3 lg:col-span-2">
-              {loading ? (
-                <div className="h-[300px] flex items-center justify-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                </div>
-              ) : error ? (
-                <div className="h-[300px] flex items-center justify-center">
-                  <p>Failed to load analytics data.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="col-span-1 border rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Active Users</h3>
-                    <div className="text-2xl font-bold">{stats.activeUsers}</div>
-                    <p className="text-xs text-muted-foreground mt-1">{activeUserPercentage}% of total users</p>
-                  </div>
-                  <div className="col-span-1 border rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Average Tasks</h3>
-                    <div className="text-2xl font-bold">{Math.round(stats.totalTasks / (stats.activeUsers || 1) * 10) / 10}</div>
-                    <p className="text-xs text-muted-foreground mt-1">Tasks per active user</p>
-                  </div>
-                  <div className="col-span-1 border rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Active Rate</h3>
-                    <div className="text-2xl font-bold">{activeUserPercentage}%</div>
-                    <p className="text-xs text-muted-foreground mt-1">{stats.activeUsers} of {stats.totalUsers} users</p>
-                  </div>
                 </div>
               )}
             </DashboardCard>

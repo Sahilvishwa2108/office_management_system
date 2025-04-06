@@ -269,27 +269,17 @@ export default function JuniorDashboard() {
           </div>
           
           <DashboardCard title="Recent Activity" loading={loading}>
-          {error ? (
-                <div className="flex flex-col items-center justify-center p-6 text-center">
-                  <p className="text-sm text-muted-foreground">{error}</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-4"
-                    onClick={() => window.location.reload()}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              ) : (
-                <ActivityFeed 
-                  activities={dashboardData?.recentActivities}
-                  loading={loading}
-                  viewAllUrl="/dashboard/activities"
-                  showUserInfo={true}
-                  showRoleInfo={true}
-                />
-              )}
+            {error ? (
+              <p>Failed to load activity data</p>
+            ) : (
+              <ActivityFeed 
+                fetchUrl="/api/activities"
+                loading={loading}
+                viewAllUrl="/dashboard/activities"
+                showUserInfo={true}
+                showRoleInfo={true}
+              />
+            )}
           </DashboardCard>
         </TabsContent>
         

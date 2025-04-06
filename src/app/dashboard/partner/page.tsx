@@ -264,32 +264,13 @@ export default function PartnerDashboard() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <DashboardCard
-              title="Recent Activity"
-              className="col-span-4"
-              loading={loading}
-            >
-              {error ? (
-                <div className="flex flex-col items-center justify-center p-6 text-center">
-                  <p className="text-sm text-muted-foreground">{error}</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-4"
-                    onClick={() => window.location.reload()}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              ) : (
-                <ActivityFeed
-                  activities={dashboardData?.recentActivities}
-                  loading={loading}
-                  viewAllUrl="/dashboard/activities"
-                  showUserInfo={true}
-                  showRoleInfo={true}
-                />
-              )}
+            <DashboardCard title="Recent Activity" className="col-span-4" loading={loading}>
+              <ActivityFeed 
+                fetchUrl="/api/activities"
+                loading={loading}
+                showUserInfo={true}
+                showRoleInfo={true}
+              />
             </DashboardCard>
 
             <Card className="col-span-3">

@@ -1,9 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { processActivityNotifications } from "@/lib/notification-service";
 import { Activity } from "@prisma/client";
 
 interface ActivityData {
-  type: "user" | "task" | "client" | "document" | "message";
+  type: "user" | "task" | "client" | "document" | "message" | "system";
   action: string;
   target: string;
   details?: any;
@@ -12,7 +11,8 @@ interface ActivityData {
 }
 
 /**
- * Creates an activity log and triggers notifications
+ * Unified activity logging service
+ * Creates an activity log and can trigger notifications
  * Login/logout activities are excluded from being stored
  */
 export async function logActivity({
@@ -22,13 +22,24 @@ export async function logActivity({
   details,
   userId,
   relatedUserIds = []
-}: ActivityData): Promise<Activity | null> {  // Changed return type to allow null when skipping
+}: ActivityData): Promise<Activity | null> {
   // Skip logging login/logout activities
   if (type === "user" && (action === "login" || action === "logout")) {
     return null;
   }
   
   try {
+    // Verify the user exists
+    const userExists = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true }
+    });
+
+    if (!userExists) {
+      console.warn(`Skipping activity logging: User with ID ${userId} not found`);
+      return null;
+    }
+    
     // Create the activity record
     const activity = await prisma.activity.create({
       data: {
@@ -37,23 +48,59 @@ export async function logActivity({
         target,
         details: details || {},
         userId
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            role: true
+          }
+        }
       }
     });
     
-    // Process notifications based on this activity
-    await processActivityNotifications({
-      activityId: activity.id,
-      type,
-      action,
-      target,
-      details,
-      actorId: userId,
-      relatedUserIds
-    });
+    // Trim old activities if we have too many
+    const totalCount = await prisma.activity.count();
+    if (totalCount > 500) {
+      const activitiesToDelete = await prisma.activity.findMany({
+        orderBy: { createdAt: 'asc' },
+        take: totalCount - 500,
+        select: { id: true }
+      });
+      
+      if (activitiesToDelete.length > 0) {
+        await prisma.activity.deleteMany({
+          where: { id: { in: activitiesToDelete.map(a => a.id) } }
+        });
+      }
+    }
+
+    // Process notifications if needed (implement separately)
+    if (relatedUserIds.length > 0) {
+      // This could call another service to handle notifications
+      // await processActivityNotifications(activity, relatedUserIds);
+    }
     
     return activity;
   } catch (error) {
     console.error("Failed to log activity:", error);
-    throw error; // Rethrow as activity logging is likely important for the application
+    // Don't throw to prevent breaking core functionality
+    return null;
   }
+}
+
+/**
+ * Helper functions for common activity types
+ */
+
+export function logUserActivity(action: string, target: string, userId: string, details?: any) {
+  return logActivity({ type: "user", action, target, userId, details });
+}
+
+export function logClientActivity(action: string, target: string, userId: string, details?: any) {
+  return logActivity({ type: "client", action, target, userId, details });
+}
+
+export function logSystemActivity(action: string, target: string, userId: string, details?: any) {
+  return logActivity({ type: "system", action, target, userId, details });
 }
