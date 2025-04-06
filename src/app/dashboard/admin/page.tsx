@@ -15,8 +15,10 @@ import {
   ArrowRight,
   Plus,
   CheckCircle,
-  ClipboardList
+  ClipboardList,
+  CheckSquare
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OverviewStats } from "@/components/dashboard/overview-stats";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { DashboardCard } from "@/components/ui/dashboard-card";
@@ -46,6 +48,7 @@ interface DashboardData {
     pendingTasks: number;
     inProgressTasks: number;
     overdueTasksCount: number;
+    newUsersThisMonth: number;
   };
   recentActivities: Array<{
     id: string;
@@ -91,7 +94,16 @@ export default function AdminDashboard() {
       }
     };
 
+    // Fetch data initially
     fetchDashboardData();
+    
+    // Set up polling for real-time updates
+    const intervalId = setInterval(() => {
+      fetchDashboardData();
+    }, 30000); // Poll every 30 seconds
+    
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   // Calculate stats for display
@@ -103,7 +115,8 @@ export default function AdminDashboard() {
     completedTasks: 0,
     pendingTasks: 0,
     inProgressTasks: 0,
-    overdueTasksCount: 0
+    overdueTasksCount: 0,
+    newUsersThisMonth: 0
   };
 
   // Calculate percentage of active users
@@ -317,6 +330,22 @@ export default function AdminDashboard() {
           </div>
         </TabsContent>
         <TabsContent value="analytics" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card className="col-span-1">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                <UsersIcon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                <p className="text-xs text-muted-foreground">
+                  +{stats.newUsersThisMonth} new this month
+                </p>
+              </CardContent>
+            </Card>
+            {/* Other statistics cards... */}
+          </div>
+          
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <DashboardCard title="Task Performance" loading={loading} className="col-span-3 lg:col-span-1">
               {!loading && !error && (
@@ -352,19 +381,74 @@ export default function AdminDashboard() {
             </DashboardCard>
             
             <DashboardCard title="User Analytics" loading={loading} className="col-span-3 lg:col-span-2">
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              {loading ? (
+                <div className="h-[300px] flex items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </div>
+              ) : error ? (
+                <div className="h-[300px] flex items-center justify-center">
+                  <p>Failed to load analytics data.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="col-span-1 border rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Active Users</h3>
+                    <div className="text-2xl font-bold">{stats.activeUsers}</div>
+                    <p className="text-xs text-muted-foreground mt-1">{activeUserPercentage}% of total users</p>
+                  </div>
+                  <div className="col-span-1 border rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Average Tasks</h3>
+                    <div className="text-2xl font-bold">{Math.round(stats.totalTasks / (stats.activeUsers || 1) * 10) / 10}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Tasks per active user</p>
+                  </div>
+                  <div className="col-span-1 border rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Active Rate</h3>
+                    <div className="text-2xl font-bold">{activeUserPercentage}%</div>
+                    <p className="text-xs text-muted-foreground mt-1">{stats.activeUsers} of {stats.totalUsers} users</p>
+                  </div>
+                </div>
+              )}
+            </DashboardCard>
+          </div>
+          
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Task Completion Trend</CardTitle>
+                <CardDescription>Monthly task completion rates</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px] flex items-center justify-center">
                 {loading ? (
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 ) : error ? (
-                  <p>Failed to load analytics data.</p>
+                  <p>Failed to load chart data.</p>
                 ) : (
                   <div className="text-center">
                     <BarChart className="h-16 w-16 mx-auto text-muted-foreground opacity-50" />
-                    <p className="mt-2">Detailed analytics will be available soon</p>
+                    <p className="mt-2">Chart visualization coming soon</p>
                   </div>
                 )}
-              </div>
-            </DashboardCard>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Task Distribution</CardTitle>
+                <CardDescription>Tasks by status and priority</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px] flex items-center justify-center">
+                {loading ? (
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                ) : error ? (
+                  <p>Failed to load chart data.</p>
+                ) : (
+                  <div className="text-center">
+                    <BarChart className="h-16 w-16 mx-auto text-muted-foreground opacity-50" />
+                    <p className="mt-2">Chart visualization coming soon</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
       </Tabs>

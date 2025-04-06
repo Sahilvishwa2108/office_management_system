@@ -475,7 +475,7 @@ export default function PartnerDashboard() {
               }))}
               limit={5}
               showAssignee={true}
-              onTaskClick={(taskId) => router.push(`/dashboard/partner/tasks/${taskId}`)}
+              onTaskClick={(taskId) => router.push(`/dashboard/tasks/${taskId}`)}
             />
             <TaskSummary
               title="In Progress"
@@ -486,7 +486,7 @@ export default function PartnerDashboard() {
               }))}
               limit={5}
               showAssignee={true}
-              onTaskClick={(taskId) => router.push(`/dashboard/partner/tasks/${taskId}`)}
+              onTaskClick={(taskId) => router.push(`/dashboard/tasks/${taskId}`)}
             />
             <TaskSummary
               title="Recently Completed"
@@ -497,7 +497,7 @@ export default function PartnerDashboard() {
               }))}
               limit={5}
               showAssignee={true}
-              onTaskClick={(taskId) => router.push(`/dashboard/partner/tasks/${taskId}`)}
+              onTaskClick={(taskId) => router.push(`/dashboard/tasks/${taskId}`)}
             />
           </div>
           

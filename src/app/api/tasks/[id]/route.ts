@@ -9,7 +9,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const taskId = params.id;
+    // Fix: Await params before accessing id
+    const taskId = (await params).id;
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
@@ -100,24 +101,32 @@ export async function PATCH(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // If the user is not an admin, they can only update the status
-    if (currentUser.role !== "ADMIN") {
-      // Junior staff can only update status
-      if (Object.keys(body).length > 1 || !body.hasOwnProperty("status")) {
-        return NextResponse.json(
-          { error: "You can only update the task status" },
-          { status: 403 }
-        );
-      }
-    }
-
-    // Fetch the task to check permissions
+    // Fetch the task first, before using it in permission checks
     const task = await prisma.task.findUnique({
       where: { id: taskId },
     });
 
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    // Now check permissions after task is fetched
+    if (currentUser.role !== "ADMIN") {
+      // Partners can update the status of any task
+      if (currentUser.role === "PARTNER" && Object.keys(body).length === 1 && body.hasOwnProperty("status")) {
+        // This is allowed - only updating status
+      }
+      // Partners can update tasks they created
+      else if (currentUser.role === "PARTNER" && task.assignedById === currentUser.id) {
+        // This is allowed - partner is updating their own task
+      }
+      // Junior staff can only update status
+      else if (Object.keys(body).length > 1 || !body.hasOwnProperty("status")) {
+        return NextResponse.json(
+          { error: "You can only update the task status" },
+          { status: 403 }
+        );
+      }
     }
 
     const originalTask = await prisma.task.findUnique({
@@ -231,14 +240,6 @@ export async function DELETE(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Only admin can delete tasks
-    if (currentUser.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Only administrators can delete tasks" },
-        { status: 403 }
-      );
-    }
-
     // Fetch the task to check permissions
     const task = await prisma.task.findUnique({
       where: { id: params.id },
@@ -247,6 +248,15 @@ export async function DELETE(
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
+
+    // Only admin or the partner who created the task can delete it
+    if (currentUser.role !== "ADMIN" && 
+      !(currentUser.role === "PARTNER" && task.assignedById === currentUser.id)) {
+    return NextResponse.json(
+      { error: "You don't have permission to delete this task" },
+      { status: 403 }
+    );
+  }
 
     // Delete the task
     await prisma.task.delete({

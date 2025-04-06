@@ -5,8 +5,20 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 // Schema for comment creation
+const attachmentSchema = z.object({
+  url: z.string().url(),
+  secure_url: z.string().url(),
+  public_id: z.string(),
+  format: z.string().optional(),
+  resource_type: z.string(),
+  original_filename: z.string().optional(),
+});
+
 const commentSchema = z.object({
-  content: z.string().min(1, "Comment cannot be empty"),
+  content: z.string().optional().default(""),
+  attachments: z.array(attachmentSchema).optional(),
+}).refine(data => data.content.trim() !== "" || (data.attachments && data.attachments.length > 0), {
+  message: "Comment must contain text or attachments",
 });
 
 export async function POST(
@@ -14,7 +26,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const taskId = params.id;
+    const taskId = (await params).id;
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
@@ -33,10 +45,27 @@ export async function POST(
     // Check if task exists
     const task = await prisma.task.findUnique({
       where: { id: taskId },
+      include: {
+        assignedBy: true,
+        assignedTo: true,
+      },
     });
 
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    // Check if user has permission to comment on this task
+    const canComment = 
+      currentUser.role === "ADMIN" ||
+      task.assignedById === currentUser.id ||
+      task.assignedToId === currentUser.id;
+
+    if (!canComment) {
+      return NextResponse.json(
+        { error: "You don't have permission to comment on this task" },
+        { status: 403 }
+      );
     }
 
     // Validate request data
@@ -49,6 +78,7 @@ export async function POST(
         content: validatedData.content,
         taskId: taskId,
         userId: currentUser.id,
+        attachments: validatedData.attachments,
       },
       include: {
         user: {
@@ -68,7 +98,11 @@ export async function POST(
         type: "task",
         action: "commented",
         target: task.title,
-        details: { taskId: task.id, commentId: comment.id },
+        details: { 
+          taskId: task.id, 
+          commentId: comment.id,
+          hasAttachments: validatedData.attachments && validatedData.attachments.length > 0
+        },
         userId: currentUser.id,
       },
     });
@@ -116,20 +150,56 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const taskId = params.id;
+    const taskId = (await params).id;
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user.email as string },
+    });
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     // Check if task exists
     const task = await prisma.task.findUnique({
       where: { id: taskId },
+      include: {
+        assignedBy: true,
+        assignedTo: true,
+      },
     });
 
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    // Check if user has access to task comments
+    const canAccessComments = 
+      currentUser.role === "ADMIN" ||
+      task.assignedById === currentUser.id ||
+      task.assignedToId === currentUser.id;
+      
+    // Also allow access to previous assignees who might have commented
+    if (!canAccessComments) {
+      // Check if user has previously commented on this task
+      const userComments = await prisma.taskComment.findFirst({
+        where: {
+          taskId: taskId,
+          userId: currentUser.id,
+        },
+      });
+      
+      if (!userComments) {
+        return NextResponse.json(
+          { error: "You don't have permission to view comments on this task" },
+          { status: 403 }
+        );
+      }
     }
 
     // Get task comments

@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,7 +26,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import {
   CalendarIcon,
-  ClipboardListIcon,
   UserIcon,
   BuildingIcon,
   ArrowLeftIcon,
@@ -34,6 +34,8 @@ import {
   Loader2 as SpinnerIcon,
 } from "lucide-react";
 import { TaskComments } from "@/components/tasks/task-comments";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { canEditTask, canDeleteTask, canReassignTask } from "@/lib/permissions";
 
 interface User {
   id: string;
@@ -81,15 +83,16 @@ export default function TaskDetailPage() {
   const router = useRouter();
   const params = useParams();
   const taskId = params.id as string;
-  
+  const { data: session } = useSession();
+
   const [task, setTask] = useState<Task | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState<string | null>(null);
-  
+
   useEffect(() => {
     const fetchTask = async () => {
       try {
@@ -104,45 +107,57 @@ export default function TaskDetailPage() {
         setLoading(false);
       }
     };
-    
+
     const fetchComments = async () => {
       try {
+        console.log("Fetching comments for task:", taskId);
         setCommentsLoading(true);
         const response = await axios.get(`/api/tasks/${taskId}/comments`);
+        console.log("Comments response:", response.data);
         setComments(response.data);
       } catch (error) {
         console.error("Error fetching comments:", error);
+        if (axios.isAxiosError(error)) {
+          console.error(`Status: ${error.response?.status}, Message: ${error.message}`);
+        }
         toast.error("Failed to load comments");
+        // Set comments to an empty array to prevent mapping errors
+        setComments([]);
       } finally {
         setCommentsLoading(false);
       }
     };
-    
+
     const fetchCurrentUser = async () => {
       try {
+        console.log("Fetching current user");
         const response = await axios.get('/api/users/me');
+        console.log("Current user response:", response.data);
         setCurrentUser(response.data);
       } catch (error) {
         console.error("Error fetching current user:", error);
+        if (axios.isAxiosError(error)) {
+          console.error(`Status: ${error.response?.status}, Message: ${error.message}`);
+        }
       }
     };
-    
+
     if (taskId) {
       fetchTask();
       fetchComments();
       fetchCurrentUser();
     }
   }, [taskId]);
-  
+
   const updateTaskStatus = async () => {
     if (!newStatus || newStatus === task?.status) return;
-    
+
     try {
       setUpdating(true);
       await axios.patch(`/api/tasks/${taskId}`, {
         status: newStatus
       });
-      
+
       setTask(prev => prev ? {...prev, status: newStatus} : null);
       toast.success("Task status updated successfully");
     } catch (error) {
@@ -152,7 +167,7 @@ export default function TaskDetailPage() {
       setUpdating(false);
     }
   };
-  
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending": return "bg-gray-500 hover:bg-gray-600";
@@ -163,7 +178,7 @@ export default function TaskDetailPage() {
       default: return "bg-gray-500 hover:bg-gray-600";
     }
   };
-  
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "low": return "bg-green-500 hover:bg-green-600";
@@ -172,7 +187,7 @@ export default function TaskDetailPage() {
       default: return "bg-gray-500 hover:bg-gray-600";
     }
   };
-  
+
   if (loading) {
     return (
       <div className="container py-10">
@@ -185,7 +200,7 @@ export default function TaskDetailPage() {
       </div>
     );
   }
-  
+
   if (!task) {
     return (
       <div className="container py-10">
@@ -195,7 +210,7 @@ export default function TaskDetailPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="container py-10">
       <div className="mb-6">
@@ -208,10 +223,10 @@ export default function TaskDetailPage() {
           Back
         </Button>
       </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main task information */}
-        <div className="lg:col-span-2">
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left side: Task information and actions */}
+        <div className="lg:col-span-7">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -237,7 +252,7 @@ export default function TaskDetailPage() {
                   {task.description || "No description provided"}
                 </div>
               </div>
-              
+
               {/* Task metadata */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
@@ -249,13 +264,13 @@ export default function TaskDetailPage() {
                       : "No due date"}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <UserIcon className="h-5 w-5 text-muted-foreground" />
                   <span className="font-medium">Assigned By:</span>
                   <span>{task.assignedBy.name}</span>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <UserIcon className="h-5 w-5 text-muted-foreground" />
                   <span className="font-medium">Assigned To:</span>
@@ -263,7 +278,7 @@ export default function TaskDetailPage() {
                     {task.assignedTo ? task.assignedTo.name : "Unassigned"}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <BuildingIcon className="h-5 w-5 text-muted-foreground" />
                   <span className="font-medium">Client:</span>
@@ -276,28 +291,9 @@ export default function TaskDetailPage() {
               </div>
             </CardContent>
           </Card>
-          
-          {/* Comments section */}
-          <div className="mt-6">
-            {commentsLoading ? (
-              <Card>
-                <CardContent className="py-6 flex justify-center">
-                  <SpinnerIcon className="h-6 w-6 animate-spin text-primary" />
-                </CardContent>
-              </Card>
-            ) : currentUser ? (
-              <TaskComments 
-                taskId={taskId} 
-                comments={comments}
-                currentUser={currentUser}
-              />
-            ) : null}
-          </div>
-        </div>
-        
-        {/* Task actions panel */}
-        <div>
-          <Card>
+
+          {/* Task actions */}
+          <Card className="mt-6">
             <CardHeader>
               <CardTitle>Task Actions</CardTitle>
             </CardHeader>
@@ -332,9 +328,9 @@ export default function TaskDetailPage() {
                   )}
                 </Button>
               </div>
-              
+
               <Separator />
-              
+
               {/* Task Reassignment */}
               <div className="space-y-2">
                 <h4 className="font-medium">Manage Task</h4>
@@ -347,9 +343,9 @@ export default function TaskDetailPage() {
                   Reassign Task
                 </Button>
               </div>
-              
+
               <Separator />
-              
+
               {/* Edit task */}
               <Button 
                 variant="outline" 
@@ -359,7 +355,7 @@ export default function TaskDetailPage() {
                 <PencilIcon className="h-4 w-4" />
                 Edit Task Details
               </Button>
-              
+
               {/* Delete task */}
               <Button 
                 variant="destructive" 
@@ -367,7 +363,7 @@ export default function TaskDetailPage() {
                 onClick={async () => {
                   const confirmed = window.confirm("Are you sure you want to delete this task? This action cannot be undone.");
                   if (!confirmed) return;
-                  
+
                   try {
                     await axios.delete(`/api/tasks/${taskId}`);
                     toast.success("Task deleted successfully");
@@ -382,6 +378,34 @@ export default function TaskDetailPage() {
                 Delete Task
               </Button>
             </CardContent>
+          </Card>
+        </div>
+
+        {/* Right side: Comments */}
+        <div className="lg:col-span-5 h-[calc(100vh-200px)]">
+          <Card className="h-full flex flex-col">
+            <CardHeader>
+              <CardTitle>Discussion</CardTitle>
+              <CardDescription>
+                Comments and activity for this task
+              </CardDescription>
+            </CardHeader>
+            <div className="flex-grow overflow-hidden">
+              <ScrollArea className="h-[calc(100vh-320px)] p-6">
+                {commentsLoading ? (
+                  <div className="flex flex-col items-center justify-center">
+                    <SpinnerIcon className="h-8 w-8 animate-spin text-primary mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading comments...</p>
+                  </div>
+                ) : currentUser ? (
+                  <TaskComments 
+                    taskId={taskId} 
+                    comments={comments}
+                    currentUser={currentUser}
+                  />
+                ) : null}
+              </ScrollArea>
+            </div>
           </Card>
         </div>
       </div>

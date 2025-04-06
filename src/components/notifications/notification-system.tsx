@@ -93,17 +93,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  // Mark all notifications as read
+  // Clear all notifications
   const markAllAsRead = async () => {
     try {
-      await axios.patch("/api/notifications", { isRead: true });
-      setNotifications(prev =>
-        prev.map(notification => ({ ...notification, isRead: true }))
-      );
-      toast.success("All notifications marked as read");
+      await axios.delete("/api/notifications");
+      setNotifications([]); // Clear all notifications
+      toast.success("All notifications cleared");
     } catch (err) {
-      console.error("Failed to mark all notifications as read:", err);
-      toast.error("Failed to mark all notifications as read");
+      console.error("Failed to clear notifications:", err);
+      toast.error("Failed to clear notifications");
     }
   };
 
@@ -189,7 +187,7 @@ export function NotificationBell() {
               onClick={() => markAllAsRead()}
               className="text-xs h-7"
             >
-              Mark all as read
+              Clear all
             </Button>
           )}
         </div>

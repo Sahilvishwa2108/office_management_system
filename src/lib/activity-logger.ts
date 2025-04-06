@@ -8,9 +8,7 @@ export type ActivityAction =
   | "assigned" 
   | "completed" 
   | "role_changed"
-  | "status_changed"
-  | "login"
-  | "logout";
+  | "status_changed";
 
 export interface ActivityDetails {
   [key: string]: any;
@@ -18,6 +16,7 @@ export interface ActivityDetails {
 
 /**
  * Creates an activity record in the database and maintains a limit of 500 recent activities
+ * Login/logout activities are excluded from being stored
  */
 export async function logActivity(
   type: string,
@@ -26,6 +25,11 @@ export async function logActivity(
   userId: string,
   details?: any
 ) {
+  // Skip logging login/logout activities
+  if (type === "user" && (action === "login" || action === "logout")) {
+    return;
+  }
+  
   try {
     // First verify the user exists
     const userExists = await prisma.user.findUnique({

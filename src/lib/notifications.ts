@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+// Add this import at the top of the file
+import { getTaskAssignmentTemplate, getTaskReassignedTemplate } from "../../emails/templates/task-templates";
 // Remove or comment this import since it's causing errors
 // import { sendWhatsAppMessage } from './email';
 

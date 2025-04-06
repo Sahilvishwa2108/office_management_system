@@ -82,6 +82,32 @@ export async function GET(request: NextRequest) {
       where: whereCondition,
     });
 
+    // Limit total activities to 20 to save database storage
+    const totalActivities = await prisma.activity.count();
+    if (totalActivities > 20) {
+      // Get IDs of oldest activities to delete
+      const activitiesToDelete = await prisma.activity.findMany({
+        orderBy: {
+          createdAt: "asc",
+        },
+        take: totalActivities - 20,
+        select: {
+          id: true,
+        },
+      });
+      
+      // Delete oldest activities
+      if (activitiesToDelete.length > 0) {
+        await prisma.activity.deleteMany({
+          where: {
+            id: {
+              in: activitiesToDelete.map(activity => activity.id),
+            },
+          },
+        });
+      }
+    }
+
     return NextResponse.json({
       data: activities,
       pagination: {

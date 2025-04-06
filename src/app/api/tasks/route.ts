@@ -19,46 +19,45 @@ const taskCreateSchema = z.object({
 // GET all tasks with optional filtering
 export async function GET(request: NextRequest) {
   try {
-    // Get authenticated user
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Parse query parameters
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user.email as string },
+    });
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Get query parameters
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
-    const priority = searchParams.get("priority");
-    const assignedToMe = searchParams.get("assignedToMe") === "true";
 
-    // Build the where clause for filtering
-    const where: any = {};
-    
-    if (status) {
+    // Build the where clause based on the user's role
+    let where: any = {};
+
+    // Apply status filter if provided
+    if (status && status !== "all") {
       where.status = status;
     }
-    
-    if (priority) {
-      where.priority = priority;
-    }
-    
-    if (assignedToMe && session.user.id) {
-      where.assignedToId = session.user.id;
+
+    // Apply role-based filtering
+    if (currentUser.role === "ADMIN") {
+      // Admin sees all tasks
+    } else if (currentUser.role === "PARTNER") {
+      // Partner sees tasks they created
+      where.assignedById = currentUser.id;
+    } else {
+      // Other users only see tasks they're assigned to
+      where.assignedToId = currentUser.id;
     }
 
-    // Get tasks with related data
     const tasks = await prisma.task.findMany({
       where,
-      orderBy: {
-        createdAt: "desc",
-      },
       include: {
-        assignedBy: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
         assignedTo: {
           select: {
             id: true,
@@ -71,6 +70,9 @@ export async function GET(request: NextRequest) {
             contactPerson: true,
           },
         },
+      },
+      orderBy: {
+        createdAt: "desc",
       },
     });
 
@@ -92,9 +94,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only admin can create tasks
-    if (session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Only administrators can create tasks" }, { status: 403 });
+    // Only admin and partner can create tasks
+    if (session.user.role !== "ADMIN" && session.user.role !== "PARTNER") {
+      return NextResponse.json({ error: "Only administrators and partners can create tasks" }, { status: 403 });
     }
 
     // Get current user for assignedBy

@@ -53,7 +53,7 @@ export function ActivityFeed({
   loading: initialLoading = false,
   emptyMessage = "No recent activity found",
   viewAllUrl,
-  maxHeight = "360px",
+  maxHeight = "calc(5 * 72px)", // Height for 5 activities (approximately)
   compact = false,
   showUserInfo = true,
   showRoleInfo = false,
@@ -96,13 +96,13 @@ export function ActivityFeed({
 
   // Enhanced function to get appropriate icon based on activity type AND action
   const getActivityIcon = (type: string, action: string) => {
-    // Check for special combinations of type + action first
-    if (type === "user" && action === "login") {
-      return <LogIn className="h-4 w-4 text-blue-500" />;
-    }
-    if (type === "user" && action === "logout") {
-      return <LogOut className="h-4 w-4 text-blue-500" />;
-    }
+    // // Check for special combinations of type + action first
+    // if (type === "user" && action === "login") {
+    //   return <LogIn className="h-4 w-4 text-blue-500" />;
+    // }
+    // if (type === "user" && action === "logout") {
+    //   return <LogOut className="h-4 w-4 text-blue-500" />;
+    // }
     if (type === "user" && action === "role_changed") {
       return <UserCog className="h-4 w-4 text-purple-500" />;
     }
@@ -145,9 +145,9 @@ export function ActivityFeed({
       return `assigned ${target}`;
     }
     
-    if (type === "user" && (action === "login" || action === "logout")) {
-      return action === "login" ? "logged in" : "logged out";
-    }
+    // if (type === "user" && (action === "login" || action === "logout")) {
+    //   return action === "login" ? "logged in" : "logged out";
+    // }
     
     // Default formatting
     return `${action} ${target}`;
@@ -285,32 +285,12 @@ export function ActivityFeed({
   );
 
   return (
-    <>
-      {maxHeight ? (
-        <ScrollArea className={`h-[${maxHeight}] pr-4 rounded-md`}>
-          <div className="pr-2">
-            {content}
-          </div>
-          {viewAllUrl && (
-            <div className="mt-2 text-center">
-              <Button variant="ghost" size="sm" asChild className="text-xs">
-                <Link href={viewAllUrl}>View all activities</Link>
-              </Button>
-            </div>
-          )}
-        </ScrollArea>
-      ) : (
-        <>
+    <div className="activity-feed-container">
+      <ScrollArea className="h-[calc(5*72px)] rounded-md">
+        <div className="pr-2">
           {content}
-          {viewAllUrl && (
-            <div className="mt-2 text-center">
-              <Button variant="ghost" size="sm" asChild className="text-xs">
-                <Link href={viewAllUrl}>View all activities</Link>
-              </Button>
-            </div>
-          )}
-        </>
-      )}
-    </>
+        </div>
+      </ScrollArea>
+    </div>
   );
 }

@@ -33,6 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface JuniorDashboardData {
   stats: {
@@ -268,18 +269,27 @@ export default function JuniorDashboard() {
           </div>
           
           <DashboardCard title="Recent Activity" loading={loading}>
-            {error ? (
-              <div className="flex flex-col items-center justify-center p-6 text-center">
-                <p className="text-sm text-muted-foreground">{error}</p>
-              </div>
-            ) : (
-              <ActivityFeed 
-                activities={dashboardData?.recentActivities}
-                loading={loading}
-                currentUserMode={true}
-                expanded={false}
-              />
-            )}
+          {error ? (
+                <div className="flex flex-col items-center justify-center p-6 text-center">
+                  <p className="text-sm text-muted-foreground">{error}</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-4"
+                    onClick={() => window.location.reload()}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : (
+                <ActivityFeed 
+                  activities={dashboardData?.recentActivities}
+                  loading={loading}
+                  viewAllUrl="/dashboard/activities"
+                  showUserInfo={true}
+                  showRoleInfo={true}
+                />
+              )}
           </DashboardCard>
         </TabsContent>
         
@@ -373,13 +383,15 @@ export default function JuniorDashboard() {
                 <p className="text-sm text-muted-foreground">{error}</p>
               </div>
             ) : (
-              <ActivityFeed 
-                activities={dashboardData?.recentActivities}
-                loading={loading}
-                currentUserMode={true}
-                expanded={true}
-                maxHeight="500px"
-              />
+              <ScrollArea className="h-[320px]">
+                <ActivityFeed 
+                  activities={dashboardData?.recentActivities}
+                  loading={loading}
+                  currentUserMode={true}
+                  expanded={true}
+                  maxHeight="320px"
+                />
+              </ScrollArea>
             )}
           </DashboardCard>
         </TabsContent>

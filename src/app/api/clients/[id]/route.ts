@@ -18,7 +18,7 @@ const clientUpdateSchema = z.object({
 
 // GET specific client
 export async function GET(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -28,8 +28,8 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fix: Access id safely from params object
-    const id = params.id;
+    // Fix: Await params before accessing id
+    const id = (await params).id;
 
     const client = await prisma.client.findUnique({
       where: { id },

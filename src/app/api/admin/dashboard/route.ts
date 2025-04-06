@@ -13,6 +13,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Only admin can create tasks
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Only administrators can create tasks" }, { status: 403 });
+    }
+
     // Fetch dashboard stats data
     const [
       totalUsers,

@@ -107,6 +107,11 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching notifications:", error);
+    // Log more details about the error
+    if (error instanceof Error) {
+      console.error(`Error name: ${error.name}, Message: ${error.message}`);
+      console.error(`Stack trace: ${error.stack}`);
+    }
     return NextResponse.json(
       { error: "Failed to fetch notifications" },
       { status: 500 }
@@ -151,6 +156,43 @@ export async function PATCH(request: NextRequest) {
     console.error("Error updating notifications:", error);
     return NextResponse.json(
       { error: "Failed to update notifications" },
+      { status: 500 }
+    );
+  }
+}
+
+// Delete all notifications
+export async function DELETE(request: NextRequest) {
+  try {
+    // Get authenticated user
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get current user
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user.email as string },
+    });
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Delete all notifications for this user
+    await prisma.notification.deleteMany({
+      where: {
+        sentToId: currentUser.id,
+      },
+    });
+
+    return NextResponse.json({
+      message: "All notifications deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting notifications:", error);
+    return NextResponse.json(
+      { error: "Failed to delete notifications" },
       { status: 500 }
     );
   }

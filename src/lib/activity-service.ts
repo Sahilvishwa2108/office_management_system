@@ -13,6 +13,7 @@ interface ActivityData {
 
 /**
  * Creates an activity log and triggers notifications
+ * Login/logout activities are excluded from being stored
  */
 export async function logActivity({
   type,
@@ -21,7 +22,12 @@ export async function logActivity({
   details,
   userId,
   relatedUserIds = []
-}: ActivityData): Promise<Activity> {  // Changed return type from void to Activity
+}: ActivityData): Promise<Activity | null> {  // Changed return type to allow null when skipping
+  // Skip logging login/logout activities
+  if (type === "user" && (action === "login" || action === "logout")) {
+    return null;
+  }
+  
   try {
     // Create the activity record
     const activity = await prisma.activity.create({
