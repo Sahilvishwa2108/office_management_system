@@ -6,11 +6,11 @@ import { sendTaskStatusUpdateNotification, sendTaskAssignedNotification } from "
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    // Fix: Await params before accessing id
-    const taskId = (await params).id;
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const taskId = resolvedParams.id;
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
@@ -82,10 +82,12 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const taskId = params.id;
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const taskId = resolvedParams.id;
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
@@ -223,9 +225,12 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const taskId = resolvedParams.id;
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
@@ -242,7 +247,7 @@ export async function DELETE(
 
     // Fetch the task to check permissions
     const task = await prisma.task.findUnique({
-      where: { id: params.id },
+      where: { id: taskId },
     });
 
     if (!task) {
@@ -260,7 +265,7 @@ export async function DELETE(
 
     // Delete the task
     await prisma.task.delete({
-      where: { id: params.id },
+      where: { id: taskId },
     });
 
     // Log the activity

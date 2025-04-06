@@ -23,10 +23,11 @@ const commentSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const taskId = (await params).id;
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const taskId = resolvedParams.id;
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
@@ -147,10 +148,11 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const taskId = (await params).id;
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const taskId = resolvedParams.id;
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
