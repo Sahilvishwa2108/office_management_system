@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 import axios from "axios";
 import {
@@ -157,12 +158,17 @@ export function ActivityFeed({
   if (loading) {
     return (
       <div className="space-y-4">
-        {[...Array(expanded ? 7 : 4)].map((_, i) => (
-          <div key={i} className={`flex items-start ${compact ? "gap-3" : "gap-4"} animate-pulse`}>
-            <div className="h-8 w-8 rounded-full bg-muted"></div>
+        {[...Array(expanded ? 7 : limit || 4)].map((_, i) => (
+          <div key={i} className={`flex items-start ${compact ? "gap-3" : "gap-4"}`}>
+            {showUserInfo && (
+              <Skeleton className={`rounded-full ${compact ? "h-8 w-8" : "h-10 w-10"}`} />
+            )}
             <div className="space-y-2 flex-1">
-              <div className="h-4 w-3/4 bg-muted rounded"></div>
-              <div className="h-3 w-1/2 bg-muted rounded"></div>
+              <Skeleton className="h-4 w-3/4" />
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-3 w-3 rounded-full" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
             </div>
           </div>
         ))}

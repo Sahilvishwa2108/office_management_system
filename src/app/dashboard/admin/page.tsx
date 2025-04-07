@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,7 @@ import {
   Plus,
   CheckCircle,
   ClipboardList,
-  CheckSquare
 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OverviewStats } from "@/components/dashboard/overview-stats";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { DashboardCard } from "@/components/ui/dashboard-card";
@@ -26,6 +24,8 @@ import { TaskMetrics } from "@/components/dashboard/task-metrics";
 import { TaskSummary } from "@/components/dashboard/task-summary"; 
 import { TaskProgress } from "@/components/dashboard/task-progress";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/loading/dashboard-skeleton";
 
 interface Task {
   id: string;
@@ -120,9 +120,118 @@ export default function AdminDashboard() {
   };
 
   // Calculate percentage of active users
-  const activeUserPercentage = stats.totalUsers > 0 
-    ? Math.round((stats.activeUsers / stats.totalUsers) * 100) 
-    : 0;
+  const activeUserPercentage = useMemo(() => {
+    return stats.totalUsers > 0 
+      ? Math.round((stats.activeUsers / stats.totalUsers) * 100) 
+      : 0;
+  }, [stats.activeUsers, stats.totalUsers]);
+
+  // Loading state for dashboard data
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+
+        <Tabs defaultValue="overview" className="space-y-4">
+          {/* <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          </TabsList> */}
+          <TabsContent value="overview" className="space-y-4">
+            {/* Stats cards skeleton */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {Array(4).fill(0).map((_, i) => (
+                <Card key={i}>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-4 w-4 rounded-full" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-8 w-16 mb-1" />
+                    <Skeleton className="h-4 w-24" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            {/* Task status card skeleton */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <Card className="col-span-3 lg:col-span-1">
+                <CardHeader>
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-4 w-48" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Skeleton className="h-12 w-full rounded-md" />
+                  <div className="flex flex-wrap gap-4">
+                    {Array(4).fill(0).map((_, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <Skeleton className="h-2 w-2 rounded-full" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="col-span-3 lg:col-span-2">
+                <CardHeader>
+                  <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {Array(3).fill(0).map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Activity feed skeleton */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+              <Card className="col-span-4">
+                <CardHeader>
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-4 w-48" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {Array(5).fill(0).map((_, i) => (
+                      <div key={i} className="flex gap-4">
+                        <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                        <div className="space-y-2 flex-1">
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-3/4" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="col-span-3">
+                <CardHeader>
+                  <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  {Array(4).fill(0).map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -143,6 +252,13 @@ export default function AdminDashboard() {
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-4">
+        {loading ? (
+            <>
+              <DashboardStatsSkeleton />
+              <DashboardContentSkeleton />
+            </>
+          ) : (
+            <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <OverviewStats 
               title="Total Users" 
@@ -313,8 +429,17 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
+          </>
+          )}
         </TabsContent>
         <TabsContent value="analytics" className="space-y-4">
+        {loading ? (
+            <>
+              <DashboardStatsSkeleton />
+              <DashboardContentSkeleton />
+            </>
+          ) : (
+            <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card className="col-span-1">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -434,6 +559,8 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
+          </>
+          )}
         </TabsContent>
       </Tabs>
     </div>

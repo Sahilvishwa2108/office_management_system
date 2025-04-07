@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -66,9 +66,14 @@ interface Client {
 export default function EditClientPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
+
+  // Unwrap params Promise at the top level of the component
+  const resolvedParams = use(params);
+  const clientId = resolvedParams.id;
+
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -97,9 +102,9 @@ export default function EditClientPage({
     const fetchClientDetails = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`/api/clients/${params.id}`);
+        const response = await axios.get(`/api/clients/${clientId}`);
         setClient(response.data);
-        
+
         // Set form values from fetched client data
         form.reset({
           contactPerson: response.data.contactPerson,
@@ -111,7 +116,7 @@ export default function EditClientPage({
           isGuest: response.data.isGuest,
           accessExpiry: response.data.accessExpiry ? new Date(response.data.accessExpiry) : null,
         });
-        
+
         setError(null);
       } catch (err: any) {
         console.error("Error fetching client details:", err);
@@ -123,7 +128,7 @@ export default function EditClientPage({
     };
 
     fetchClientDetails();
-  }, [params.id, form]);
+  }, [clientId, form]);
 
   // Form submission handler
   const onSubmit = async (data: ClientFormValues) => {
@@ -132,7 +137,7 @@ export default function EditClientPage({
       toast.error("Please provide either an email or phone number");
       return;
     }
-    
+
     setSaving(true);
 
     try {
@@ -143,15 +148,15 @@ export default function EditClientPage({
           ? data.accessExpiry.toISOString() 
           : null
       };
-      
+
       // Submit to API
-      await axios.patch(`/api/clients/${params.id}`, clientData);
-      
+      await axios.patch(`/api/clients/${clientId}`, clientData);
+
       toast.success("Client updated successfully");
-      
+
       // Redirect after short delay
       setTimeout(() => {
-        router.push(`/dashboard/clients/${params.id}`);
+        router.push(`/dashboard/clients/${clientId}`);
         router.refresh();
       }, 500);
     } catch (err: any) {
@@ -191,7 +196,7 @@ export default function EditClientPage({
     <div>
       <div className="mb-6 flex items-center gap-2">
         <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-          <Link href={`/dashboard/clients/${params.id}`}>
+          <Link href={`/dashboard/clients/${clientId}`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -376,7 +381,7 @@ export default function EditClientPage({
                 <Button 
                   type="button" 
                   variant="outline"
-                  onClick={() => router.push(`/dashboard/clients/${params.id}`)}
+                  onClick={() => router.push(`/dashboard/clients/${clientId}`)}
                 >
                   Cancel
                 </Button>

@@ -25,6 +25,10 @@ import { TaskProgress } from "@/components/dashboard/task-progress";
 import { TaskMetrics } from "@/components/dashboard/task-metrics";
 import { TaskSummary } from "@/components/dashboard/task-summary";
 import { useRouter } from "next/navigation";
+import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/loading/dashboard-skeleton";
+import { UserCardSkeleton } from "@/components/loading/user-skeleton";
+import { TaskListSkeleton } from "@/components/loading/task-skeleton";
+
 
 interface PartnerDashboardData {
   stats: {
@@ -136,6 +140,13 @@ export default function PartnerDashboard() {
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-4">
+        {loading ? (
+            <>
+              <DashboardStatsSkeleton />
+              <DashboardContentSkeleton />
+            </>
+          ) : (
+            <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatsCard
               title="Total Staff"
@@ -350,27 +361,18 @@ export default function PartnerDashboard() {
               </CardContent>
             </Card>
           </div>
+          </>
+          )}
         </TabsContent>
         <TabsContent value="team" className="space-y-4">
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {loading ? (
-              // Loading placeholders for staff cards
-              [...Array(3)].map((_, i) => (
-                <div key={i} className="animate-pulse border rounded-lg p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-12 w-12 rounded-full bg-muted"></div>
-                    <div className="space-y-2">
-                      <div className="h-4 w-24 bg-muted rounded"></div>
-                      <div className="h-3 w-32 bg-muted rounded"></div>
-                    </div>
-                  </div>
-                  <div className="mt-4 space-y-2">
-                    <div className="h-3 w-full bg-muted rounded"></div>
-                    <div className="h-3 w-2/3 bg-muted rounded"></div>
-                  </div>
-                </div>
-              ))
-            ) : error ? (
+              <>
+              {Array(6).fill(0).map((_, i) => (
+                <UserCardSkeleton key={i} />
+              ))}
+            </>
+          ) : error ? (
               <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
                 <AlertTriangle className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
                 <p className="text-muted-foreground">{error}</p>
@@ -447,6 +449,10 @@ export default function PartnerDashboard() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {loading ? (
+            <TaskListSkeleton />
+          ) : (
+            <>
             <TaskSummary
               title="High Priority"
               description="Tasks requiring immediate attention"
@@ -480,6 +486,8 @@ export default function PartnerDashboard() {
               showAssignee={true}
               onTaskClick={(taskId) => router.push(`/dashboard/tasks/${taskId}`)}
             />
+            </>
+          )}
           </div>
           
           <div className="flex justify-end">

@@ -40,7 +40,21 @@ const routePermissions = {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
+  // Add caching for static assets
+  if (
+    pathname.includes('/_next/static') ||
+    pathname.includes('/images/') ||
+    pathname.includes('/favicon.ico')
+  ) {
+    const headers = new Headers(request.headers);
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    
+    const response = NextResponse.next();
+    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    return response;
+  }
+
   // Skip middleware for public routes and API routes to avoid infinite loops
   if (
     pathname.startsWith("/_next") ||

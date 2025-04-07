@@ -37,6 +37,8 @@ import {
 } from "lucide-react";
 import { TaskComments } from "@/components/tasks/task-comments";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent } from "@/components/ui/alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TaskDetailSkeleton } from "@/components/loading/task-skeleton";
 
 interface User {
   id: string;
@@ -208,16 +210,7 @@ export default function TaskDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container py-10">
-        <div className="flex justify-center items-center h-64">
-          <div className="flex flex-col items-center gap-2">
-            <SpinnerIcon className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-xl">Loading task details...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <TaskDetailSkeleton />;
   }
 
   if (!task) {

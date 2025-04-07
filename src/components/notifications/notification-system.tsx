@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 
 // Define notification types
@@ -193,20 +194,23 @@ export function NotificationBell() {
         </div>
         <ScrollArea className="h-[320px]">
           {loading ? (
-            <div className="p-3 space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex gap-3 animate-pulse p-2">
-                  <div className="h-4 w-4 bg-muted rounded-full mt-1" />
-                  <div className="space-y-2 flex-1">
-                    <div className="h-4 w-3/4 bg-muted rounded" />
-                    <div className="h-3 w-1/2 bg-muted rounded" />
+            <div className="p-4">
+              <div className="space-y-3">
+                {Array(3).fill(0).map((_, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-3 w-2/3" />
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           ) : notifications.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="text-sm text-muted-foreground">No notifications</p>
+            <div className="p-4 text-center">
+              <Bell className="mx-auto h-6 w-6 text-muted-foreground opacity-50 mb-2" />
+              <p className="text-sm text-muted-foreground">No notifications yet</p>
             </div>
           ) : (
             <div className="divide-y">

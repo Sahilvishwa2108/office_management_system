@@ -37,6 +37,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface User {
   id: string;
@@ -85,6 +86,7 @@ export function TaskComments({
   const [newComment, setNewComment] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [commentsLoading, setCommentsLoading] = useState(false);
   
   const handleAddComment = async () => {
     if (!newComment.trim() && attachments.length === 0) return;
@@ -129,6 +131,25 @@ export function TaskComments({
   const getFileNameFromAttachment = (attachment: Attachment) => {
     return attachment.original_filename || attachment.public_id.split('/').pop() || "file";
   };
+
+  if (commentsLoading) {
+    return (
+      <div className="space-y-6 pr-4">
+        {Array(3).fill(0).map((_, index) => (
+          <div key={`comment-skeleton-${index}`} className="flex gap-4 mb-6">
+            <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+              <Skeleton className="h-16 w-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <Card>

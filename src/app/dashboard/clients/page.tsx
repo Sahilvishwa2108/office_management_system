@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo, useTransition, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
@@ -58,6 +58,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Client {
   id: string;
@@ -89,6 +90,44 @@ export default function ClientsPage() {
   const [totalClients, setTotalClients] = useState(0);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
+
+  const [isPending, startTransition] = useTransition();
+
+  // Memoize expensive computations
+  const filteredClients = useMemo(() => {
+    if (!clients) return [];
+
+    return clients.filter((client) => {
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const contactPerson = client.contactPerson?.toLowerCase() || "";
+        const companyName = client.companyName?.toLowerCase() || "";
+        const email = client.email?.toLowerCase() || "";
+        const phone = client.phone?.toLowerCase() || "";
+
+        return (
+          contactPerson.includes(searchLower) ||
+          companyName.includes(searchLower) ||
+          email.includes(searchLower) ||
+          phone.includes(searchLower)
+        );
+      }
+
+      if (activeTab === "permanent" && client.isGuest) return false;
+      if (activeTab === "guest" && !client.isGuest) return false;
+
+      return true;
+    });
+  }, [clients, searchTerm, activeTab]);
+
+  // Optimize search handling with transitions
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Use startTransition to avoid blocking UI during filtering
+    startTransition(() => {
+      setSearchTerm(value);
+    });
+  }, []);
 
   // Function to load clients with search and filtering
   const loadClients = async () => {
@@ -187,6 +226,55 @@ export default function ClientsPage() {
     return client?.contactPerson || "Unnamed Client";
   };
 
+  // Add proper skeleton state for loading
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-32" />
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Skeleton className="h-10 w-full sm:w-72" />
+              <div className="flex-1 flex justify-end">
+                <Skeleton className="h-10 w-40" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {Array(5)
+                .fill(0)
+                .map((_, i) => (
+                  <div key={i} className="p-4 border rounded-lg">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <div className="flex-1">
+                        <Skeleton className="h-6 w-40 mb-1" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Skeleton className="h-5 w-16" />
+                        <Skeleton className="h-9 w-24" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Title and action buttons */}
@@ -240,26 +328,19 @@ export default function ClientsPage() {
                   placeholder="Search clients..."
                   className="pl-8"
                   value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setPage(1);
-                  }}
+                  onChange={handleSearchChange}
                 />
               </div>
             </div>
 
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : dataError ? (
+            {dataError ? (
               <div className="text-center py-12 border rounded-md bg-background">
                 <Users className="h-10 w-10 mx-auto text-muted-foreground opacity-20 mb-2" />
                 <h3 className="text-lg font-medium mb-2">Error loading clients</h3>
                 <p className="text-muted-foreground mb-6">{dataError}</p>
                 <Button onClick={loadClients}>Try Again</Button>
               </div>
-            ) : clients.length === 0 ? (
+            ) : filteredClients.length === 0 ? (
               <div className="text-center py-12 border rounded-md bg-background">
                 <Users className="h-10 w-10 mx-auto text-muted-foreground opacity-20 mb-2" />
                 <h3 className="text-lg font-medium mb-2">No clients found</h3>
@@ -295,7 +376,7 @@ export default function ClientsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {clients.map((client) => (
+                    {filteredClients.map((client) => (
                       <TableRow key={client.id}>
                         <TableCell className="font-medium">
                           {/* Add robust name rendering with fallback */}

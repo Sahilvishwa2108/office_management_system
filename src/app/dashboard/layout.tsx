@@ -35,6 +35,18 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { NotificationProvider } from "@/components/notifications/notification-system";
+import dynamic from "next/dynamic";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load components that aren't needed immediately
+const NotificationBell = dynamic(
+  () =>
+    import("@/components/notifications/notification-system").then(
+      (mod) => mod.NotificationBell
+    ),
+  { ssr: false, loading: () => <Skeleton className="h-9 w-9 rounded-full" /> }
+);
 
 interface NavItem {
   title: string;
@@ -258,201 +270,70 @@ export default function DashboardLayout({
   };
 
   return (
-    <NotificationProvider>
-      <div className="flex min-h-screen flex-col overflow-x-hidden">
-        <div className="flex flex-1">
-          {/* Fixed Sidebar */}
-          <div
-            className={cn(
-              "hidden fixed top-0 bottom-0 flex-col border-r bg-card transition-all duration-300 lg:flex",
-              sidebarCollapsed ? "w-20" : "w-64"
-            )}
-          >
-            {/* Toggle collapse button - now centered vertically */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-6 w-6 -mr-3 rounded-full border bg-background shadow-sm"
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            >
-              {sidebarCollapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronLeft className="h-4 w-4" />
+    <Suspense fallback={null}>
+      <NotificationProvider>
+        <div className="flex min-h-screen flex-col overflow-x-hidden">
+          <div className="flex flex-1">
+            {/* Fixed Sidebar */}
+            <div
+              className={cn(
+                "hidden fixed top-0 bottom-0 flex-col border-r bg-card transition-all duration-300 lg:flex",
+                sidebarCollapsed ? "w-20" : "w-64"
               )}
-              <span className="sr-only">Toggle Sidebar</span>
-            </Button>
-
-            <div className="flex h-14 items-center border-b px-4">
-              <Link
-                href="/"
-                className={cn(
-                  "flex items-center gap-2 font-semibold",
-                  sidebarCollapsed && "justify-center w-full"
-                )}
+            >
+              {/* Toggle collapse button - now centered vertically */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-6 w-6 -mr-3 rounded-full border bg-background shadow-sm"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               >
-                <Building2 className="h-6 w-6" />
-                {!sidebarCollapsed && <span>Office Manager</span>}
-              </Link>
-            </div>
-
-            <ScrollArea className="flex-1 py-2">
-              <nav className="grid gap-1 px-2">
-                {getVisibleNavItems().map((item) => (
-                  <NavItemComponent key={item.href} item={item} />
-                ))}
-              </nav>
-            </ScrollArea>
-
-            <div className="mt-auto border-t p-4">
-              <div
-                className={cn(
-                  "flex items-center gap-3 rounded-md p-2",
-                  sidebarCollapsed && "flex-col"
-                )}
-              >
-                <Avatar className="h-9 w-9">
-                  <AvatarImage
-                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
-                    alt={session?.user?.name}
-                  />
-                  <AvatarFallback>
-                    {getInitials(session?.user?.name)}
-                  </AvatarFallback>
-                </Avatar>
-                {!sidebarCollapsed && (
-                  <div className="flex flex-1 flex-col truncate">
-                    <span className="truncate text-sm font-medium">
-                      {session?.user?.name}
-                    </span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {session?.user?.email}
-                    </span>
-                  </div>
-                )}
                 {sidebarCollapsed ? (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() =>
-                            signOut({ redirect: true, callbackUrl: "/login" })
-                          }
-                        >
-                          <LogOut className="h-4 w-4" />
-                          <span className="sr-only">Log out</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">Log out</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <ChevronRight className="h-4 w-4" />
                 ) : (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="ml-auto h-8 w-8"
-                    onClick={() =>
-                      signOut({ redirect: true, callbackUrl: "/login" })
-                    }
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span className="sr-only">Log out</span>
-                  </Button>
+                  <ChevronLeft className="h-4 w-4" />
                 )}
-              </div>
-            </div>
-          </div>
+                <span className="sr-only">Toggle Sidebar</span>
+              </Button>
 
-          {/* Main content with margin to account for sidebar */}
-          <div
-            className={cn(
-              "flex flex-1 flex-col",
-              sidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
-            )}
-          >
-            {/* Mobile header */}
-            <header className="sticky top-0 z-30 flex h-14 items-center border-b bg-background lg:hidden">
-              <div className="flex items-center gap-2 px-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="lg:hidden"
-                  onClick={() => setIsMobileNavOpen(true)}
+              <div className="flex h-14 items-center border-b px-4">
+                <Link
+                  href="/"
+                  className={cn(
+                    "flex items-center gap-2 font-semibold",
+                    sidebarCollapsed && "justify-center w-full"
+                  )}
                 >
-                  <Menu className="h-6 w-6" />
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-                <Link href="/" className="flex items-center gap-1 font-semibold">
                   <Building2 className="h-6 w-6" />
-                  Office
+                  {!sidebarCollapsed && <span>Office Manager</span>}
                 </Link>
               </div>
-            </header>
 
-            {/* Dashboard header */}
-            <DashboardHeader />
-
-            {/* Main content */}
-            <main className="flex-1 p-4 md:p-6">{children}</main>
-          </div>
-
-          {/* Mobile navigation overlay */}
-          <div
-            className={cn(
-              "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden",
-              isMobileNavOpen ? "block" : "hidden"
-            )}
-          >
-            <div className="fixed left-0 top-0 h-full w-72 bg-card p-4 shadow-lg">
-              <div className="flex items-center justify-between mb-4">
-                <Link href="/" className="flex items-center gap-2 font-semibold">
-                  <Building2 className="h-6 w-6" />
-                  <span>Office Manager</span>
-                </Link>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsMobileNavOpen(false)}
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-              <ScrollArea className="h-[calc(100%-64px)]">
-                <nav className="grid gap-1">
+              <ScrollArea className="flex-1 py-2">
+                <nav className="grid gap-1 px-2">
                   {getVisibleNavItems().map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-2 text-base transition-colors",
-                        item.href.split("/").length === 3
-                          ? pathname === item.href
-                          : pathname === item.href ||
-                            pathname.startsWith(`${item.href}/`)
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted"
-                      )}
-                      onClick={() => setIsMobileNavOpen(false)}
-                    >
-                      {item.icon}
-                      {item.title}
-                    </Link>
+                    <NavItemComponent key={item.href} item={item} />
                   ))}
                 </nav>
-                <div className="mt-6 border-t pt-4">
-                  <div className="flex items-center gap-3 rounded-md p-2">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage
-                        src={`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
-                        alt={session?.user?.name}
-                      />
-                      <AvatarFallback>
-                        {getInitials(session?.user?.name)}
-                      </AvatarFallback>
-                    </Avatar>
+              </ScrollArea>
+
+              <div className="mt-auto border-t p-4">
+                <div
+                  className={cn(
+                    "flex items-center gap-3 rounded-md p-2",
+                    sidebarCollapsed && "flex-col"
+                  )}
+                >
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage
+                      src={`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
+                      alt={session?.user?.name}
+                    />
+                    <AvatarFallback>
+                      {getInitials(session?.user?.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {!sidebarCollapsed && (
                     <div className="flex flex-1 flex-col truncate">
                       <span className="truncate text-sm font-medium">
                         {session?.user?.name}
@@ -461,30 +342,174 @@ export default function DashboardLayout({
                         {session?.user?.email}
                       </span>
                     </div>
-                  </div>
-                  <Link href="/dashboard/upcoming/admin/documents">
-                    <Button variant="outline" className="w-full justify-between">
-                      Document Repository
-                      <ArrowRight className="h-4 w-4 ml-2" />
+                  )}
+                  {sidebarCollapsed ? (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              signOut({ redirect: true, callbackUrl: "/login" })
+                            }
+                          >
+                            <LogOut className="h-4 w-4" />
+                            <span className="sr-only">Log out</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">Log out</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="ml-auto h-8 w-8"
+                      onClick={() =>
+                        signOut({ redirect: true, callbackUrl: "/login" })
+                      }
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span className="sr-only">Log out</span>
                     </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Main content with margin to account for sidebar */}
+            <div
+              className={cn(
+                "flex flex-1 flex-col",
+                sidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
+              )}
+            >
+              {/* Mobile header */}
+              <header className="sticky top-0 z-30 flex h-14 items-center border-b bg-background lg:hidden">
+                <div className="flex items-center gap-2 px-4">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="lg:hidden"
+                    onClick={() => setIsMobileNavOpen(true)}
+                  >
+                    <Menu className="h-6 w-6" />
+                    <span className="sr-only">Toggle menu</span>
+                  </Button>
+                  <Link
+                    href="/"
+                    className="flex items-center gap-1 font-semibold"
+                  >
+                    <Building2 className="h-6 w-6" />
+                    Office
+                  </Link>
+                </div>
+              </header>
+
+              {/* Dashboard header */}
+              <Suspense fallback={<Skeleton className="h-14 w-full border-b" />}>
+                <DashboardHeader />
+              </Suspense>
+
+              {/* Main content */}
+              <main className="flex-1 p-4 md:p-6">{children}</main>
+            </div>
+
+            {/* Mobile navigation overlay */}
+            <div
+              className={cn(
+                "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden",
+                isMobileNavOpen ? "block" : "hidden"
+              )}
+            >
+              <div className="fixed left-0 top-0 h-full w-72 bg-card p-4 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <Link
+                    href="/"
+                    className="flex items-center gap-2 font-semibold"
+                  >
+                    <Building2 className="h-6 w-6" />
+                    <span>Office Manager</span>
                   </Link>
                   <Button
-                    variant="outline"
-                    className="mt-2 w-full justify-start gap-2"
-                    onClick={() => {
-                      setIsMobileNavOpen(false);
-                      signOut({ redirect: true, callbackUrl: "/login" });
-                    }}
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsMobileNavOpen(false)}
                   >
-                    <LogOut className="h-4 w-4" />
-                    Log out
+                    <X className="h-5 w-5" />
                   </Button>
                 </div>
-              </ScrollArea>
+                <ScrollArea className="h-[calc(100%-64px)]">
+                  <nav className="grid gap-1">
+                    {getVisibleNavItems().map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-3 rounded-md px-3 py-2 text-base transition-colors",
+                          item.href.split("/").length === 3
+                            ? pathname === item.href
+                            : pathname === item.href ||
+                              pathname.startsWith(`${item.href}/`)
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:bg-muted"
+                        )}
+                        onClick={() => setIsMobileNavOpen(false)}
+                      >
+                        {item.icon}
+                        {item.title}
+                      </Link>
+                    ))}
+                  </nav>
+                  <div className="mt-6 border-t pt-4">
+                    <div className="flex items-center gap-3 rounded-md p-2">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage
+                          src={`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
+                          alt={session?.user?.name}
+                        />
+                        <AvatarFallback>
+                          {getInitials(session?.user?.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-1 flex-col truncate">
+                        <span className="truncate text-sm font-medium">
+                          {session?.user?.name}
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {session?.user?.email}
+                        </span>
+                      </div>
+                    </div>
+                    <Link href="/dashboard/upcoming/admin/documents">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between"
+                      >
+                        Document Repository
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="outline"
+                      className="mt-2 w-full justify-start gap-2"
+                      onClick={() => {
+                        setIsMobileNavOpen(false);
+                        signOut({ redirect: true, callbackUrl: "/login" });
+                      }}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Log out
+                    </Button>
+                  </div>
+                </ScrollArea>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </NotificationProvider>
+      </NotificationProvider>
+    </Suspense>
   );
 }

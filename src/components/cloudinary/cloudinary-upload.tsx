@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Upload, Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface CloudinaryUploadProps {
   onUploadComplete: (attachment: { 
@@ -19,31 +20,48 @@ interface CloudinaryUploadProps {
 
 export function CloudinaryUpload({ onUploadComplete, disabled = false }: CloudinaryUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setUploading(true);
+    setUploadProgress(0);
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", "ml_default"); // This is a common default preset
+    formData.append("upload_preset", "ml_default");
 
     try {
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'darlvqu7v'}/auto/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      const data = await response.json();
+      const xhr = new XMLHttpRequest();
       
-      if (data.error) {
-        throw new Error(data.error.message);
-      }
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(progress);
+        }
+      };
 
+      const uploadPromise = new Promise<any>((resolve, reject) => {
+        xhr.open("POST", 
+          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'darlvqu7v'}/auto/upload`
+        );
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        };
+        
+        xhr.onerror = () => reject(new Error("Upload failed"));
+        
+        xhr.send(formData);
+      });
+
+      const data = await uploadPromise;
+      
       onUploadComplete({
         url: data.url,
         secure_url: data.secure_url,
@@ -59,6 +77,7 @@ export function CloudinaryUpload({ onUploadComplete, disabled = false }: Cloudin
       toast.error("Failed to upload file");
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -80,8 +99,16 @@ export function CloudinaryUpload({ onUploadComplete, disabled = false }: Cloudin
       >
         {uploading ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Uploading...
+            <div className="w-full relative">
+              <Skeleton className="h-4 w-full" />
+              <div 
+                className="absolute top-0 left-0 h-4 bg-primary/50 transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              />
+              <span className="absolute inset-0 text-xs flex items-center justify-center">
+                {uploadProgress}%
+              </span>
+            </div>
           </>
         ) : (
           <>

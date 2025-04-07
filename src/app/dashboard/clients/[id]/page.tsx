@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { use } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -24,7 +25,6 @@ import {
   Building,
   Clock,
   FileText,
-  Loader2,
   Mail,
   MapPin,
   Pencil,
@@ -35,6 +35,7 @@ import {
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Client {
   id: string;
@@ -66,12 +67,12 @@ interface Client {
   }>;
 }
 
-export default function ClientDetailsPage({ params }: { params: { id: string } }) {
+export default function ClientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
 
-  // Fix: Properly access params using React.use() to handle the Promise
-  const paramData = use(Promise.resolve(params));
-  const clientId = paramData.id;
+  // Correctly unwrap the params promise
+  const resolvedParams = use(params);
+  const clientId = resolvedParams.id;
 
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,10 +106,43 @@ export default function ClientDetailsPage({ params }: { params: { id: string } }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[50vh]">
-        <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading client details...</p>
+      <div className="space-y-6">
+        {/* Header section skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8" />
+            <div>
+              <Skeleton className="h-8 w-48" />
+              <div className="flex items-center gap-2 mt-1">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-5 w-16" />
+              </div>
+            </div>
+          </div>
+
+          <Skeleton className="h-10 w-32" />
+        </div>
+
+        {/* Tabs skeleton */}
+        <div>
+          <Skeleton className="h-10 w-96 mb-4" />
+          
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-64" />
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Array(4).fill(0).map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-8 w-full" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );

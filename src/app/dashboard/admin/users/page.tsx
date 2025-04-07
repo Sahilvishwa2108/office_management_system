@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { UserCount } from "@/components/dashboard/user-count";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface User {
   id: string;
@@ -143,6 +144,90 @@ export default function UsersPage() {
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const renderSkeletonRows = () => {
+    return Array(8).fill(0).map((_, index) => (
+      <TableRow key={`skeleton-${index}`}>
+        <TableCell>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div>
+              <Skeleton className="h-4 w-32 mb-2" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+        </TableCell>
+        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+        <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+      </TableRow>
+    ));
+  };
+
+  // Replace the loading spinner with table skeleton
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        
+        <Skeleton className="h-40 w-full" /> {/* Role distribution chart skeleton */}
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <Skeleton className="h-7 w-28" />
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-8 w-72" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array(5).fill(0).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-8 w-8 rounded-full" />
+                          <div>
+                            <Skeleton className="h-4 w-32 mb-1" />
+                            <Skeleton className="h-3 w-24" />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell className="text-right">
+                        <Skeleton className="h-8 w-20 ml-auto" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Title Row with Button */}
@@ -201,8 +286,41 @@ export default function UsersPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex justify-center items-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array(5).fill(0).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-8 w-8 rounded-full" />
+                          <div>
+                            <Skeleton className="h-4 w-32 mb-1" />
+                            <Skeleton className="h-3 w-24" />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell className="text-right">
+                        <Skeleton className="h-8 w-20 ml-auto" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : (
             <div className="border rounded-md">

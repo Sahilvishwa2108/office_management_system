@@ -40,6 +40,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { UserDetailSkeleton } from "@/components/loading/user-skeleton";
 import React from "react";
 
 interface UserParams {
@@ -132,11 +133,7 @@ export default function UserDetailsPage({
 
   // Show loading state
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <UserDetailSkeleton />;
   }
 
   // Show error state if user not found

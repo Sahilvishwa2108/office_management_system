@@ -2,6 +2,41 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { unstable_cache } from "next/cache"; // Using unstable_cache for data caching
+
+// Cache the activity fetch for 30 seconds
+const getCachedActivities = unstable_cache(
+  async (params: { limit: number, page: number, type: string | null, where: any }) => {
+    const { limit, page, where } = params;
+    const skip = (page - 1) * limit;
+    
+    const activities = await prisma.activity.findMany({
+      where,
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+          },
+        },
+      },
+      skip,
+      take: limit,
+    });
+    
+    const totalCount = await prisma.activity.count({
+      where,
+    });
+    
+    return { activities, totalCount };
+  },
+  ["activities"],
+  { revalidate: 30 } // Cache for 30 seconds
+);
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,8 +49,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "10");
     const page = parseInt(searchParams.get("page") || "1");
-    const skip = (page - 1) * limit;
-    const type = searchParams.get("type"); // Allow filtering by type
+    const type = searchParams.get("type");
 
     // Define public activity types and actions
     const publicActivities = {
@@ -50,28 +84,12 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // Fetch activities with proper filtering
-    const activities = await prisma.activity.findMany({
-      where,
-      orderBy: {
-        createdAt: "desc",
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            role: true,
-          },
-        },
-      },
-      skip,
-      take: limit,
-    });
-
-    // Count total activities for pagination
-    const totalCount = await prisma.activity.count({
-      where,
+    // Fetch activities with caching
+    const { activities, totalCount } = await getCachedActivities({
+      limit,
+      page,
+      type,
+      where
     });
 
     // Format the response
@@ -82,10 +100,10 @@ export async function GET(request: NextRequest) {
         action: activity.action,
         target: activity.target,
         timestamp: activity.createdAt,
-        user: {
+        user: activity.user ? {
           name: activity.user.name,
           role: activity.user.role,
-        },
+        } : undefined,
         details: activity.details,
       })),
       pagination: {
@@ -94,6 +112,11 @@ export async function GET(request: NextRequest) {
         limit,
         pages: Math.ceil(totalCount / limit),
       },
+    }, {
+      headers: {
+        // Add caching headers
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=59',
+      }
     });
   } catch (error) {
     console.error("Error fetching public activities:", error);

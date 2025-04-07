@@ -31,6 +31,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -111,8 +112,38 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   // Show loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="container mx-auto py-6">
+        <div className="mb-6 flex items-center gap-2">
+          <Skeleton className="h-8 w-8 rounded-md" />
+          <Skeleton className="h-8 w-48" />
+        </div>
+
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="flex justify-end gap-3">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-36" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

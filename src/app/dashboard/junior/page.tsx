@@ -34,6 +34,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardStatsSkeleton, DashboardContentSkeleton, TaskCardSkeleton } from "@/components/loading/dashboard-skeleton";
 
 interface JuniorDashboardData {
   stats: {
@@ -123,6 +125,13 @@ export default function JuniorDashboard() {
         </TabsList>
         
         <TabsContent value="overview" className="space-y-4">
+        {loading ? (
+            <>
+              <DashboardStatsSkeleton />
+              <DashboardContentSkeleton />
+            </>
+          ) : (
+            <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatsCard 
               title="Active Tasks" 
@@ -286,6 +295,8 @@ export default function JuniorDashboard() {
               </ScrollArea>
             )}
           </DashboardCard> */}
+          </>
+          )}
         </TabsContent>
         
         <TabsContent value="tasks" className="space-y-4">
@@ -322,20 +333,11 @@ export default function JuniorDashboard() {
           </div>
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {loading ? (
-              // Loading placeholders for task cards
-              [...Array(6)].map((_, i) => (
-                <div key={i} className="animate-pulse border rounded-lg p-4">
-                  <div className="space-y-2">
-                    <div className="h-4 w-2/3 bg-muted rounded"></div>
-                    <div className="h-3 w-full bg-muted rounded"></div>
-                    <div className="h-3 w-full bg-muted rounded"></div>
-                  </div>
-                  <div className="mt-4 flex justify-between">
-                    <div className="h-6 w-16 bg-muted rounded"></div>
-                    <div className="h-6 w-16 bg-muted rounded"></div>
-                  </div>
-                </div>
-              ))
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                {Array(6).fill(0).map((_, i) => (
+                  <TaskCardSkeleton key={i} />
+                ))}
+              </div>
             ) : error ? (
               <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
                 <AlertTriangle className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
