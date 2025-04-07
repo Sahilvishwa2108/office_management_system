@@ -194,7 +194,7 @@ export default function AdminDashboard() {
                     />
                     
                     <Button asChild variant="outline" className="w-full mt-4">
-                      <Link href="/dashboard/admin/tasks">
+                      <Link href="/dashboard/tasks">
                         View All Tasks
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
@@ -211,7 +211,7 @@ export default function AdminDashboard() {
                     <CardTitle>Priority Tasks</CardTitle>
                     <CardDescription>Tasks that need immediate attention</CardDescription>
                   </div>
-                  <Button size="sm" onClick={() => router.push('/dashboard/admin/tasks/create')}>
+                  <Button size="sm" onClick={() => router.push('/dashboard/tasks/create')}>
                     <Plus className="mr-2 h-3 w-3" />
                     New Task
                   </Button>
@@ -225,7 +225,7 @@ export default function AdminDashboard() {
                         <div 
                           key={task.id} 
                           className="border rounded-md p-3 hover:bg-muted/50 transition-colors cursor-pointer"
-                          onClick={() => router.push(`/dashboard/admin/tasks/${task.id}`)}
+                          onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
                         >
                           <div className="flex items-center justify-between">
                             <h3 className="font-medium">{task.title}</h3>
@@ -260,7 +260,7 @@ export default function AdminDashboard() {
                     <div className="text-center">
                       <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-2" />
                       <p className="text-muted-foreground mb-4">No tasks created yet</p>
-                      <Button onClick={() => router.push('/dashboard/admin/tasks/create')}>
+                      <Button onClick={() => router.push('/dashboard/tasks/create')}>
                         <Plus className="mr-2 h-4 w-4" />
                         Create First Task
                       </Button>
@@ -298,7 +298,7 @@ export default function AdminDashboard() {
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
-                <Link href="/dashboard/admin/tasks">
+                <Link href="/dashboard/tasks">
                   <Button variant="outline" className="w-full justify-between">
                     View All Tasks
                     <ArrowRight className="h-4 w-4 ml-2" />

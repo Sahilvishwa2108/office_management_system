@@ -203,7 +203,7 @@ export default function PartnerDashboard() {
                     
                     <div className="grid grid-cols-2 gap-4 pt-2">
                       <Button 
-                        onClick={() => router.push("/dashboard/partner/tasks/create")}
+                        onClick={() => router.push("/dashboard/tasks/create")}
                         className="w-full"
                       >
                         <Plus className="h-4 w-4 mr-2" />
@@ -211,7 +211,7 @@ export default function PartnerDashboard() {
                       </Button>
                       <Button 
                         variant="outline" 
-                        onClick={() => router.push("/dashboard/partner/tasks/assign")}
+                        onClick={() => router.push("/dashboard/tasks/assign")}
                         className="w-full"
                       >
                         Assign Tasks
@@ -306,7 +306,7 @@ export default function PartnerDashboard() {
                     .map((task) => (
                       <Link
                         key={task.id}
-                        href={`/dashboard/partner/tasks/${task.id}`}
+                        href={`/dashboard/tasks/${task.id}`}
                       >
                         <div className="border rounded-md p-3 hover:bg-muted/50 transition-colors">
                           <div className="flex justify-between items-start">
@@ -341,7 +341,7 @@ export default function PartnerDashboard() {
                       </Link>
                     ))
                 )}
-                <Link href="/dashboard/partner/tasks">
+                <Link href="/dashboard/tasks">
                   <Button variant="outline" className="w-full justify-between">
                     View All Tasks
                     <ArrowRight className="h-4 w-4 ml-2" />
@@ -429,7 +429,7 @@ export default function PartnerDashboard() {
             <div className="flex items-center gap-2">
               <Button 
                 variant="outline"
-                onClick={() => router.push("/dashboard/partner/tasks?filter=overdue")}
+                onClick={() => router.push("/dashboard/tasks?filter=overdue")}
               >
                 {stats.pendingTasks > 0 && (
                   <span className="h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center mr-2">
@@ -439,7 +439,7 @@ export default function PartnerDashboard() {
                 Overdue
               </Button>
               
-              <Button onClick={() => router.push("/dashboard/partner/tasks/create")}>
+              <Button onClick={() => router.push("/dashboard/tasks/create")}>
                 <Plus className="mr-2 h-4 w-4" />
                 New Task
               </Button>
@@ -484,7 +484,7 @@ export default function PartnerDashboard() {
           
           <div className="flex justify-end">
             <Button asChild variant="outline">
-              <Link href="/dashboard/partner/tasks">
+              <Link href="/dashboard/tasks">
                 View All Tasks
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>

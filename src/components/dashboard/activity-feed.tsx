@@ -1,14 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
-import { formatDistanceToNow } from "date-fns";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { 
-  AlertCircle, User, Briefcase, UserCog, 
-  PlusCircle, Trash2, Shield 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatDistanceToNow } from "date-fns";
+import axios from "axios";
+import {
+  User,
+  Briefcase,
+  Shield,
+  AlertCircle,
+  UserCog,
+  PlusCircle,
+  Trash2,
 } from "lucide-react";
 
 interface ActivityUser {
@@ -42,11 +47,11 @@ interface ActivityFeedProps {
 
 export function ActivityFeed({
   fetchUrl = "/api/activities",
-  limit = 10,
+  limit = 5, // Default to 5 items
   loading: initialLoading = false,
   emptyMessage = "No recent activity found",
   viewAllUrl,
-  maxHeight = "calc(5 * 72px)", 
+  maxHeight = "calc(5 * 72px)", // Height for 5 items
   compact = false,
   showUserInfo = true,
   showRoleInfo = false,
@@ -55,12 +60,14 @@ export function ActivityFeed({
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState<boolean>(initialLoading || true);
 
-  // Fetch activities from unified endpoint
+  // Fetch activities from unified endpoint - fetch more than we display
   useEffect(() => {
     const fetchActivities = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(fetchUrl, { params: { limit } });
+        // Always fetch at least 15 activities to ensure scrollability
+        const fetchLimit = expanded ? 30 : Math.max(15, limit * 3);
+        const response = await axios.get(fetchUrl, { params: { limit: fetchLimit } });
         const data = response.data.data || response.data;
         setActivities(data);
       } catch (error) {
@@ -71,7 +78,7 @@ export function ActivityFeed({
     };
     
     fetchActivities();
-  }, [fetchUrl, limit]);
+  }, [fetchUrl, limit, expanded]);
 
   // Function to get initials from name
   const getInitials = (name: string): string => {
@@ -172,10 +179,12 @@ export function ActivityFeed({
     );
   }
 
-  const displayActivities = expanded ? activities : activities.slice(0, limit);
+  // No slicing - show all activities to ensure scrollability
+  // The scrollArea will handle showing only what fits in the viewport
+  const displayActivities = activities;
 
   return (
-    <ScrollArea className={`rounded-md`} style={{ maxHeight }}>
+    <ScrollArea className="w-full h-full" style={{ maxHeight }}>
       <div className="pr-3 space-y-3">
         {displayActivities.map((activity, index) => (
           <div key={activity.id}>
@@ -184,6 +193,7 @@ export function ActivityFeed({
                 <Avatar className={compact ? "h-8 w-8" : "h-10 w-10"}>
                   <AvatarImage 
                     src={activity.user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${activity.user.name}`} 
+                    alt={activity.user.name}
                   />
                   <AvatarFallback>{getInitials(activity.user.name)}</AvatarFallback>
                 </Avatar>

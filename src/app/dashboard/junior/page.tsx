@@ -193,7 +193,7 @@ export default function JuniorDashboard() {
               {dashboardData?.tasks && dashboardData.tasks.length > 0 && (
                 <div className="mt-4">
                   <Button asChild variant="outline" className="w-full">
-                    <Link href="/dashboard/junior/tasks">
+                    <Link href="/dashboard/tasks">
                       View All Tasks
                     </Link>
                   </Button>
@@ -255,7 +255,7 @@ export default function JuniorDashboard() {
                           </Link>
                         </Button>
                         <Button asChild size="sm">
-                          <Link href="/dashboard/junior/tasks/create">
+                          <Link href="/dashboard/tasks/create">
                             <BadgePlus className="h-4 w-4 mr-1" />
                             Create Task
                           </Link>
@@ -297,19 +297,19 @@ export default function JuniorDashboard() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Filter Tasks</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/dashboard/junior/tasks?filter=all")}>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/tasks?filter=all")}>
                   All Tasks
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/junior/tasks?filter=pending")}>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/tasks?filter=pending")}>
                   Pending
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/junior/tasks?filter=in-progress")}>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/tasks?filter=in-progress")}>
                   In Progress
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/junior/tasks?filter=high")}>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/tasks?filter=high")}>
                   High Priority
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/junior/tasks?filter=overdue")}>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/tasks?filter=overdue")}>
                   Overdue
                 </DropdownMenuItem>
               </DropdownMenuContent>
