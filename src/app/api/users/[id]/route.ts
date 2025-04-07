@@ -112,6 +112,7 @@ export async function PUT(
 
     // Get request data
     const { name, email, role: newRole } = await req.json();
+    const normalizedEmail = email?.toLowerCase().trim();
 
     // Get the user to update
     const userToUpdate = await prisma.user.findUnique({
@@ -149,9 +150,10 @@ export async function PUT(
     }
 
     // Check if email is already in use by another user
-    if (email !== userToUpdate.email) {
+    if (normalizedEmail && normalizedEmail !== userToUpdate.email) {
+      // Check if the email is already in use by another user
       const existingUser = await prisma.user.findUnique({
-        where: { email },
+        where: { email: normalizedEmail },
       });
 
       if (existingUser && existingUser.id !== userId) {
@@ -167,7 +169,7 @@ export async function PUT(
       where: { id: userId },
       data: {
         name,
-        email,
+        email: normalizedEmail,
         role: newRole,
       },
     });

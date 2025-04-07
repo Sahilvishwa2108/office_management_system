@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
+    const normalizedEmail = email.toLowerCase().trim(); // Normalize email
     // Partners can only create BUSINESS_EXECUTIVE or BUSINESS_CONSULTANT roles
     if (
       role === "PARTNER" && 
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        email: normalizedEmail,
         role: assignedRole,
         isActive: true, // Explicitly set this
         passwordResetToken: passwordToken,
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Send email with password setup link
-    await sendPasswordSetupEmail(email, name, passwordToken);
+    await sendPasswordSetupEmail(normalizedEmail, name, passwordToken);
 
     // Log the activity
     await logActivity(
