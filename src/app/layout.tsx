@@ -1,46 +1,33 @@
-import type { Metadata } from "next";
-import { Inter } from 'next/font/google';
-import { cn } from "@/lib/utils";
-import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/context/auth-provider";
-import { Toaster } from "@/components/ui/sonner";
+"use client";
+
 import "./globals.css";
+import { Inter } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
+import { SessionProvider } from "next-auth/react";
+import { NotificationProvider } from "@/components/notifications/notification-system";
+import { Toaster } from "sonner";
+import { LoadingProvider } from "@/components/loading-state-manager";
 
-// Use Inter as a fallback font (comes with Next.js)
-const inter = Inter({ 
-  subsets: ['latin'],
-  variable: '--font-sans',
-});
-
-export const metadata: Metadata = {
-  title: "Office Management System",
-  description: "Streamline your office operations and boost productivity",
-};
+const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={cn(
-          "min-h-screen font-sans antialiased",
-          inter.variable
-        )}
-      >
-        <AuthProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-            <Toaster position="top-right" />
-          </ThemeProvider>
-        </AuthProvider>
+      <body className={inter.className}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <SessionProvider>
+            <NotificationProvider>
+              <LoadingProvider>
+                {children}
+                <Toaster position="top-right" richColors closeButton />
+              </LoadingProvider>
+            </NotificationProvider>
+          </SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -8,8 +8,15 @@ export async function GET(request: NextRequest) {
   try {
     // Get authenticated user
     const session = await getServerSession(authOptions);
+    
+    // Return empty data instead of 401 when not authenticated
+    // This prevents errors in components that might load before auth is ready
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({
+        data: [],
+        pagination: { total: 0, page: 1, limit: 10, pages: 0 },
+        unreadCount: 0
+      });
     }
 
     // Get current user
@@ -18,7 +25,11 @@ export async function GET(request: NextRequest) {
     });
 
     if (!currentUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({
+        data: [],
+        pagination: { total: 0, page: 1, limit: 10, pages: 0 },
+        unreadCount: 0
+      });
     }
 
     // Parse query parameters

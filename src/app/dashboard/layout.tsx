@@ -10,7 +10,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import {
-  Home,
   Users,
   ClipboardList,
   MessageSquare,
@@ -27,7 +26,6 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
-import { toast } from "sonner";
 import {
   Tooltip,
   TooltipContent,
@@ -35,18 +33,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { NotificationProvider } from "@/components/notifications/notification-system";
-import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// Lazy load components that aren't needed immediately
-const NotificationBell = dynamic(
-  () =>
-    import("@/components/notifications/notification-system").then(
-      (mod) => mod.NotificationBell
-    ),
-  { ssr: false, loading: () => <Skeleton className="h-9 w-9 rounded-full" /> }
-);
 
 interface NavItem {
   title: string;
@@ -64,7 +52,7 @@ export default function DashboardLayout({
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   // Close mobile nav when route changes
   useEffect(() => {
