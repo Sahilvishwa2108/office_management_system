@@ -2,16 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import axios from "axios";
-import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  Card, CardContent, CardHeader, CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -21,16 +25,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Plus, Eye, Loader2, ClipboardX } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { format } from "date-fns";
+import { ClipboardX, Eye, Loader2, Plus } from "lucide-react";
 import { TaskPageLayout } from "@/components/layouts/task-page-layout";
 import Link from "next/link";
 
@@ -56,7 +52,7 @@ export default function TasksPage() {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   useEffect(() => {
@@ -83,31 +79,21 @@ export default function TasksPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending":
-        return "bg-gray-500 hover:bg-gray-600";
-      case "in-progress":
-        return "bg-blue-500 hover:bg-blue-600";
-      case "review":
-        return "bg-yellow-500 hover:bg-yellow-600";
-      case "completed":
-        return "bg-green-500 hover:bg-green-600";
-      case "cancelled":
-        return "bg-red-500 hover:bg-red-600";
-      default:
-        return "bg-gray-500 hover:bg-gray-600";
+      case "pending": return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+      case "in-progress": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
+      case "review": return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
+      case "completed": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
+      case "cancelled": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "low":
-        return "bg-green-500 hover:bg-green-600";
-      case "medium":
-        return "bg-yellow-500 hover:bg-yellow-600";
-      case "high":
-        return "bg-red-500 hover:bg-red-600";
-      default:
-        return "bg-gray-500 hover:bg-gray-600";
+      case "low": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
+      case "medium": return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
+      case "high": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
     }
   };
 
@@ -122,6 +108,7 @@ export default function TasksPage() {
   return (
     <TaskPageLayout
       title="Tasks"
+      description="View and manage all your tasks in one place"
       showBackButton={false}
       maxWidth="max-w-full"
     >
@@ -137,11 +124,11 @@ export default function TasksPage() {
         )}
       </div>
 
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-        <div className="md:col-span-1">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-4">
+        <div className="lg:col-span-1">
           <Card className="h-full">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Filter Tasks</CardTitle>
+              <CardTitle className="text-lg font-medium">Filter Tasks</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -166,6 +153,7 @@ export default function TasksPage() {
                       <SelectItem value="in-progress">In Progress</SelectItem>
                       <SelectItem value="review">Review</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -174,11 +162,11 @@ export default function TasksPage() {
           </Card>
         </div>
 
-        <div className="md:col-span-2">
+        <div className="lg:col-span-3">
           <Card className="h-full">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
-                <CardTitle className="text-lg">Task List</CardTitle>
+                <CardTitle className="text-lg font-medium">Task List</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {filteredTasks.length} tasks
                 </p>
@@ -209,30 +197,27 @@ export default function TasksPage() {
                     </TableHeader>
                     <TableBody>
                       {filteredTasks.map((task) => (
-                        <TableRow key={task.id}>
-                          <TableCell>{task.title}</TableCell>
+                        <TableRow key={task.id} className="hover:bg-muted/50">
+                          <TableCell className="font-medium">{task.title}</TableCell>
                           <TableCell>
-                            <Badge className={getStatusColor(task.status)}>
-                              {task.status.replace("-", " ")}
+                            <Badge variant="secondary" className={getStatusColor(task.status)}>
+                              {task.status.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge className={getPriorityColor(task.priority)}>
-                              {task.priority}
+                            <Badge variant="secondary" className={getPriorityColor(task.priority)}>
+                              {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {task.dueDate
-                              ? format(new Date(task.dueDate), "MMM d, yyyy")
-                              : "-"}
+                            {task.dueDate ? format(new Date(task.dueDate), 'MMM d, yyyy') : '-'}
                           </TableCell>
-                          <TableCell>
-                            {task.assignedTo?.name || "-"}
-                          </TableCell>
+                          <TableCell>{task.assignedTo?.name || '-'}</TableCell>
                           <TableCell className="text-right">
                             <Button variant="ghost" size="icon" asChild>
                               <Link href={`/dashboard/tasks/${task.id}`}>
                                 <Eye className="h-4 w-4" />
+                                <span className="sr-only">View details</span>
                               </Link>
                             </Button>
                           </TableCell>

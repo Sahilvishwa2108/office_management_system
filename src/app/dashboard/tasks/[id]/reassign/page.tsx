@@ -4,16 +4,14 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+  CardFooter
 } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -21,11 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  ArrowLeftIcon,
-  UserIcon,
-  Loader2 as SpinnerIcon 
-} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { TaskPageLayout } from "@/components/layouts/task-page-layout";
+import { User as UserIcon, Loader2 } from "lucide-react";
 
 interface User {
   id: string;
@@ -108,54 +105,54 @@ export default function ReassignTaskPage() {
   
   if (loading) {
     return (
-      <div className="container max-w-2xl py-10 flex justify-center items-center">
-        <div className="flex flex-col items-center gap-2">
-          <SpinnerIcon className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-lg">Loading...</p>
+      <TaskPageLayout title="Reassign Task" backHref={`/dashboard/tasks/${taskId}`} maxWidth="max-w-xl">
+        <div className="flex justify-center items-center h-[40vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </div>
+      </TaskPageLayout>
     );
   }
   
   if (!task) {
     return (
-      <div className="container max-w-2xl py-10">
-        <div className="text-center">Task not found</div>
-      </div>
+      <TaskPageLayout title="Task Not Found" backHref="/dashboard/tasks" maxWidth="max-w-xl">
+        <Card>
+          <CardContent className="pt-6 pb-6 text-center">
+            <p>Task not found or you don't have permission to access it.</p>
+            <Button className="mt-4" onClick={() => router.push("/dashboard/tasks")}>
+              Back to Tasks
+            </Button>
+          </CardContent>
+        </Card>
+      </TaskPageLayout>
     );
   }
 
   return (
-    <div className="container max-w-2xl py-10">
-      <div className="mb-6">
-        <Button
-          variant="outline"
-          onClick={() => router.back()}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-          Back
-        </Button>
-      </div>
-      
+    <TaskPageLayout 
+      title="Reassign Task" 
+      description={`Reassign: ${task.title}`}
+      backHref={`/dashboard/tasks/${taskId}`}
+      maxWidth="max-w-xl"
+    >
       <Card>
         <CardHeader>
           <CardTitle>Reassign Task</CardTitle>
           <CardDescription>
-            Reassign "{task.title}" to another team member
+            Change who is responsible for this task
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <label className="text-sm font-medium">Current Assignee</label>
-            <div className="p-2 rounded-md bg-muted flex items-center gap-2">
+            <div className="p-3 rounded-md bg-muted flex items-center gap-2">
               <UserIcon className="h-5 w-5 text-muted-foreground" />
               <span>{task.assignedTo ? task.assignedTo.name : "Unassigned"}</span>
             </div>
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-medium">Reassign To</label>
+            <label className="text-sm font-medium">Reassign To*</label>
             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
               <SelectTrigger>
                 <SelectValue placeholder="Select team member" />
@@ -163,11 +160,16 @@ export default function ReassignTaskPage() {
               <SelectContent>
                 {users.map(user => (
                   <SelectItem key={user.id} value={user.id}>
-                    {user.name} ({user.role.toLowerCase().replace('_', ' ')})
+                    {user.name} ({user.role.replace(/_/g, " ")})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {!selectedUserId && (
+              <p className="text-xs text-muted-foreground">
+                Please select a team member to assign this task to
+              </p>
+            )}
           </div>
           
           <div className="space-y-2">
@@ -176,11 +178,11 @@ export default function ReassignTaskPage() {
               placeholder="Add context about why you're reassigning this task..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="min-h-32"
+              className="min-h-[100px] resize-none"
             />
           </div>
         </CardContent>
-        <CardFooter className="justify-between">
+        <CardFooter className="flex justify-between">
           <Button 
             variant="outline" 
             onClick={() => router.back()}
@@ -193,7 +195,7 @@ export default function ReassignTaskPage() {
           >
             {submitting ? (
               <>
-                <SpinnerIcon className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Reassigning...
               </>
             ) : (
@@ -202,6 +204,6 @@ export default function ReassignTaskPage() {
           </Button>
         </CardFooter>
       </Card>
-    </div>
+    </TaskPageLayout>
   );
 }

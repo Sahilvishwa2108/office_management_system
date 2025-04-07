@@ -2,23 +2,27 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import axios from "axios";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+  CardFooter
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -26,16 +30,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
-import { Loader2 as SpinnerIcon, ArrowLeft as ArrowLeftIcon } from "lucide-react";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { TaskPageLayout } from "@/components/layouts/task-page-layout";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { CalendarIcon, Loader2 } from "lucide-react";
 
 // Define schema for task editing (same as creation schema)
 const taskFormSchema = z.object({
@@ -73,28 +80,6 @@ export default function EditTaskPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
 
-  // Improve the fetchClients function
-  const fetchClients = async () => {
-    try {
-      const response = await axios.get("/api/clients");
-      console.log("Clients response:", response.data); // Debug the actual response
-
-      if (Array.isArray(response.data)) {
-        setClients(response.data);
-      } else if (response.data?.clients && Array.isArray(response.data.clients)) {
-        setClients(response.data.clients);
-      } else {
-        console.warn("Unexpected clients data format:", response.data);
-        setClients([]);
-        toast.warning("Could not load client data properly");
-      }
-    } catch (error) {
-      console.error("Error fetching clients:", error);
-      setClients([]);
-      toast.error("Failed to load clients");
-    }
-  };
-
   // Initialize form with empty values (will be populated once data is fetched)
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
@@ -108,6 +93,26 @@ export default function EditTaskPage() {
       clientId: null,
     },
   });
+
+  // Fetch clients with proper error handling
+  const fetchClients = async () => {
+    try {
+      const response = await axios.get("/api/clients");
+      
+      if (Array.isArray(response.data)) {
+        setClients(response.data);
+      } else if (response.data?.clients && Array.isArray(response.data.clients)) {
+        setClients(response.data.clients);
+      } else {
+        setClients([]);
+        toast.warning("Could not load client data properly");
+      }
+    } catch (error) {
+      console.error("Error fetching clients:", error);
+      setClients([]);
+      toast.error("Failed to load clients");
+    }
+  };
 
   // Load task data, users, and clients on component mount
   useEffect(() => {
@@ -154,25 +159,20 @@ export default function EditTaskPage() {
 
   // Form submission handler
   const onSubmit = async (data: TaskFormValues) => {
-    // Convert "null" string to actual null
-    const clientId = data.clientId === "null" ? null : data.clientId;
-
     try {
       setIsLoading(true);
 
       // Format data as needed
       const taskData = {
         ...data,
+        assignedToId: data.assignedToId === "null" ? null : data.assignedToId,
+        clientId: data.clientId === "null" ? null : data.clientId,
         dueDate: data.dueDate ? data.dueDate.toISOString() : null,
-        clientId, // Use the converted clientId
       };
 
       // Submit to API
       await axios.patch(`/api/tasks/${taskId}`, taskData);
-
       toast.success("Task updated successfully");
-
-      // Redirect back to task details
       router.push(`/dashboard/tasks/${taskId}`);
     } catch (error) {
       console.error("Error updating task:", error);
@@ -184,245 +184,232 @@ export default function EditTaskPage() {
 
   if (isFetching) {
     return (
-      <div className="container max-w-3xl py-10 flex justify-center items-center">
-        <div className="flex flex-col items-center gap-2">
-          <SpinnerIcon className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-lg">Loading task data...</p>
+      <TaskPageLayout title="Edit Task" backHref={`/dashboard/tasks/${taskId}`}>
+        <div className="flex justify-center items-center h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </div>
+      </TaskPageLayout>
     );
   }
 
   return (
-    <div className="container max-w-3xl py-10">
-      <div className="mb-6">
-        <Button
-          variant="outline"
-          onClick={() => router.back()}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-          Back
-        </Button>
-      </div>
-
+    <TaskPageLayout title="Edit Task" backHref={`/dashboard/tasks/${taskId}`} maxWidth="max-w-3xl">
       <Card>
         <CardHeader>
-          <CardTitle>Edit Task</CardTitle>
+          <CardTitle>Edit Task Details</CardTitle>
           <CardDescription>
-            Update task information and assignments
+            Make changes to the task information
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Title Field */}
               <FormField
                 control={form.control}
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Title</FormLabel>
+                    <FormLabel>Task Title*</FormLabel>
                     <FormControl>
-                      <Input placeholder="Task title" {...field} />
+                      <Input placeholder="Enter task title" {...field} />
                     </FormControl>
-                    <FormDescription>
-                      A clear, concise title for the task
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Description Field */}
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Detailed task description"
-                        className="min-h-32"
-                        {...field}
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Provide detailed instructions or requirements
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Priority</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Priority Selection */}
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Set the task's priority level
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="in-progress">In Progress</SelectItem>
+                          <SelectItem value="review">Review</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              {/* Status Selection */}
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="in-progress">In Progress</SelectItem>
-                        <SelectItem value="review">Review</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Set the task status
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="assignedToId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assign To</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value || "null"}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select assignee" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="null">Unassigned</SelectItem>
+                          {users.map(user => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.name} ({user.role.replace(/_/g, " ")})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Due Date Picker */}
+                <FormField
+                  control={form.control}
+                  name="clientId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Client (Optional)</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value || "null"}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select client" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="null">No Client</SelectItem>
+                          {clients.map(client => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.companyName || client.contactPerson}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
                 name="dueDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Due Date</FormLabel>
-                    <DatePicker
-                      date={field.value ? new Date(field.value) : undefined}
-                      setDate={field.onChange}
-                    />
-                    <FormDescription>
-                      The deadline for task completion
-                    </FormDescription>
+                    <FormLabel>Due Date (Optional)</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>No due date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={field.value || undefined}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                        <div className="p-3 border-t border-border">
+                          <Button
+                            variant="ghost"
+                            className="w-full"
+                            onClick={() => field.onChange(null)}
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Assigned User Selection */}
               <FormField
                 control={form.control}
-                name="assignedToId"
+                name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Assign To</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value || undefined}
-                      value={field.value || undefined}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select team member" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {users.map(user => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.name} ({user.role.toLowerCase().replace('_', ' ')})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Team member responsible for this task
-                    </FormDescription>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter task description"
+                        className="min-h-[120px] resize-none"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Client Selection */}
-              <FormField
-                control={form.control}
-                name="clientId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Client (Optional)</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value || undefined}
-                      value={field.value || undefined}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select client (optional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="null">No Client</SelectItem>
-                        {Array.isArray(clients) && clients.length > 0 ? (
-                          clients.map(client => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.contactPerson} {client.companyName ? `(${client.companyName})` : ''}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="no-clients-available" disabled>No clients available</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Associate this task with a specific client
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <CardFooter className="flex justify-between px-0">
-                <Button type="button" variant="outline" onClick={() => router.back()}>
+              <CardFooter className="flex justify-end gap-3 px-0 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push(`/dashboard/tasks/${taskId}`)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isLoading}>
                   {isLoading ? (
                     <>
-                      <SpinnerIcon className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Updating...
                     </>
                   ) : (
-                    "Save Changes"
+                    "Update Task"
                   )}
                 </Button>
               </CardFooter>
@@ -430,6 +417,6 @@ export default function EditTaskPage() {
           </Form>
         </CardContent>
       </Card>
-    </div>
+    </TaskPageLayout>
   );
 }
