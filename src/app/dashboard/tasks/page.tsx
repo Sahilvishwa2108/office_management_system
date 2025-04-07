@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
@@ -29,6 +29,7 @@ import { format } from "date-fns";
 import { ClipboardX, Eye, Loader2, Plus } from "lucide-react";
 import { TaskPageLayout } from "@/components/layouts/task-page-layout";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface Task {
   id: string;
@@ -55,29 +56,30 @@ export default function TasksPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        setLoading(true);
-        const url = new URL("/api/tasks", window.location.origin);
+  const fetchTasks = useCallback(async () => {
+    try {
+      setLoading(true);
+      const url = new URL("/api/tasks", window.location.origin);
 
-        if (statusFilter && statusFilter !== "all") {
-          url.searchParams.append("status", statusFilter);
-        }
-
-        const response = await axios.get(url.toString());
-        setTasks(response.data);
-      } catch (error) {
-        console.error("Error fetching tasks:", error);
-      } finally {
-        setLoading(false);
+      if (statusFilter && statusFilter !== "all") {
+        url.searchParams.append("status", statusFilter);
       }
-    };
 
-    fetchTasks();
+      const response = await axios.get(url.toString());
+      setTasks(response.data);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      toast.error("Failed to load tasks");
+    } finally {
+      setLoading(false);
+    }
   }, [statusFilter]);
 
-  const getStatusColor = (status: string) => {
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case "pending": return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
       case "in-progress": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
@@ -86,24 +88,29 @@ export default function TasksPage() {
       case "cancelled": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
       default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
     }
-  };
+  }, []);
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = useCallback((priority: string) => {
     switch (priority) {
       case "low": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
       case "medium": return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
       case "high": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
       default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
     }
-  };
+  }, []);
 
-  const canCreateTask = (session: any) => {
+  const canCreateTask = useCallback((session: any) => {
     return session?.user?.role === "ADMIN" || session?.user?.role === "PARTNER";
-  };
+  }, []);
 
-  const filteredTasks = tasks.filter((task) =>
-    task.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTasks = useMemo(() =>
+    tasks.filter((task) =>
+      task.title.toLowerCase().includes(searchQuery.toLowerCase())
+    ), [tasks, searchQuery]);
+
+  const displayTasks = useMemo(() =>
+    filteredTasks.slice(0, 50),
+    [filteredTasks]);
 
   return (
     <TaskPageLayout
@@ -196,7 +203,7 @@ export default function TasksPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredTasks.map((task) => (
+                      {displayTasks.map((task) => (
                         <TableRow key={task.id} className="hover:bg-muted/50">
                           <TableCell className="font-medium">{task.title}</TableCell>
                           <TableCell>
@@ -225,6 +232,12 @@ export default function TasksPage() {
                       ))}
                     </TableBody>
                   </Table>
+
+                  {filteredTasks.length > 50 && (
+                    <div className="py-3 px-4 text-sm text-center text-muted-foreground border-t">
+                      Showing 50 of {filteredTasks.length} tasks. Refine your search for more specific results.
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

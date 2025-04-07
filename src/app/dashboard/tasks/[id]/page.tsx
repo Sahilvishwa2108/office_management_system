@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
@@ -105,61 +105,68 @@ export default function TaskDetailPage() {
   const [updating, setUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchTask = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(`/api/tasks/${taskId}`);
-        setTask(response.data);
-        setNewStatus(response.data.status);
-      } catch (error) {
-        console.error("Error fetching task:", error);
-        toast.error("Failed to load task details");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchComments = async () => {
-      try {
-        console.log("Fetching comments for task:", taskId);
-        setCommentsLoading(true);
-        const response = await axios.get(`/api/tasks/${taskId}/comments`);
-        console.log("Comments response:", response.data);
-        setComments(response.data);
-      } catch (error) {
-        console.error("Error fetching comments:", error);
-        if (axios.isAxiosError(error)) {
-          console.error(`Status: ${error.response?.status}, Message: ${error.message}`);
-        }
-        toast.error("Failed to load comments");
-        // Set comments to an empty array to prevent mapping errors
-        setComments([]);
-      } finally {
-        setCommentsLoading(false);
-      }
-    };
-
-    const fetchCurrentUser = async () => {
-      try {
-        console.log("Fetching current user");
-        const response = await axios.get('/api/users/me');
-        console.log("Current user response:", response.data);
-        setCurrentUser(response.data);
-      } catch (error) {
-        console.error("Error fetching current user:", error);
-        if (axios.isAxiosError(error)) {
-          console.error(`Status: ${error.response?.status}, Message: ${error.message}`);
-        }
-      }
-    };
-
-    if (taskId) {
-      fetchTask();
-      fetchComments();
-      fetchCurrentUser();
+  // Memoized data fetching functions
+  const fetchTask = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`/api/tasks/${taskId}`);
+      setTask(response.data);
+      setNewStatus(response.data.status);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching task:", error);
+      toast.error("Failed to load task details");
+      return null;
+    } finally {
+      setLoading(false);
     }
   }, [taskId]);
+
+  const fetchComments = useCallback(async () => {
+    try {
+      setCommentsLoading(true);
+      const response = await axios.get(`/api/tasks/${taskId}/comments`);
+      setComments(response.data);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      // Set comments to empty array to prevent mapping errors
+      setComments([]);
+      toast.error("Failed to load comments");
+    } finally {
+      setCommentsLoading(false);
+    }
+  }, [taskId]);
+
+  const fetchCurrentUser = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/users/me');
+      setCurrentUser(response.data);
+    } catch (error) {
+      console.error("Error fetching current user:", error);
+    }
+  }, []);
+
+  // Load all data in parallel for better performance
+  useEffect(() => {
+    if (taskId) {
+      Promise.all([
+        fetchTask(),
+        fetchComments(),
+        fetchCurrentUser()
+      ]);
+    }
+  }, [fetchTask, fetchComments, fetchCurrentUser, taskId]);
+
+  // Memoize helper functions
+  const canEditTask = useMemo(() => {
+    if (!task || !currentUser) return false;
+    return currentUser.role === "ADMIN" || task.assignedBy.id === currentUser.id;
+  }, [task, currentUser]);
+
+  const canReassignTask = useMemo(() => {
+    if (!currentUser) return false;
+    return currentUser.role === "ADMIN" || currentUser.role === "PARTNER";
+  }, [currentUser]);
 
   const updateTaskStatus = async () => {
     if (!newStatus || newStatus === task?.status) return;
@@ -311,7 +318,7 @@ export default function TaskDetailPage() {
           <CardContent>
             <div className="flex flex-wrap gap-3">
               {/* Edit button - only for admin or creator */}
-              {canEditTask(task, currentUser) && (
+              {canEditTask && (
                 <Button
                   variant="outline"
                   onClick={() => router.push(`/dashboard/tasks/${taskId}/edit`)}
@@ -322,7 +329,7 @@ export default function TaskDetailPage() {
               )}
 
               {/* Reassign button - only for admin or partner */}
-              {canReassignTask(currentUser) && (
+              {canReassignTask && (
                 <Button
                   variant="outline"
                   onClick={() => router.push(`/dashboard/tasks/${taskId}/reassign`)}
@@ -333,7 +340,7 @@ export default function TaskDetailPage() {
               )}
 
               {/* Delete button - only for admin or creator */}
-              {canEditTask(task, currentUser) && (
+              {canEditTask && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
