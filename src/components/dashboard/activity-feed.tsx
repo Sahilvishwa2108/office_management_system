@@ -201,7 +201,7 @@ export function ActivityFeed({
                     {showRoleInfo && activity.user?.role && (
                       <>
                         <span className="text-xs bg-muted px-1.5 py-0.5 rounded-sm">
-                          {activity.user.role.replace("_", " ")}
+                          {activity.user.role.replace(/_/g, " ")}
                         </span>
                         <span>•</span>
                       </>
