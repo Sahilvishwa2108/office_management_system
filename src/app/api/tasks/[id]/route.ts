@@ -3,6 +3,17 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { sendTaskStatusUpdateNotification, sendTaskAssignedNotification } from "@/lib/notifications";
+import { v2 as cloudinary } from "cloudinary";
+
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+
 
 export async function GET(
   request: NextRequest,
@@ -262,6 +273,34 @@ export async function DELETE(
       { status: 403 }
     );
   }
+
+
+
+  // Fetch all comments for the task
+  const comments = await prisma.taskComment.findMany({
+    where: { taskId },
+    select: { attachments: true }, // Assuming `attachments` is stored in comments
+  });
+
+  // Extract public_ids of attachments from comments
+  const publicIds = comments
+    .flatMap((comment) => comment.attachments || [])
+    .map((attachment) => (attachment as { public_id: string })?.public_id)
+    .filter((publicId) => publicId !== undefined);
+
+  // Delete attachments from Cloudinary
+  if (publicIds.length > 0) {
+    await cloudinary.api.delete_resources(publicIds);
+  }
+
+  // Delete comments from Prisma
+  await prisma.taskComment.deleteMany({
+    where: { taskId },
+  });
+
+
+
+
 
     // Delete the task
     await prisma.task.delete({

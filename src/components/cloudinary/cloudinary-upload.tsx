@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import CryptoJS from "crypto-js";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Upload, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CloudinaryUploadProps {
+  taskId?: string;
   onUploadComplete: (attachment: { 
     url: string; 
     secure_url: string; 
@@ -14,54 +16,80 @@ interface CloudinaryUploadProps {
     format: string;
     resource_type: string;
     original_filename: string; 
+    size: number;
   }) => void;
   disabled?: boolean;
 }
 
-export function CloudinaryUpload({ onUploadComplete, disabled = false }: CloudinaryUploadProps) {
+export function CloudinaryUpload({ taskId, onUploadComplete, disabled = false }: CloudinaryUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
+  
+    if (!taskId) {
+      toast.error("Task ID is missing. Cannot upload file.");
+      return;
+    }
+  
     setUploading(true);
     setUploadProgress(0);
+  
     const formData = new FormData();
+    const timestamp = Math.floor(Date.now() / 1000); // Current timestamp
+    const folder = `office_management/task`;
+    const apiKey = process.env.CLOUDINARY_API_KEY || "856333556323653";
+    const apiSecret = process.env.CLOUDINARY_API_SECRET || "PntG4lFTeOS3QD8w_oUdggqOOrI";
+  
+    // Generate the signature
+    const signatureString = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+    const signature = CryptoJS.SHA1(signatureString).toString(); // Use crypto-js for hashing
+  
     formData.append("file", file);
-    formData.append("upload_preset", "ml_default");
-
+    formData.append("api_key", apiKey);
+    formData.append("timestamp", timestamp.toString());
+    formData.append("folder", folder);
+    formData.append("signature", signature);
+    formData.append("taskId", taskId);
+  
+    // Determine resource type based on file type
+    const isImage = file.type.startsWith("image/");
+    const resourceType = isImage ? "image" : "raw";
+  
     try {
       const xhr = new XMLHttpRequest();
-      
+  
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
           const progress = Math.round((event.loaded / event.total) * 100);
           setUploadProgress(progress);
         }
       };
-
+  
       const uploadPromise = new Promise<any>((resolve, reject) => {
-        xhr.open("POST", 
-          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'darlvqu7v'}/auto/upload`
+        xhr.open(
+          "POST",
+          `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME || "dar1v71xk"}/${resourceType}/upload`
         );
-
+  
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve(JSON.parse(xhr.responseText));
           } else {
+            console.error("Cloudinary response:", xhr.responseText);
             reject(new Error(`Upload failed with status ${xhr.status}`));
           }
         };
-        
+  
         xhr.onerror = () => reject(new Error("Upload failed"));
-        
+  
         xhr.send(formData);
       });
-
+  
       const data = await uploadPromise;
-      
+  
       onUploadComplete({
         url: data.url,
         secure_url: data.secure_url,
@@ -69,8 +97,9 @@ export function CloudinaryUpload({ onUploadComplete, disabled = false }: Cloudin
         format: data.format,
         resource_type: data.resource_type,
         original_filename: data.original_filename || file.name,
+        size: file.size,
       });
-
+  
       toast.success("File uploaded successfully");
     } catch (error) {
       console.error("Error uploading file:", error);

@@ -58,7 +58,11 @@ function AlertDialogContent({
           className
         )}
         {...props}
-      />
+        >
+          {/* Ensure AlertDialogTitle is included */}
+        <AlertDialogTitle className="sr-only">Dialog Title</AlertDialogTitle>
+        {props.children}
+        </AlertDialogPrimitive.Content>
     </AlertDialogPortal>
   )
 }
@@ -138,7 +142,9 @@ function AlertDialogCancel({
     <AlertDialogPrimitive.Cancel
       className={cn(buttonVariants({ variant: "outline" }), className)}
       {...props}
-    />
+      >
+        Cancel
+      </AlertDialogPrimitive.Cancel>
   )
 }
 

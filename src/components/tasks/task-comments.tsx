@@ -53,6 +53,7 @@ interface Attachment {
   format: string;
   resource_type: string;
   original_filename: string;
+  size: number; // Size of the attachment in bytes
 }
 
 interface Comment {
@@ -113,7 +114,7 @@ export function TaskComments({
   };
 
   const handleAttachmentComplete = (attachment: Attachment) => {
-    setAttachments([...attachments, attachment]);
+    setAttachments([...attachments, attachment]); 
   };
   
   const handleRemoveAttachment = (index: number) => {
@@ -150,6 +151,14 @@ export function TaskComments({
       </div>
     );
   }
+
+  const getAttachmentUrl = (attachment: Attachment) => {
+    if (attachment.resource_type === "raw") {
+      // Add `fl_attachment` transformation for raw files
+      return attachment.secure_url.replace("/upload/", "/upload/fl_attachment/");
+    }
+    return attachment.secure_url;
+  };
 
   return (
     <Card>
@@ -197,38 +206,46 @@ export function TaskComments({
                             className="border rounded-md p-2 flex items-center gap-2 bg-muted/50 hover:bg-muted transition-colors"
                           >
                             {attachment.resource_type === "image" ? (
-                              <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-1 m-2.5">
+                              <div className="flex items-center gap-2">
+                                <ImageIcon className="h-4 w-4 text-blue-500" />
+                                <span className="text-sm truncate max-w-[150px]">
+                                  {getFileNameFromAttachment(attachment)}
+                                </span>
+                              </div>
+
+                              <a 
+                                href={getAttachmentUrl(attachment)}
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="mt-1"
+                              >
+                                <div className="w-48 h-48 flex items-center justify-center border rounded-md overflow-hidden">
+                                  <img 
+                                    src={getAttachmentUrl(attachment)}
+                                    alt={getFileNameFromAttachment(attachment)}
+                                    className="object-cover w-full h-full"
+                                  />
+                                </div>
+                              </a>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-1 w-48 m-2.5">
+                              {/* Document Name and Download Icon in the Same Row */}
+                              <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <ImageIcon className="h-4 w-4 text-blue-500" />
+                                  <FileIcon className="h-5 w-5 text-blue-500" />
                                   <span className="text-sm truncate max-w-[150px]">
                                     {getFileNameFromAttachment(attachment)}
                                   </span>
                                 </div>
-                                
-                                <a 
-                                  href={attachment.secure_url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="mt-1"
-                                >
-                                  <img 
-                                    src={attachment.secure_url}
-                                    alt={getFileNameFromAttachment(attachment)}
-                                    className="max-h-36 max-w-full rounded border object-cover"
-                                  />
-                                </a>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <FileIcon className="h-4 w-4 text-blue-500" />
-                                <span className="text-sm truncate max-w-[150px]">
-                                  {getFileNameFromAttachment(attachment)}
-                                </span>
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <a href={attachment.secure_url} target="_blank" rel="noopener noreferrer">
-                                        <DownloadIcon className="h-4 w-4" />
+                                      <a href={getAttachmentUrl(attachment)} target="_blank" rel="noopener noreferrer">
+                                      <div className="border border-muted-foreground rounded p-0.5 mr-1 hover:border-primary transition-colors flex items-center justify-center w-6 h-6">
+                                      <DownloadIcon className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                                    </div>
                                       </a>
                                     </TooltipTrigger>
                                     <TooltipContent>
@@ -237,7 +254,13 @@ export function TaskComments({
                                   </Tooltip>
                                 </TooltipProvider>
                               </div>
-                            )}
+
+                              {/* Document Type and Size Below */}
+                              <div className="text-xs text-muted-foreground mt-1 pl-1">
+                              Document
+                            </div>
+                            </div>
+                          )}
                           </div>
                         ))}
                       </div>
@@ -295,7 +318,8 @@ export function TaskComments({
             )}
             
             <div className="flex justify-between items-center">
-              <CloudinaryUpload 
+              <CloudinaryUpload
+                taskId={taskId}
                 onUploadComplete={handleAttachmentComplete} 
                 disabled={isSubmitting}
               />
