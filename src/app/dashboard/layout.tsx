@@ -67,7 +67,7 @@ export default function DashboardLayout({
     {
       title: "Dashboard",
       href: getRoleDashboardPath(userRole),
-      icon: <LayoutDashboard className="h-6 w-6" />,
+      icon: <LayoutDashboard className="h-5 w-5" />,
       role: [
         "ADMIN",
         "PARTNER",
@@ -231,15 +231,24 @@ export default function DashboardLayout({
       <Link
         href={item.href}
         className={cn(
-          "flex items-center gap-3 rounded-md px-3 py-2 text-base transition-colors",
+          "flex items-center gap-3 rounded-lg px-3 py-2 text-base transition-all duration-200",
           sidebarCollapsed && "justify-center",
           isActiveNavItem(item.href)
-            ? "bg-primary/10 text-primary"
-            : "text-muted-foreground hover:bg-muted"
+            ? "bg-primary/10 text-primary shadow-sm"
+            : "text-muted-foreground hover:bg-muted hover:translate-x-1"
         )}
       >
-        {item.icon}
-        {!sidebarCollapsed && <span>{item.title}</span>}
+        <div
+          className={cn(
+            "flex items-center justify-center rounded-md w-9 h-9 transition-colors",
+            isActiveNavItem(item.href)
+              ? "bg-primary/20 text-primary"
+              : "bg-muted/50 text-muted-foreground group-hover:bg-muted/80"
+          )}
+        >
+          {item.icon}
+        </div>
+        {!sidebarCollapsed && <span className="font-medium">{item.title}</span>}
       </Link>
     );
 
