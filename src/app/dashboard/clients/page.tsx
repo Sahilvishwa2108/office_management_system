@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useTransition, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
@@ -46,6 +46,8 @@ import {
   Trash2,
   Loader2,
   Building,
+  LayoutGrid,
+  LayoutList,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -74,6 +76,116 @@ interface Client {
   completedTasks: number;
 }
 
+// Client List Item Component
+const ClientListItem = ({ 
+  client, 
+  confirmDelete,
+  canDelete
+}: { 
+  client: Client, 
+  confirmDelete: (id: string) => void,
+  canDelete: boolean
+}) => {
+  const router = useRouter();
+  
+  // Function to handle click on the entire row
+  const handleRowClick = () => {
+    router.push(`/dashboard/clients/${client.id}`);
+  };
+  
+  // Prevent propagation for action buttons
+  const handleActionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+  
+  const isExpired = client.isGuest && client.accessExpiry ? 
+    isAfter(new Date(), new Date(client.accessExpiry)) : false;
+  
+  return (
+    <div 
+      onClick={handleRowClick}
+      className="p-4 border rounded-lg mb-4 hover:bg-muted/50 cursor-pointer transition-colors"
+    >
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{client.contactPerson}</span>
+            {client.isGuest && (
+              <Badge variant={isExpired ? "destructive" : "secondary"} className="text-xs">
+                {isExpired ? "Expired Guest" : "Guest"}
+              </Badge>
+            )}
+            {!client.isGuest && (
+              <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 text-xs">
+                Permanent
+              </Badge>
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground mt-1">
+            {client.companyName && <span className="mr-3">{client.companyName}</span>}
+            {client.email && <span className="mr-3">{client.email}</span>}
+            {client.phone && <span>{client.phone}</span>}
+            {!client.companyName && !client.email && !client.phone && (
+              <span className="italic">No contact information</span>
+            )}
+          </div>
+          <div className="text-xs mt-2 flex items-center gap-2">
+            <span className="text-muted-foreground">Tasks:</span>
+            <Badge variant="outline" className="text-xs">
+              {client.activeTasks} active
+            </Badge>
+            <Badge variant="outline" className="text-xs text-muted-foreground">
+              {client.completedTasks} completed
+            </Badge>
+          </div>
+        </div>
+        
+        <div 
+          className="flex flex-wrap gap-2"
+          onClick={handleActionClick}
+        >
+          {/* Action buttons */}
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="h-8"
+          >
+            <Link href={`/dashboard/clients/${client.id}`}>
+              <Eye className="h-3.5 w-3.5 mr-1" />
+              View
+            </Link>
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="h-8"
+          >
+            <Link href={`/dashboard/clients/${client.id}/edit`}>
+              <Edit className="h-3.5 w-3.5 mr-1" />
+              Edit
+            </Link>
+          </Button>
+          
+          {canDelete && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-8"
+              onClick={() => confirmDelete(client.id)}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Delete
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ClientsPage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -83,6 +195,15 @@ export default function ClientsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
+  // Changed default view to "card" from "table"
+  const [viewMode, setViewMode] = useState<"table" | "card">(() => {
+    // Try to get saved preference from localStorage, default to "card" if not found
+    if (typeof window !== 'undefined') {
+      const savedView = localStorage.getItem('clientViewMode');
+      return savedView === 'table' ? 'table' : 'card';
+    }
+    return 'card';
+  });
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -92,6 +213,23 @@ export default function ClientsPage() {
   const [dataError, setDataError] = useState<string | null>(null);
 
   const [isPending, startTransition] = useTransition();
+
+  // Save view mode preference when it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('clientViewMode', viewMode);
+    }
+  }, [viewMode]);
+
+  // Check if user can delete clients
+  const canDeleteClients = useMemo(() => {
+    return session?.user?.role === "ADMIN" || session?.user?.role === "PARTNER";
+  }, [session]);
+
+  // Handle view mode toggle
+  const handleViewModeChange = useCallback((value: string) => {
+    setViewMode(value as "table" | "card");
+  }, []);
 
   // Memoize expensive computations
   const filteredClients = useMemo(() => {
@@ -303,12 +441,43 @@ export default function ClientsPage() {
       {/* Client tabs and search */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Clients</CardTitle>
+          {/* Moved view toggle to the header for better visibility */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <CardTitle>Clients</CardTitle>
+            
+            {/* View mode toggle - now a prominent part of the header */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground mr-1 hidden sm:inline">View:</span>
+              <div className="border rounded-md flex">
+                <button 
+                  onClick={() => handleViewModeChange("table")}
+                  className={`flex items-center gap-1 px-3 py-1.5 text-sm ${viewMode === "table" 
+                    ? "bg-primary text-primary-foreground" 
+                    : "hover:bg-muted"}`}
+                  aria-pressed={viewMode === "table"}
+                >
+                  <LayoutList className="h-4 w-4" />
+                  <span className="hidden sm:inline">Table</span>
+                </button>
+                <button 
+                  onClick={() => handleViewModeChange("card")}
+                  className={`flex items-center gap-1 px-3 py-1.5 text-sm ${viewMode === "card" 
+                    ? "bg-primary text-primary-foreground" 
+                    : "hover:bg-muted"}`}
+                  aria-pressed={viewMode === "card"}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                  <span className="hidden sm:inline">Cards</span>
+                </button>
+              </div>
+            </div>
+          </div>
           <CardDescription>View and manage client records</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              {/* Client type tabs */}
               <Tabs
                 defaultValue="all"
                 value={activeTab}
@@ -322,6 +491,7 @@ export default function ClientsPage() {
                 </TabsList>
               </Tabs>
 
+              {/* Search box */}
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -362,7 +532,8 @@ export default function ClientsPage() {
                   </Button>
                 </div>
               </div>
-            ) : (
+            ) : viewMode === "table" ? (
+              // TABLE VIEW
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -379,7 +550,6 @@ export default function ClientsPage() {
                     {filteredClients.map((client) => (
                       <TableRow key={client.id}>
                         <TableCell className="font-medium">
-                          {/* Add robust name rendering with fallback */}
                           {getDisplayName(client)}
                         </TableCell>
                         <TableCell>
@@ -457,8 +627,7 @@ export default function ClientsPage() {
                                   Edit Client
                                 </Link>
                               </DropdownMenuItem>
-                              {(session?.user?.role === "ADMIN" ||
-                                session?.user?.role === "PARTNER") && (
+                              {canDeleteClients && (
                                 <DropdownMenuItem
                                   className="text-red-600 focus:text-red-600"
                                   onClick={() => confirmDelete(client.id)}
@@ -474,6 +643,18 @@ export default function ClientsPage() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+            ) : (
+              // CARD VIEW
+              <div className="space-y-4">
+                {filteredClients.map((client) => (
+                  <ClientListItem 
+                    key={client.id} 
+                    client={client} 
+                    confirmDelete={confirmDelete} 
+                    canDelete={canDeleteClients}
+                  />
+                ))}
               </div>
             )}
 

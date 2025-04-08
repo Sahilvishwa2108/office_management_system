@@ -16,6 +16,8 @@ import {
   Plus,
   CheckCircle,
   ClipboardList,
+  CheckSquare,
+  AlertTriangle,
 } from "lucide-react";
 import { OverviewStats } from "@/components/dashboard/overview-stats";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
@@ -23,6 +25,7 @@ import { DashboardCard } from "@/components/ui/dashboard-card";
 import { TaskMetrics } from "@/components/dashboard/task-metrics";
 import { TaskSummary } from "@/components/dashboard/task-summary"; 
 import { TaskProgress } from "@/components/dashboard/task-progress";
+import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/loading/dashboard-skeleton";
@@ -320,60 +323,53 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
             
-            {dashboardData?.tasks && dashboardData.tasks.length > 0 ? (
-              <Card className="col-span-3 lg:col-span-2">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Priority Tasks</CardTitle>
-                    <CardDescription>Tasks that need immediate attention</CardDescription>
-                  </div>
-                  <Button size="sm" onClick={() => router.push('/dashboard/tasks/create')}>
-                    <Plus className="mr-2 h-3 w-3" />
-                    New Task
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {dashboardData.tasks
-                      .filter(task => task.priority === 'high' && task.status !== 'completed')
-                      .slice(0, 3)
-                      .map(task => (
-                        <div 
-                          key={task.id} 
-                          className="border rounded-md p-3 hover:bg-muted/50 transition-colors cursor-pointer"
-                          onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-medium">{task.title}</h3>
-                            <Badge className="bg-red-500">{task.priority}</Badge>
-                          </div>
-                          <div className="flex items-center justify-between mt-2 text-sm">
-                            <span className="text-muted-foreground">
-                              {task.assignedTo ? `Assigned to: ${task.assignedTo.name}` : "Unassigned"}
-                            </span>
-                            <Badge variant="outline" className="bg-muted">
-                              {task.status}
-                            </Badge>
-                          </div>
+            <Card className="col-span-3 lg:col-span-2">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Priority Tasks</CardTitle>
+                  <CardDescription>Tasks that need immediate attention</CardDescription>
+                </div>
+                <Button size="sm" onClick={() => router.push('/dashboard/tasks/create')}>
+                  <Plus className="mr-2 h-3 w-3" />
+                  New Task
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {dashboardData?.tasks && dashboardData.tasks
+                    .filter(task => task.priority === 'high' && task.status !== 'completed')
+                    .slice(0, 3)
+                    .map(task => (
+                      <div 
+                        key={task.id} 
+                        className="border rounded-md p-3 hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium">{task.title}</h3>
+                          <Badge className="bg-red-500">{task.priority}</Badge>
                         </div>
-                      ))}
-                    
-                    {dashboardData.tasks.filter(task => task.priority === 'high' && task.status !== 'completed').length === 0 && (
-                      <div className="text-center py-6">
-                        <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2 opacity-50" />
-                        <p className="text-muted-foreground">No high priority tasks</p>
+                        <div className="flex items-center justify-between mt-2 text-sm">
+                          <span className="text-muted-foreground">
+                            {task.assignedTo ? `Assigned to: ${task.assignedTo.name}` : "Unassigned"}
+                          </span>
+                          <Badge variant="outline" className="bg-muted">
+                            {task.status}
+                          </Badge>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="col-span-3 lg:col-span-2">
-                <CardContent className="flex items-center justify-center h-64">
-                  {loading ? (
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  ) : (
-                    <div className="text-center">
+                    ))}
+                  
+                  {dashboardData?.tasks && dashboardData.tasks.length > 0 && 
+                   dashboardData.tasks.filter(task => task.priority === 'high' && task.status !== 'completed').length === 0 && (
+                    <div className="text-center py-6">
+                      <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2 opacity-50" />
+                      <p className="text-muted-foreground">No high priority tasks</p>
+                    </div>
+                  )}
+                  
+                  {(!dashboardData?.tasks || dashboardData.tasks.length === 0) && (
+                    <div className="text-center py-6">
                       <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-2" />
                       <p className="text-muted-foreground mb-4">No tasks created yet</p>
                       <Button onClick={() => router.push('/dashboard/tasks/create')}>
@@ -382,9 +378,9 @@ export default function AdminDashboard() {
                       </Button>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
@@ -432,134 +428,143 @@ export default function AdminDashboard() {
           </>
           )}
         </TabsContent>
-        <TabsContent value="analytics" className="space-y-4">
-        {loading ? (
+        <TabsContent value="analytics" className="space-y-6">
+          {loading ? (
             <>
               <DashboardStatsSkeleton />
               <DashboardContentSkeleton />
             </>
           ) : (
             <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="col-span-1">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                <UsersIcon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalUsers}</div>
-                <p className="text-xs text-muted-foreground">
-                  +{stats.newUsersThisMonth} new this month
-                </p>
-              </CardContent>
-            </Card>
-            {/* Other statistics cards... */}
-          </div>
-          
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <DashboardCard title="User Analytics" loading={loading} className="col-span-3 lg:col-span-2">
-              {loading ? (
-                <div className="h-[300px] flex items-center justify-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                </div>
-              ) : error ? (
-                <div className="h-[300px] flex items-center justify-center">
-                  <p>Failed to load analytics data.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="col-span-1 border rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Active Users</h3>
+              {/* Metrics section */}
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                <Card className="col-span-1">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                    <UsersIcon className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                    <p className="text-xs text-muted-foreground">
+                      +{stats.newUsersThisMonth} new this month
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="col-span-1">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+                    <UserCheck className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
                     <div className="text-2xl font-bold">{stats.activeUsers}</div>
-                    <p className="text-xs text-muted-foreground mt-1">{activeUserPercentage}% of total users</p>
-                  </div>
-                  <div className="col-span-1 border rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Average Tasks</h3>
-                    <div className="text-2xl font-bold">{Math.round(stats.totalTasks / (stats.activeUsers || 1) * 10) / 10}</div>
-                    <p className="text-xs text-muted-foreground mt-1">Tasks per active user</p>
-                  </div>
-                  <div className="col-span-1 border rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Active Rate</h3>
-                    <div className="text-2xl font-bold">{activeUserPercentage}%</div>
-                    <p className="text-xs text-muted-foreground mt-1">{stats.activeUsers} of {stats.totalUsers} users</p>
-                  </div>
-                </div>
-              )}
-            </DashboardCard>
-            <DashboardCard title="Task Performance" loading={loading} className="col-span-9 lg:col-span-3">
-              {!loading && !error && (
-                <div className="space-y-6">
-                  <TaskMetrics metrics={[
-                    {
-                      label: "Completion Rate",
-                      value: Math.round((stats.completedTasks / (stats.totalTasks || 1)) * 100),
-                      change: 5,  // This would ideally come from the API comparing to previous period
-                      changeType: "increase"
-                    },
-                    {
-                      label: "On-time Delivery",
-                      value: Math.round(((stats.completedTasks - (stats.overdueTasksCount || 0)) / (stats.completedTasks || 1)) * 100),
-                      change: -2, 
-                      changeType: "decrease"
-                    },
-                    {
-                      label: "Tasks per User",
-                      value: Math.round(stats.totalTasks / (stats.activeUsers || 1) * 10) / 10,
-                      change: 0.2,
-                      changeType: "increase"
-                    },
-                    {
-                      label: "Overdue Tasks",
-                      value: stats.overdueTasksCount || 0,
-                      change: stats.overdueTasksCount > 0 ? 10 : -5,
-                      changeType: stats.overdueTasksCount > 0 ? "increase" : "decrease"
-                    }
-                  ]} />
-                </div>
-              )}
-            </DashboardCard>
-          </div>
-          
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Task Completion Trend</CardTitle>
-                <CardDescription>Monthly task completion rates</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px] flex items-center justify-center">
-                {loading ? (
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                ) : error ? (
-                  <p>Failed to load chart data.</p>
-                ) : (
-                  <div className="text-center">
-                    <BarChart className="h-16 w-16 mx-auto text-muted-foreground opacity-50" />
-                    <p className="mt-2">Chart visualization coming soon</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Task Distribution</CardTitle>
-                <CardDescription>Tasks by status and priority</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px] flex items-center justify-center">
-                {loading ? (
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                ) : error ? (
-                  <p>Failed to load chart data.</p>
-                ) : (
-                  <div className="text-center">
-                    <BarChart className="h-16 w-16 mx-auto text-muted-foreground opacity-50" />
-                    <p className="mt-2">Chart visualization coming soon</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-          </>
+                    <p className="text-xs text-muted-foreground">
+                      {activeUserPercentage}% of total users
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="col-span-1">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Tasks</CardTitle>
+                    <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.totalTasks}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {stats.completedTasks} completed ({Math.round((stats.completedTasks / (stats.totalTasks || 1)) * 100)}%)
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="col-span-1">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Overdue Tasks</CardTitle>
+                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.overdueTasksCount}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Need immediate attention
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* User statistics cards */}
+              <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+                <DashboardCard title="User Analytics" loading={loading} className="col-span-1 lg:col-span-1">
+                  {!loading && !error && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium">Activity Overview</h3>
+                        <Badge variant="outline">{activeUserPercentage}% active</Badge>
+                      </div>
+                      
+                      <Progress value={activeUserPercentage} className="h-2" />
+                      
+                      <div className="grid grid-cols-3 gap-4 pt-2 text-center">
+                        <div className="space-y-1">
+                          <p className="text-2xl font-bold">{stats.activeUsers}</p>
+                          <p className="text-xs text-muted-foreground">Active</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-2xl font-bold">{stats.totalUsers - stats.activeUsers}</p>
+                          <p className="text-xs text-muted-foreground">Inactive</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-2xl font-bold">{Math.round(stats.totalTasks / (stats.activeUsers || 1) * 10) / 10}</p>
+                          <p className="text-xs text-muted-foreground">Tasks/User</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </DashboardCard>
+                    
+                <DashboardCard title="Task Performance" loading={loading} className="col-span-1 lg:col-span-2">
+                  {!loading && !error && (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                        <div className="p-2 bg-muted/20 rounded-md">
+                          <p className="text-2xl font-bold">{stats.completedTasks}</p>
+                          <p className="text-xs text-muted-foreground">Completed</p>
+                        </div>
+                        <div className="p-2 bg-muted/20 rounded-md">
+                          <p className="text-2xl font-bold">{stats.pendingTasks}</p>
+                          <p className="text-xs text-muted-foreground">Pending</p>
+                        </div>
+                        <div className="p-2 bg-muted/20 rounded-md">
+                          <p className="text-2xl font-bold">{stats.inProgressTasks}</p>
+                          <p className="text-xs text-muted-foreground">In Progress</p>
+                        </div>
+                        <div className="p-2 bg-muted/20 rounded-md">
+                          <p className="text-2xl font-bold">{stats.overdueTasksCount}</p>
+                          <p className="text-xs text-muted-foreground">Overdue</p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Task Status Distribution</span>
+                          <span>{stats.totalTasks} total</span>
+                        </div>
+                        <TaskProgress 
+                          items={[
+                            { label: "Completed", value: stats.completedTasks || 0, color: "bg-green-500" },
+                            { label: "In Progress", value: stats.inProgressTasks || 0, color: "bg-blue-500" },
+                            { label: "Pending", value: stats.pendingTasks || 0, color: "bg-amber-500" },
+                            { label: "Overdue", value: stats.overdueTasksCount || 0, color: "bg-red-500" }
+                          ]}
+                          size="lg"
+                          showLabels={true}
+                          showPercentages={true}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </DashboardCard>
+              </div>
+            </>
           )}
         </TabsContent>
       </Tabs>

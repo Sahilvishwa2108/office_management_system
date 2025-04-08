@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
+import { toast } from "sonner";
+import { format } from "date-fns";
+
 import {
-  Card, CardContent, CardHeader, CardTitle,
+  Card,
+  CardHeader,
+  CardContent,
+  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +22,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { TaskPageLayout } from "@/components/layouts/task-page-layout";
+import { TaskListSkeleton } from "@/components/loading/task-skeleton";
+
+import {
+  ArrowUpDown,
+  ClipboardX,
+  Eye,
+  Loader2,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -24,13 +43,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { ClipboardX, Eye, Loader2, Plus } from "lucide-react";
-import { TaskListSkeleton } from "@/components/loading/task-skeleton";
-import { TaskPageLayout } from "@/components/layouts/task-page-layout";
 import Link from "next/link";
-import { toast } from "sonner";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Task {
   id: string;
@@ -47,6 +61,91 @@ interface Task {
     contactPerson: string;
   } | null;
 }
+
+// Task List Item Component
+const TaskListItem = ({ task }: { task: Task }) => {
+  const router = useRouter();
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+  
+  const handleRowClick = () => {
+    router.push(`/dashboard/tasks/${task.id}`);
+  };
+  
+  const handleActionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+  
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending": return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+      case "in-progress": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
+      case "review": return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
+      case "completed": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
+      case "cancelled": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+    }
+  };
+  
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "low": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
+      case "medium": return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
+      case "high": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+    }
+  };
+  
+  return (
+    <tr 
+      className="border-b hover:bg-muted/50 cursor-pointer"
+      onClick={handleRowClick}
+    >
+      <td className="p-4">
+        <div>
+          <p className="font-medium">{task.title}</p>
+          <Badge variant="outline" className={getPriorityColor(task.priority)}>
+            {task.priority}
+          </Badge>
+        </div>
+      </td>
+      <td className="p-4">
+        <Badge className={getStatusColor(task.status)}>
+          {task.status}
+        </Badge>
+      </td>
+      <td className="p-4">
+        {task.dueDate ? format(new Date(task.dueDate), 'MMM dd, yyyy') : '-'}
+      </td>
+      <td className="p-4">
+        {task.assignedTo ? task.assignedTo.name : 'Unassigned'}
+      </td>
+      <td className="p-4 text-right" onClick={handleActionClick}>
+        <DropdownMenu open={isActionMenuOpen} onOpenChange={setIsActionMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 data-[state=open]:bg-muted"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[160px]">
+            <DropdownMenuItem onClick={() => router.push(`/dashboard/tasks/${task.id}`)}>
+              <Eye className="w-4 h-4 mr-2" />
+              View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push(`/dashboard/tasks/${task.id}/edit`)}>
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit Task
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </td>
+    </tr>
+  );
+};
 
 export default function TasksPage() {
   const router = useRouter();
@@ -80,26 +179,6 @@ export default function TasksPage() {
     fetchTasks();
   }, [fetchTasks]);
 
-  const getStatusColor = useCallback((status: string) => {
-    switch (status) {
-      case "pending": return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
-      case "in-progress": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
-      case "review": return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
-      case "completed": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
-      case "cancelled": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
-    }
-  }, []);
-
-  const getPriorityColor = useCallback((priority: string) => {
-    switch (priority) {
-      case "low": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
-      case "medium": return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
-      case "high": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
-    }
-  }, []);
-
   const canCreateTask = useCallback((session: any) => {
     return session?.user?.role === "ADMIN" || session?.user?.role === "PARTNER";
   }, []);
@@ -112,6 +191,11 @@ export default function TasksPage() {
   const displayTasks = useMemo(() =>
     filteredTasks.slice(0, 50),
     [filteredTasks]);
+
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setSearchQuery("");
+  };
 
   return (
     <TaskPageLayout
@@ -153,13 +237,13 @@ export default function TasksPage() {
                   <label className="text-sm font-medium">Status</label>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger>
-                      <SelectValue placeholder="All Statuses" />
+                      <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Statuses</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="in-progress">In Progress</SelectItem>
-                      <SelectItem value="review">Under Review</SelectItem>
+                      <SelectItem value="review">Review</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
@@ -170,10 +254,7 @@ export default function TasksPage() {
                   <Button 
                     variant="ghost" 
                     className="w-full text-sm"
-                    onClick={() => {
-                      setStatusFilter("all");
-                      setSearchQuery("");
-                    }}
+                    onClick={clearFilters}
                   >
                     Clear Filters
                   </Button>
@@ -202,19 +283,11 @@ export default function TasksPage() {
                 <div className="flex flex-col justify-center items-center h-64 gap-2">
                   <ClipboardX className="h-8 w-8 text-muted-foreground opacity-40" />
                   <p className="text-muted-foreground text-center">
-                    {searchQuery || statusFilter !== "all"
-                      ? "No tasks match your filters"
-                      : "No tasks found"}
+                    No tasks found{searchQuery ? ` matching "${searchQuery}"` : ""}
+                    {statusFilter !== "all" ? ` with status "${statusFilter}"` : ""}.
                   </p>
                   {(searchQuery || statusFilter !== "all") && (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setStatusFilter("all");
-                        setSearchQuery("");
-                      }}
-                    >
+                    <Button variant="outline" size="sm" onClick={clearFilters}>
                       Clear Filters
                     </Button>
                   )}
@@ -224,60 +297,23 @@ export default function TasksPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[40%]">Task</TableHead>
+                        <TableHead>Task</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Priority</TableHead>
                         <TableHead>Due Date</TableHead>
+                        <TableHead>Assigned To</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {displayTasks.map((task) => (
-                        <TableRow key={task.id}>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{task.title}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {task.assignedTo ? `Assigned to: ${task.assignedTo.name}` : "Unassigned"}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(task.status)}>
-                              {task.status.charAt(0).toUpperCase() + 
-                                task.status.slice(1).replace(/-/g, " ")}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getPriorityColor(task.priority)}>
-                              {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {task.dueDate
-                              ? format(new Date(task.dueDate), "MMM d, yyyy")
-                              : "No due date"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              asChild
-                              title="View Task"
-                            >
-                              <Link href={`/dashboard/tasks/${task.id}`}>
-                                <Eye className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                        <TaskListItem key={task.id} task={task} />
                       ))}
                     </TableBody>
                   </Table>
 
                   {filteredTasks.length > 50 && (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
-                      Showing 50 of {filteredTasks.length} tasks. Please use search to narrow down results.
+                    <div className="py-2 px-4 text-center text-sm text-muted-foreground border-t">
+                      Showing first 50 results of {filteredTasks.length} tasks. Please refine your search.
                     </div>
                   )}
                 </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react"; // Add session import
+import { useSession } from "next-auth/react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +34,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserPlus, MoreVertical, Loader2, Search, Eye, Edit, Lock, Ban, CheckCircle2 } from "lucide-react";
+import { UserPlus, MoreVertical, Loader2, Search, Eye, Edit, Lock, Ban, CheckCircle2, MoreHorizontal, KeyIcon, CheckCircle } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -63,6 +65,133 @@ const roleConfigs = [
   { role: "BUSINESS_CONSULTANT", label: "Business Consultants", color: "bg-teal-500" },
 ];
 
+// Format the role for display
+const formatRole = (role: string) => {
+  return role
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+// Get initials from name
+const getInitials = (name: string): string => {
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
+};
+
+// UserListItem component
+const UserListItem = ({ 
+  user, 
+  onToggleStatus 
+}: { 
+  user: User, 
+  onToggleStatus: (id: string, status: boolean) => Promise<void> 
+}) => {
+  const router = useRouter();
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+
+  const navigateToUser = () => {
+    router.push(`/dashboard/admin/users/${user.id}`);
+  };
+
+  // Prevent row click when clicking on actions
+  const handleActionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  return (
+    <div 
+      onClick={navigateToUser}
+      className="p-4 border rounded-lg mb-4 hover:bg-muted/50 cursor-pointer transition-colors"
+    >
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Avatar>
+            <AvatarImage
+              src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
+              alt={user.name}
+            />
+            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-medium">{user.name}</p>
+            <p className="text-sm text-muted-foreground">{user.email}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant="outline" className="text-xs">
+                {formatRole(user.role)}
+              </Badge>
+              {user.isActive !== false ? (
+                <Badge variant="outline" className="bg-green-100 text-green-800 text-xs">Active</Badge>
+              ) : (
+                <Badge variant="destructive" className="text-xs">Blocked</Badge>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div 
+          className="flex items-center gap-2"
+          onClick={handleActionClick}
+        >
+          <p className="text-xs text-muted-foreground">
+            {format(new Date(user.createdAt), 'PPP')}
+          </p>
+          <DropdownMenu open={isActionMenuOpen} onOpenChange={setIsActionMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="data-[state=open]:bg-muted"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[160px]">
+              <DropdownMenuItem asChild>
+                <Link href={`/dashboard/admin/users/${user.id}`}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  View Details
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/dashboard/admin/users/${user.id}/edit`}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit User
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onToggleStatus(user.id, user.isActive !== false)}>
+                {user.isActive !== false ? (
+                  <>
+                    <Ban className="w-4 h-4 mr-2" />
+                    Block User
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Activate User
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href={`/dashboard/admin/users/${user.id}/reset-password`}>
+                  <KeyIcon className="w-4 h-4 mr-2" />
+                  Reset Password
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function UsersPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -70,14 +199,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-
-  // Format the role for display
-  const formatRole = (role: string) => {
-    return role
-      .replace(/_/g, " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-  };
+  const [viewMode, setViewMode] = useState<"table" | "card">("table");
 
   // Load users - excluding clients and current user
   const loadUsers = async () => {
@@ -257,31 +379,41 @@ export default function UsersPage() {
       {/* Users list card with filters */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search users..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col md:flex-row gap-4 flex-1">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search users..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Select
+                value={roleFilter}
+                onValueChange={setRoleFilter}
+              >
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Filter by role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="PARTNER">Partner</SelectItem>
+                  <SelectItem value="BUSINESS_EXECUTIVE">Business Executive</SelectItem>
+                  <SelectItem value="BUSINESS_CONSULTANT">Business Consultant</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select
-              value={roleFilter}
-              onValueChange={setRoleFilter}
-            >
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-                <SelectItem value="PARTNER">Partner</SelectItem>
-                <SelectItem value="BUSINESS_EXECUTIVE">Business Executive</SelectItem>
-                <SelectItem value="BUSINESS_CONSULTANT">Business Consultant</SelectItem>
-              </SelectContent>
-            </Select>
+            
+            {/* View toggle */}
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "table" | "card")} className="w-[200px]">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="table">Table</TabsTrigger>
+                <TabsTrigger value="card">Cards</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </CardHeader>
         <CardContent>
@@ -322,7 +454,7 @@ export default function UsersPage() {
                 </TableBody>
               </Table>
             </div>
-          ) : (
+          ) : viewMode === "table" ? (
             <div className="border rounded-md">
               <Table>
                 <TableHeader>
@@ -336,6 +468,7 @@ export default function UsersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {/* Existing table rows */}
                   {filteredUsers.length > 0 ? (
                     filteredUsers.map((user) => (
                       <TableRow key={user.id}>
@@ -353,15 +486,19 @@ export default function UsersPage() {
                           {format(new Date(user.createdAt), 'PPP')}
                         </TableCell>
                         <TableCell>
+                          {/* Existing dropdown menu */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="data-[state=open]:bg-muted"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuContent align="end" className="w-[160px]">
                               <DropdownMenuItem asChild>
                                 <Link href={`/dashboard/admin/users/${user.id}`}>
                                   <Eye className="w-4 h-4 mr-2" />
@@ -374,10 +511,7 @@ export default function UsersPage() {
                                   Edit User
                                 </Link>
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleToggleStatus(user.id, user.isActive !== false)}
-                              >
+                              <DropdownMenuItem onClick={() => handleToggleStatus(user.id, user.isActive !== false)}>
                                 {user.isActive !== false ? (
                                   <>
                                     <Ban className="w-4 h-4 mr-2" />
@@ -385,10 +519,17 @@ export default function UsersPage() {
                                   </>
                                 ) : (
                                   <>
-                                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                                    <CheckCircle className="w-4 h-4 mr-2" />
                                     Activate User
                                   </>
                                 )}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem asChild>
+                                <Link href={`/dashboard/admin/users/${user.id}/reset-password`}>
+                                  <KeyIcon className="w-4 h-4 mr-2" />
+                                  Reset Password
+                                </Link>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -404,6 +545,22 @@ export default function UsersPage() {
                   )}
                 </TableBody>
               </Table>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
+                  <UserListItem 
+                    key={user.id} 
+                    user={user} 
+                    onToggleStatus={handleToggleStatus} 
+                  />
+                ))
+              ) : (
+                <div className="text-center py-6 text-muted-foreground border rounded-md">
+                  No users found
+                </div>
+              )}
             </div>
           )}
         </CardContent>
