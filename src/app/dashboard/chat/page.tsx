@@ -20,6 +20,7 @@ import {
   ZoomOut,
   RotateCw,
   Eye,
+  ChevronsDown,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -1526,7 +1527,7 @@ export default function ChatPage() {
       {/* Chat main area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <Card className="flex-1 flex flex-col overflow-hidden border-0 rounded-none shadow-none">
-          <CardHeader className="py-2 px-4 flex flex-row items-center justify-center border-b bg-card h-[36px] z-10">
+          <CardHeader className="px-4 flex flex-row items-center justify-center border-b bg-card h-[36px] z-10">
             <div>
               <CardTitle className="text-lg">Chat Room</CardTitle>
               <CardDescription className="flex items-center gap-2 justify-center">
@@ -1576,7 +1577,7 @@ export default function ChatPage() {
             {/* Standard scrollable messages list */}
             <div
               ref={messageContainerRef}
-              className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-muted/50 scrollbar-track-transparent hover:scrollbar-thumb-muted/70 px-6"
+              className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-muted/50 scrollbar-track-transparent hover:scrollbar-thumb-muted/70 px-6 relative"
             >
               {isLoadingMore && (
                 <div className="flex justify-center p-2">
@@ -1633,13 +1634,27 @@ export default function ChatPage() {
                   </Button>
                 </div>
               )}
+              
+              {/* Jump to bottom button - appears when scrolled up */}
+              {isScrolling && unreadCount === 0 && (
+                <div className="fixed bottom-35 right-20 z-20 animate-fade-in">
+                  <Button
+                    onClick={scrollToBottom}
+                    size="icon"
+                    className="h-10 w-10 rounded-full shadow-lg bg-primary/90 hover:bg-primary"
+                    title="Jump to bottom"
+                  >
+                    <ChevronsDown className="h-5 w-5" />
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Ensures the input area is displayed at the bottom */}
-            <div className="p-4 border-t bg-card min-h-[80px]">
+            <div className="p-2">
               {/* File attachments preview */}
               {attachments.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
+                <div className="flex flex-wrap gap-2 mb-1">
                   {attachments.map((file, index) => (
                     <div
                       key={index}
