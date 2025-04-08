@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { SessionProvider } from "next-auth/react";
 import { NotificationProvider } from "@/components/notifications/notification-system";
 import { Toaster } from "sonner";
-import { LoadingProvider } from "@/components/loading-state-manager";
+import { LoadingBar } from "@/components/ui/loading-bar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,10 +21,9 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <SessionProvider>
             <NotificationProvider>
-              {/* <LoadingProvider> */}
+                <LoadingBar />
                 {children}
                 <Toaster position="top-right" richColors closeButton />
-              {/* </LoadingProvider> */}
             </NotificationProvider>
           </SessionProvider>
         </ThemeProvider>

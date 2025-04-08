@@ -196,3 +196,79 @@ div:has(> .animate-spin)::before {
 .animate-float {
   animation: float 3s infinite;
 }
+
+.pulse-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  z-index: 9999;
+  overflow: visible;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--primary) 20%,
+    var(--primary) 80%,
+    transparent 100%
+  );
+  box-shadow: 0 0 8px rgba(var(--primary), 0.5);
+}
+
+/* Waves on left and right */
+.pulse-loader::before,
+.pulse-loader::after {
+  content: "";
+  position: absolute;
+  height: 100%;
+  width: 30%;
+  background: var(--primary);
+  opacity: 0;
+}
+
+/* Left pulse wave */
+.pulse-loader::before {
+  left: 0;
+  transform-origin: right center;
+  animation: pulse-left 1.2s infinite ease-out;
+}
+
+/* Right pulse wave */
+.pulse-loader::after {
+  right: 0;
+  transform-origin: left center;
+  animation: pulse-right 1.2s infinite ease-out;
+}
+
+/* Center dot element */
+.pulse-loader-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px var(--primary);
+  animation: pulse-dot 1.2s infinite;
+  z-index: 10000;
+}
+
+@keyframes pulse-left {
+  0% { transform: scaleX(0); opacity: 0; }
+  40% { transform: scaleX(1); opacity: 0.8; }
+  100% { transform: scaleX(0); opacity: 0; }
+}
+
+@keyframes pulse-right {
+  0% { transform: scaleX(0); opacity: 0; }
+  40% { transform: scaleX(1); opacity: 0.8; }
+  100% { transform: scaleX(0); opacity: 0; }
+}
+
+@keyframes pulse-dot {
+  0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; }
+  50% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; }
+}
