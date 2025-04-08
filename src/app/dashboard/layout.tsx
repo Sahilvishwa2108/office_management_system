@@ -269,11 +269,11 @@ export default function DashboardLayout({
                 sidebarCollapsed ? "w-20" : "w-64"
               )}
             >
-              {/* Toggle collapse button - now centered vertically */}
+              {/* Toggle collapse button - repositioned to top */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-6 w-6 -mr-3 rounded-full border bg-background shadow-sm"
+                className="absolute right-0 top-4 z-20 h-6 w-6 -mr-3 rounded-full border bg-background shadow-sm"
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               >
                 {sidebarCollapsed ? (
