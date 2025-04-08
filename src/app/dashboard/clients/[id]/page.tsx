@@ -31,6 +31,7 @@ import {
   Phone,
   User,
   AlertCircle,
+  Hash,
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +50,7 @@ interface Client {
   accessExpiry: string | null;
   createdAt: string;
   updatedAt: string;
+  gstin: string | null;
   manager: {
     id: string;
     name: string;
@@ -276,6 +278,16 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
                           <p className="whitespace-pre-line">{client.address}</p>
                           <p className="text-xs text-muted-foreground">Address</p>
                         </div>
+                      </div>
+                    )}
+
+                    {client.gstin && (
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium flex items-center gap-2">
+                          <Hash className="h-4 w-4 text-muted-foreground" />
+                          GSTIN
+                        </p>
+                        <p className="text-lg">{client.gstin}</p>
                       </div>
                     )}
                   </div>

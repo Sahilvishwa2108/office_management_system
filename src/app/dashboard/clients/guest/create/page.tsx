@@ -37,7 +37,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-// Schema for guest client (includes required expiry date)
+// Schema for guest client
 const guestClientFormSchema = z.object({
   contactPerson: z.string().min(2, "Contact person name is required"),
   companyName: z.string().optional(),
@@ -45,6 +45,7 @@ const guestClientFormSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
+  gstin: z.string().optional(),
   accessExpiry: z.date({
     required_error: "Access expiry date is required for guest clients",
   }),
@@ -70,6 +71,7 @@ export default function CreateGuestClientPage() {
       phone: "",
       address: "",
       notes: "",
+      gstin: "",
       accessExpiry: defaultExpiryDate,
     },
   });
@@ -221,6 +223,20 @@ export default function CreateGuestClientPage() {
                         className="min-h-[120px]" 
                         {...field} 
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="gstin"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>GSTIN (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter GSTIN if applicable" {...field} value={field.value || ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

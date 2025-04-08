@@ -45,6 +45,7 @@ const clientFormSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
+  gstin: z.string().optional(),
   isGuest: z.boolean().default(false),
   accessExpiry: z.date().nullable().optional(),
 });
@@ -59,6 +60,7 @@ interface Client {
   phone: string | null;
   address: string | null;
   notes: string | null;
+  gstin: string | null;
   isGuest: boolean;
   accessExpiry: string | null;
 }
@@ -89,6 +91,7 @@ export default function EditClientPage({
       phone: "",
       address: "",
       notes: "",
+      gstin: "",
       isGuest: false,
       accessExpiry: null,
     },
@@ -113,6 +116,7 @@ export default function EditClientPage({
           phone: response.data.phone || "",
           address: response.data.address || "",
           notes: response.data.notes || "",
+          gstin: response.data.gstin || "",
           isGuest: response.data.isGuest,
           accessExpiry: response.data.accessExpiry ? new Date(response.data.accessExpiry) : null,
         });
@@ -304,6 +308,20 @@ export default function EditClientPage({
                         className="min-h-[120px]" 
                         {...field} 
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="gstin"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>GSTIN</FormLabel>
+                    <FormControl>
+                      <Input placeholder="GSTIN Number" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

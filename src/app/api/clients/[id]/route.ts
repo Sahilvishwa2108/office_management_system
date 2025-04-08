@@ -12,6 +12,7 @@ const clientUpdateSchema = z.object({
   phone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  gstin: z.string().optional().nullable(),
   isGuest: z.boolean().optional(),
   accessExpiry: z.string().optional().nullable(),
 });
@@ -147,6 +148,7 @@ export async function PATCH(
         phone: data.phone,
         address: data.address,
         notes: data.notes,
+        gstin: data.gstin,
         isGuest: data.isGuest,
         accessExpiry,
       },

@@ -12,6 +12,7 @@ const clientSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
+  gstin: z.string().optional(),
   isGuest: z.boolean().default(false),
   accessExpiry: z.string().nullable().optional(),
 });
@@ -189,6 +190,7 @@ export async function POST(req: NextRequest) {
         phone: clientData.phone,
         address: clientData.address,
         notes: clientData.notes,
+        gstin: clientData.gstin,
         isGuest: clientData.isGuest || false,
         accessExpiry: clientData.accessExpiry ? new Date(clientData.accessExpiry) : null,
         managerId: session.user.id,

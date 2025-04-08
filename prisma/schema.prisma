@@ -52,6 +52,7 @@ model Client {
   phone          String?      // Optional phone number
   address        String?      // Optional address
   notes          String?      // Optional notes field
+  gstin          String?      // Optional GSTIN (Goods and Services Tax Identification Number)
   isGuest        Boolean      @default(false) // Whether this is a temporary guest client
   accessExpiry   DateTime?    // When guest client access expires
   createdAt      DateTime     @default(now())

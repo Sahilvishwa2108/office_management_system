@@ -41,6 +41,7 @@ const clientFormSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
+  gstin: z.string().optional(),
 });
 
 type ClientFormValues = z.infer<typeof clientFormSchema>;
@@ -60,6 +61,7 @@ export default function CreateClientPage() {
       phone: "",
       address: "",
       notes: "",
+      gstin: "",
     },
   });
 
@@ -223,6 +225,20 @@ export default function CreateClientPage() {
                       )}
                     />
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="gstin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>GSTIN (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter GSTIN" {...field} value={field.value || ''} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </TabsContent>
                 
                 <TabsContent value="additional" className="space-y-4 mt-0">
