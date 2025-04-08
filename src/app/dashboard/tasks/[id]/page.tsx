@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link"; // Add this import for Link
 import axios from "axios";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -24,21 +25,34 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label"; // Add this import for Label
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // Add this import for Avatar components
 import {
   CalendarIcon,
   UserIcon,
   BuildingIcon,
   ArrowLeftIcon,
-  PencilIcon,
+  PencilIcon as Edit, // Rename to Edit for clarity
   TrashIcon,
-  Loader2 as SpinnerIcon,
-  UserPlus as UserPlusIcon,
+  Loader2,
+  UserPlus,
   Trash2 as Trash2Icon,
+  ListTodo, // Add this import for ListTodo
 } from "lucide-react";
 import { TaskComments } from "@/components/tasks/task-comments";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetailSkeleton } from "@/components/loading/task-skeleton";
+
+// Add the missing getInitials function
+const getInitials = (name: string): string => {
+  return name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
+};
 
 interface User {
   id: string;
@@ -224,182 +238,217 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <div className="container py-10">
+    <div className="container py-6">
+      {/* Back button and title */}
       <div className="mb-6">
-        <Button
-          variant="outline"
-          onClick={() => router.back()}
-          className="flex items-center gap-2"
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="mb-4" 
+          onClick={() => router.push("/dashboard/tasks")}
         >
-          <ArrowLeftIcon className="h-4 w-4" />
-          Back
+          <ArrowLeftIcon className="h-4 w-4 mr-2" /> Back to Tasks
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {/* Task information card - now spans full width */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl">{task.title}</CardTitle>
-              <CardDescription>
-                Created {format(new Date(task.createdAt), "PPP")}
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge className={getPriorityColor(task.priority)}>
-                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
-              </Badge>
-              <Badge className={getStatusColor(task.status)}>
-                {task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ')}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Task description */}
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Description</h3>
-              <div className="p-4 bg-muted rounded-md min-h-[100px]">
-                {task.description || "No description provided"}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:grid-flow-row-dense">
+        {/* Task details - Left column */}
+        <div className="lg:col-span-2 h-auto flex flex-col">
+          <Card className="h-full flex-grow">
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div>
+                  <CardTitle className="text-2xl">{task.title}</CardTitle>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <Badge className={getStatusColor(task.status)}>
+                      {task.status}
+                    </Badge>
+                    <Badge variant="outline" className={getPriorityColor(task.priority)}>
+                      {task.priority}
+                    </Badge>
+                    {task.dueDate && (
+                      <Badge variant="outline" className={
+                        new Date(task.dueDate) < new Date() && task.status !== 'completed' 
+                          ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" 
+                          : ""
+                      }>
+                        Due: {format(new Date(task.dueDate), 'MMM dd, yyyy')}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-
-            {/* Task metadata */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">Due Date:</span>
-                <span>
-                  {task.dueDate 
-                    ? format(new Date(task.dueDate), "PPP") 
-                    : "No due date"}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <UserIcon className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">Assigned By:</span>
-                <span>{task.assignedBy.name}</span>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Task description */}
+              <div>
+                <h3 className="text-sm font-medium mb-2">Description</h3>
+                <div className="text-sm text-muted-foreground">
+                  {task.description ? (
+                    <p className="whitespace-pre-wrap">{task.description}</p>
+                  ) : (
+                    <p>No description provided</p>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <UserIcon className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">Assigned To:</span>
-                <span>
-                  {task.assignedTo ? task.assignedTo.name : "Unassigned"}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <BuildingIcon className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">Client:</span>
-                <span>
-                  {task.client 
-                    ? `${task.client.contactPerson}${task.client.companyName ? ` (${task.client.companyName})` : ''}`
-                    : "No client associated"}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Task actions card - also spans full width */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Task Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-3">
-              {/* Edit button - only for admin or creator */}
-              {canEditTask && (
-                <Button
-                  variant="outline"
-                  onClick={() => router.push(`/dashboard/tasks/${taskId}/edit`)}
-                  className="flex items-center gap-2"
-                >
-                  <PencilIcon className="h-4 w-4" /> Edit Task
-                </Button>
-              )}
-
-              {/* Reassign button - only for admin or partner */}
-              {canReassignTask && (
-                <Button
-                  variant="outline"
-                  onClick={() => router.push(`/dashboard/tasks/${taskId}/reassign`)}
-                  className="flex items-center gap-2"
-                >
-                  <UserPlusIcon className="h-4 w-4" /> Reassign Task
-                </Button>
-              )}
-
-              {/* Delete button - only for admin or creator */}
-              {canEditTask && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="destructive"
-                      className="flex items-center gap-2"
-                    >
-                      <Trash2Icon className="h-4 w-4" /> Delete Task
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <div className="p-4">
-                      <h4 className="text-lg font-semibold">Confirm Deletion</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Are you sure you want to delete this task? This action cannot be undone.
-                      </p>
-                      <div className="mt-4 flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => {}}>
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          onClick={async () => {
-                            try {
-                              await axios.delete(`/api/tasks/${taskId}`);
-                              toast.success("Task deleted successfully");
-                              router.push("/dashboard/tasks");
-                            } catch (error) {
-                              console.error("Error deleting task:", error);
-                              toast.error("Failed to delete task");
-                            }
-                          }}
-                        >
-                          Delete
-                        </Button>
-                      </div>
+              {/* Task metadata */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
+                <div>
+                  <h3 className="text-sm font-medium mb-1">Assigned By</h3>
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback>{getInitials(task.assignedBy.name)}</AvatarFallback>
+                    </Avatar>
+                    <div className="text-sm">{task.assignedBy.name}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium mb-1">Assigned To</h3>
+                  {task.assignedTo ? (
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarFallback>{getInitials(task.assignedTo.name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="text-sm">{task.assignedTo.name}</div>
                     </div>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Task comments - now spans full width instead of being in a side column */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Discussion</CardTitle>
-            <CardDescription>
-              Comments and activity for this task
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {commentsLoading ? (
-              <div className="flex flex-col items-center justify-center">
-                <SpinnerIcon className="h-8 w-8 animate-spin text-primary mb-2" />
-                <p className="text-sm text-muted-foreground">Loading comments...</p>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">Unassigned</div>
+                  )}
+                </div>
+                
+                {task.client && (
+                  <div>
+                    <h3 className="text-sm font-medium mb-1">Client</h3>
+                    <Link 
+                      href={`/dashboard/clients/${task.client.id}`}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {task.client.contactPerson}
+                      {task.client.companyName && ` (${task.client.companyName})`}
+                    </Link>
+                  </div>
+                )}
+                
+                <div>
+                  <h3 className="text-sm font-medium mb-1">Created</h3>
+                  <div className="text-sm text-muted-foreground">
+                    {format(new Date(task.createdAt), 'MMM dd, yyyy')}
+                  </div>
+                </div>
               </div>
-            ) : currentUser ? (
-              <TaskComments 
-                taskId={taskId} 
-                comments={comments}
-                currentUser={currentUser}
-              />
-            ) : null}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Task actions - Right column */}
+        <div className="h-auto flex flex-col">
+          {/* Status update card */}
+          <Card className="h-full flex-grow">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Task Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Status update dropdown */}
+              <div className="space-y-2">
+                <Label htmlFor="status">Update Status</Label>
+                <Select
+                  value={newStatus || task.status}
+                  onValueChange={setNewStatus}
+                  disabled={updating}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="review">Review</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <Button 
+                onClick={updateTaskStatus} 
+                disabled={!newStatus || newStatus === task.status || updating} 
+                className="w-full"
+              >
+                {updating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Status"
+                )}
+              </Button>
+              
+              {/* Action buttons */}
+              <div className="pt-4 space-y-3 border-t">
+                {canEditTask && (
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href={`/dashboard/tasks/${task.id}/edit`}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Task
+                    </Link>
+                  </Button>
+                )}
+                
+                {canReassignTask && (
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href={`/dashboard/tasks/${task.id}/reassign`}>
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Reassign Task
+                    </Link>
+                  </Button>
+                )}
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  asChild
+                >
+                  <Link href={`/dashboard/tasks`}>
+                    <ListTodo className="mr-2 h-4 w-4" />
+                    View All Tasks
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Comments section - Full width */}
+        <div className="lg:col-span-3">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Discussion</CardTitle>
+              <CardDescription>
+                Add comments or notes about this task
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {commentsLoading ? (
+                <div className="flex flex-col items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                  <p className="text-sm text-muted-foreground">Loading comments...</p>
+                </div>
+              ) : currentUser ? (
+                <TaskComments 
+                  taskId={taskId} 
+                  comments={comments}
+                  currentUser={currentUser}
+                />
+              ) : null}
+            </CardContent>
+            <CardFooter className="border-t pt-4">
+              {/* Comment form will go here */}
+            </CardFooter>
+          </Card>
+        </div>
       </div>
     </div>
   );
