@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { v4 as uuidv4 } from "uuid";
 import { v2 as cloudinary } from "cloudinary";
 
-// Configure Cloudinary with your credentials
+// Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -14,81 +15,101 @@ cloudinary.config({
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return new NextResponse("Unauthorized", { status: 401 });
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { url, filename } = await req.json();
+    // Parse the form data
+    const formData = await req.formData();
+    const files = formData.getAll("files") as File[];
 
-    if (!url) {
-      return new NextResponse("URL is required", { status: 400 });
+    if (!files?.length) {
+      return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
 
-    // Extract both the resource type and the public ID from the URL
-    // Cloudinary URLs look like: https://res.cloudinary.com/cloud-name/resource_type/upload/v1234567/public_id.ext
-    let publicId = '';
-    let resourceType = 'image'; // Default
-    const cloudinaryPrefix = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/`;
-    
-    if (url.startsWith(cloudinaryPrefix)) {
-      // Extract resource type from URL (this is key!)
-      const withoutPrefix = url.replace(cloudinaryPrefix, '');
-      const parts = withoutPrefix.split('/');
-      
-      if (parts.length >= 2) {
-        // First part is the resource type (image, video, raw)
-        resourceType = parts[0];
-        
-        // Remove the resource type and 'upload' parts
-        parts.splice(0, 2);
-        
-        // The rest is the public ID with potentially a version (v1234)
-        let remaining = parts.join('/');
-        
-        // Remove version if present
-        remaining = remaining.replace(/^v\d+\//, '');
-        
-        // Remove file extension
-        publicId = remaining.replace(/\.[^/.]+$/, '');
-      }
-    }
+    // Process each file and upload to Cloudinary
+    const attachments = await Promise.all(
+      files.map(async (file) => {
+        try {
+          // Generate a unique file ID
+          const fileId = uuidv4();
 
-    console.log(`Using resource type from URL: ${resourceType} for file: ${filename}`);
-    console.log("Extracted public ID:", publicId);
-    
-    // Direct fetch approach - more reliable than generating a URL
-    try {
-      // Use Cloudinary's secure delivery URL structure
-      const secureUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/${resourceType}/upload/${publicId}.${filename.split('.').pop()}`;
-      console.log("Fetching from:", secureUrl);
-      
-      const response = await fetch(secureUrl);
-      
-      if (!response.ok) {
-        console.error(`Download failed with status: ${response.status}`);
-        return new NextResponse(`Failed to fetch file: ${response.statusText}`, { status: response.status });
-      }
+          // Convert File to buffer for Cloudinary upload
+          const bytes = await file.arrayBuffer();
+          const buffer = Buffer.from(bytes);
 
-      // Get the file content
-      const fileData = await response.arrayBuffer();
-      
-      // Return the file with appropriate headers for download
-      return new NextResponse(fileData, {
-        headers: {
-          'Content-Type': response.headers.get('Content-Type') || 'application/octet-stream',
-          'Content-Disposition': `attachment; filename="${filename}"`,
-          'Content-Length': response.headers.get('Content-Length') || '',
+          // Get file extension and MIME type
+          const fileExt = file.name.split(".").pop() || "";
+          const mimeType = file.type || "application/octet-stream";
+          console.log(`Uploading file: ${file.name}, Type: ${mimeType}, Extension: ${fileExt}`);
+
+          // Determine resource type based on file type
+          const resourceType = mimeType.startsWith("image/")
+            ? "image"
+            : "raw"; // Use "raw" for non-image files like PDFs
+
+          // Upload to Cloudinary using buffer upload
+          const uploadResult = await new Promise<any>((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+              {
+                folder: "office_management/chat", // Updated folder path
+                public_id: fileId,
+                resource_type: resourceType, // Explicitly set resource type
+              },
+              (error, result) => {
+                if (error) {
+                  console.error("Cloudinary upload error:", error);
+                  reject(error);
+                } else {
+                  resolve(result);
+                }
+              }
+            );
+
+            // Write buffer to stream
+            const Readable = require("stream").Readable;
+            const readableInstanceStream = new Readable({
+              read() {
+                this.push(buffer);
+                this.push(null);
+              },
+            });
+
+            readableInstanceStream.pipe(uploadStream);
+          });
+
+          console.log("Upload successful:", uploadResult);
+
+          // Determine file type for the frontend
+          const type = mimeType.startsWith("image/") ? "image" : "document";
+
+          // Return attachment metadata
+          return {
+            id: fileId,
+            filename: file.name,
+            url: uploadResult.secure_url,
+            publicId: uploadResult.public_id,
+            type,
+            size: file.size,
+          };
+        } catch (error) {
+          console.error(`Error uploading file ${file.name}:`, error);
+          throw error;
         }
-      });
-      
-    } catch (error) {
-      console.error("Error fetching file:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return new NextResponse(`Error fetching file: ${errorMessage}`, { status: 500 });
-    }
-  } catch (error: unknown) {
-    console.error("Download API error:", error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new NextResponse(`Internal Server Error: ${errorMessage}`, { status: 500 });
+      })
+    );
+
+    return NextResponse.json({ success: true, attachments });
+  } catch (error) {
+    console.error("Error uploading files:", error);
+    return NextResponse.json({ error: "Failed to upload files" }, { status: 500 });
   }
 }
+
+export const config = {
+  api: {
+    bodyParser: false,
+    responseLimit: "50mb",
+  },
+};

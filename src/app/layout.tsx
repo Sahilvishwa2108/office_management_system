@@ -21,10 +21,10 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <SessionProvider>
             <NotificationProvider>
-              <LoadingProvider>
+              {/* <LoadingProvider> */}
                 {children}
                 <Toaster position="top-right" richColors closeButton />
-              </LoadingProvider>
+              {/* </LoadingProvider> */}
             </NotificationProvider>
           </SessionProvider>
         </ThemeProvider>

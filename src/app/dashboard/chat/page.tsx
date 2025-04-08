@@ -93,211 +93,57 @@ interface User {
 }
 
 // Create a new component for inline document previews
-const DocumentPreview = memo(({ attachment }: { attachment: Attachment }) => {
-  const extension = attachment.filename.split(".").pop()?.toLowerCase();
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1048576).toFixed(1)} MB`;
+};
+const handleDownload = async (url: string, filename: string, senderName: string) => {
+  try {
+    const senderFirstName = senderName.split(" ")[0];
+    const now = new Date();
 
-  // Render PDF preview
-  if (extension === "pdf") {
-    // Function to handle PDF downloads
-    const handleDownload = async (url: string, filename: string) => {
-      try {
-        // Show loading state if needed
+    // Format the date as dd-mm-yyyy
+    const formattedDate = `${String(now.getDate()).padStart(2, "0")}-${String(now.getMonth() + 1).padStart(2, "0")}-${now.getFullYear()}`;
 
-        console.log("Attempting to download from URL:", url);
+    // Extract the file extension
+    const fileExtension = filename.split(".").pop();
+    const baseFilename = filename.replace(/\.[^/.]+$/, ""); // Remove the extension
 
-        // Modify URL for proper resource type if needed
-        let downloadUrl = url;
+    // Construct the new file name
+    const newFileName = `${baseFilename}_${senderFirstName}_${formattedDate}.${fileExtension}`;
 
-        // Check if it's a Cloudinary URL and not an image
-        if (url.includes('cloudinary.com') &&
-          !url.includes('/image/upload/')) {
-          // For non-image files, ensure we're using the raw resource type
-          downloadUrl = url.replace(/\/upload\//, '/raw/upload/');
-        }
+    const response = await fetch(url);
+    const blob = await response.blob();
 
-        console.log("Using download URL:", downloadUrl);
+    // Create a temporary download link
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = newFileName;
 
-        // Try to download using a signed URL approach
-        const response = await fetch("/api/chat/download", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: downloadUrl,
-            filename
-          }),
-        });
+    // Trigger the download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-        if (!response.ok) {
-          throw new Error(`Download failed with status ${response.status}`);
-        }
-
-        const blob = await response.blob();
-
-        // Create a temporary URL for the blob
-        const blobUrl = window.URL.createObjectURL(blob);
-
-        // Create a temporary anchor element to trigger download
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = filename;
-
-        // Append to body, click and remove
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Clean up the URL object
-        window.URL.revokeObjectURL(blobUrl);
-
-        // Show success notification
-        toast.success(`Downloaded ${filename}`);
-      } catch (error) {
-        console.error('Download error:', error);
-        toast.error(`Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    };
-
-    function formatFileSize(size: number): string {
-      if (size < 1024) return `${size} B`;
-      if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-      if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-      return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-    }
-
-    return (
-      <div className="flex items-center p-3 bg-muted/20 hover:bg-muted/30 transition-colors">
-        <div className="mr-3 text-red-500">
-          <FileText className="h-6 w-6" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-medium truncate">{attachment.filename}</p>
-          <p className="text-xs text-muted-foreground">
-            PDF Document • {formatFileSize(attachment.size)}
-          </p>
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => window.open(attachment.url, "_blank")}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleDownload(attachment.url, attachment.filename)}
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    );
+    // Clean up
+    window.URL.revokeObjectURL(downloadUrl);
+    toast.success(`Downloaded ${newFileName}`);
+  } catch (error) {
+    toast.error("Failed to download file");
+    console.error("Download error:", error);
   }
-
-  // Image attachment component with zoom/preview capability
-  if (extension === "jpg" || extension === "jpeg" || extension === "png" || extension === "gif" || extension === "webp") {
-    // Function to handle image downloads
-    const handleDownload = async (url: string, filename: string) => {
-      try {
-        // Show loading state or feedback
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Download failed');
-
-        const blob = await response.blob();
-
-        // Create a temporary URL for the blob
-        const downloadUrl = window.URL.createObjectURL(blob);
-
-        // Create a temporary anchor element to trigger download
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = filename;
-
-        // Append to body, click and remove
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Clean up the URL object
-        window.URL.revokeObjectURL(downloadUrl);
-
-        // Show success notification
-        toast.success(`Downloaded ${filename}`);
-      } catch (error) {
-        console.error('Download error:', error);
-        toast.error('Failed to download file');
-      }
-    };
-
-    return (
-      <div className="cursor-pointer relative overflow-hidden" onClick={() => window.open(attachment.url, "_blank")}>
-        <div className="relative">
-          <NextImage
-            src={attachment.url}
-            alt={attachment.filename}
-            width={500}
-            height={300}
-            className="max-h-72 object-cover w-full"
-            loading="lazy"
-          />
-
-          <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-            <div className="flex gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(attachment.url, "_blank");
-                }}
-                className="p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
-              >
-                <ZoomIn className="h-5 w-5 text-white" />
-              </button>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDownload(attachment.url, attachment.filename);
-                }}
-                className="p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
-              >
-                <Download className="h-5 w-5 text-white" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="px-2 py-1 text-xs truncate bg-background/90 absolute bottom-0 w-full">
-          {attachment.filename}
-        </div>
-      </div>
-    );
-  }
-
-  function formatFileSize(size: number): string {
-    if (size < 1024) return `${size} B`;
-    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-    if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-    return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-  }
-
-  function handleDownload(url: string, filename: string): void {
-    throw new Error("Function not implemented.");
-  }
-
-  // For other document types
+};
+const DocumentPreview = memo(({ attachment, senderName }: { attachment: Attachment; senderName: string }) => {
   return (
-    <div className="flex items-center p-3 bg-muted/20">
-      {/* Render based on extension type */}
+    <div className="flex items-center p-3 bg-muted/20 min-w-[300px]">
       <div className="mr-3">
         <FileText className="h-6 w-6" />
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-hidden">
         <p className="font-medium truncate">{attachment.filename}</p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-black">
           Document • {formatFileSize(attachment.size)}
         </p>
       </div>
@@ -306,7 +152,7 @@ const DocumentPreview = memo(({ attachment }: { attachment: Attachment }) => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => handleDownload(attachment.url, attachment.filename)}
+          onClick={() => handleDownload(attachment.url, attachment.filename, senderName)}
         >
           <Download className="h-4 w-4" />
         </Button>
@@ -314,7 +160,6 @@ const DocumentPreview = memo(({ attachment }: { attachment: Attachment }) => {
     </div>
   );
 });
-
 DocumentPreview.displayName = "DocumentPreview";
 
 // Add this component for upload progress display
@@ -357,270 +202,165 @@ const MessageItem = memo(({
   downloading?: string | null
 }) => {
   const messageDate = new Date(message.sentAt);
-  const showDateDivider =
-    index === 0 ||
-    getMessageDate(messageDate) !==
-    getMessageDate(new Date(messages[index - 1].sentAt));
-
-  // Check if this is first message from a user or if previous message is from someone else
+  const isUserMessage = message.name === session?.user?.name;
   const isNewSender =
     index === 0 ||
-    messages[index - 1].name !== message.name ||
-    new Date(message.sentAt).getTime() -
-    new Date(messages[index - 1].sentAt).getTime() >
-    5 * 60 * 1000;
-
-  const isUserMessage = message.name === session?.user?.name;
+    messages[index - 1]?.name !== message.name ||
+    new Date(message.sentAt).getTime() - new Date(messages[index - 1]?.sentAt).getTime() > 5 * 60 * 1000;
 
   return (
-    <div key={`${message.id}-${index}`} className="mb-1">
+    <div key={`${message.id}-${index}`}>
       {/* Date separator */}
-      {showDateDivider && (
+      {index === 0 || getMessageDate(messageDate) !== getMessageDate(new Date(messages[index - 1]?.sentAt)) ? (
         <div className="flex justify-center my-3">
           <div className="bg-background/70 backdrop-blur-sm px-4 py-1.5 rounded-full text-xs font-medium text-muted-foreground border shadow-sm">
             {getMessageDate(messageDate)}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Message container */}
       <div
         className={cn(
-          "group flex gap-3 max-w-[85%] mb-1",
-          isUserMessage
-            ? "ml-auto flex-row-reverse"
-            : "",
+          "group flex gap-3 max-w-[85%]",
+          isUserMessage ? "ml-auto flex-row-reverse" : "",
           !isNewSender && !isUserMessage ? "pl-12" : ""
         )}
       >
-        {/* User avatar - only show on new sender and not user's own message */}
-        {message.name !== session?.user?.name &&
-          isNewSender && (
-            <div className="mt-1 pb-[48px] relative">
-              <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
-                <AvatarImage
-                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${message.name}`}
-                  alt={message.name}
-                />
-                <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                  {message.name
-                    .substring(0, 2)
-                    .toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-          )}
+        {/* User avatar */}
+        {message.name !== session?.user?.name && isNewSender && (
+          <div className="mt-1 pb-2 relative">
+            <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
+              <AvatarImage
+                src={`https://api.dicebear.com/7.x/initials/svg?seed=${message.name}`}
+                alt={message.name}
+              />
+              <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                {message.name.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+        )}
 
-        {/* Message content with edit/delete buttons */}
+        {/* Message content */}
         <div className="relative group/message">
-          {/* Message bubble with pointer */}
           <div
             className={cn(
-              "relative rounded-2xl p-3 min-w-[120px] shadow-sm",
+              "relative rounded-lg px-2 py-1 shadow-sm",
+              message.attachments?.some((attachment) => attachment.type === "image" || attachment.type === "document") ? "p-1" : "",
               isUserMessage
-                ? "bg-gradient-to-br from-primary/50 to-primary/30 text-primary-foreground rounded-tr-sm border border-primary/20"
-                : "bg-card border rounded-tl-sm"
+                ? "bg-[#1A7377] text-black rounded-tr-sm opacity-80"
+                : "bg-gray-300 dark:bg-gray-800 text-gray-900 rounded-tl-sm border-gray-800"
             )}
-          >
-            {/* Message pointer triangle */}
-            <div
-              className={cn(
-                "absolute top-0 w-3 h-3",
-                isUserMessage
-                  ? "right-0 bg-primary rounded-bl-md"
-                  : "left-0 bg-card rounded-br-md border-r border-b"
-              )}
-            ></div>
-
-            {/* Message sender and time */}
-            {isNewSender && (
-              <div className="flex gap-2 items-center mb-1.5">
-                <p
-                  className={cn(
-                    "text-sm font-medium truncate",
-                    !isUserMessage && "text-primary"
-                  )}
-                >
-                  {isUserMessage
-                    ? "You"
-                    : message.name}
-                </p>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <time className="text-xs opacity-70">
-                        {format(
-                          messageDate,
-                          "h:mm a"
-                        )}
-                      </time>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side={
-                        isUserMessage
-                          ? "left"
-                          : "right"
-                      }
-                    >
-                      {format(
-                        messageDate,
-                        "PPP p"
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                {message.edited && (
-                  <span className="text-xs opacity-70 italic">
-                    (edited)
-                  </span>
-                )}
+          > 
+            {/* Sender's name inside the message box */}
+            {isNewSender && !isUserMessage && (
+              <div className="text-xs font-medium text-muted-foreground mb-1">
+                {message.name}
               </div>
             )}
 
-            {/* Message text */}
-            <div
-              className={cn(
-                "whitespace-pre-wrap break-words text-[15px] leading-relaxed",
-                isUserMessage
-                  ? "text-primary-foreground/95 font-medium"
-                  : "text-foreground"
-              )}
-            >
-              {formatMessageWithMentions(
-                message.message
-              )}
-            </div>
 
             {/* Attachments */}
-            {message.attachments &&
-              message.attachments.length > 0 && (
-                <div className="mt-2 space-y-2">
-                  {message.attachments.length > 1 && (
-                    <div className="text-xs text-muted-foreground mb-1">
-                      {message.attachments.length} attachments
-                    </div>
+            {message.attachments && message.attachments.length > 0 && (
+              <div className="space-y-2">
+                <div
+                  className={cn(
+                    "rounded-lg border",
+                    isUserMessage ? "border-primary-foreground/20" : "border-border",
+                    message.attachments.length > 1 ? "grid grid-cols-2 gap-1" : ""
                   )}
+                >
+                  {message.attachments.map((attachment) => (
+                    <div
+                      key={attachment.id}
+                      className={cn(
+                        "rounded overflow-hidden relative group",
+                        attachment.type === "image" && (message.attachments ?? []).length > 1
+                          ? "aspect-square"
+                          : ""
+                      )}
+                    >
+                      {attachment.type === "image" ? (
+                        <div className="relative w-48 h-48">
+                          <div
+                            onClick={() => onImageView(attachment.url, attachment.filename)}
+                            className="cursor-pointer overflow-hidden relative"
+                          >
+                            <NextImage
+                              src={attachment.url}
+                              alt={attachment.filename}
+                              width={128}
+                              height={128}
+                              className="object-cover w-full h-full rounded-md transition-transform"
+                              loading="lazy"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "/placeholder-image.jpg";
+                              }}
+                            />
+                          </div>
 
-                  <div
-                    className={cn(
-                      "rounded-lg border",
-                      isUserMessage
-                        ? "border-primary-foreground/20"
-                        : "border-border",
-                      message.attachments.length > 1
-                        ? "grid grid-cols-2 gap-1 p-1"
-                        : ""
-                    )}
-                  >
-                    {message.attachments.map(
-                      (attachment) => (
-                        <div
-                          key={attachment.id}
-                          className={cn(
-                            "rounded overflow-hidden relative group",
-                            message.attachments &&
-                              message.attachments.length === 1
-                              ? ""
-                              : "aspect-square"
-                          )}
-                        >
-                          {attachment.type === "image" ? (
-                            <div className="relative">
-                              {/* Image preview with WhatsApp-like overlay on hover */}
-                              <div
-                                onClick={() =>
-                                  onImageView(
-                                    attachment.url,
-                                    attachment.filename
-                                  )
-                                }
-                                className="cursor-pointer overflow-hidden relative"
-                              >
-                                <NextImage
-                                  src={attachment.url}
-                                  alt={attachment.filename}
-                                  width={500}
-                                  height={300}
-                                  className={cn(
-                                    "object-cover w-full transition-transform",
-                                    message.attachments?.length === 1 ? "max-h-72" : "h-full"
-                                  )}
-                                  loading="lazy"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "/placeholder-image.jpg";
-                                  }}
-                                />
-
-                                {/* WhatsApp-like overlay with download button on hover */}
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onImageView(
-                                          attachment.url,
-                                          attachment.filename
-                                        );
-                                      }}
-                                      className="p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
-                                      aria-label="View full image"
-                                    >
-                                      <ZoomIn className="h-5 w-5 text-white" />
-                                    </button>
-
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onDownload(
-                                          attachment.url,
-                                          attachment.filename
-                                        );
-                                      }}
-                                      className="p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
-                                      aria-label="Download image"
-                                    >
-                                      <Download className="h-5 w-5 text-white" />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* File name at the bottom */}
-                              <div className="px-2 py-1 text-xs truncate bg-background/90 absolute bottom-0 w-full">
-                                {attachment.filename}
-                              </div>
-                            </div>
-                          ) : (
-                            <DocumentPreview attachment={attachment} />
-                          )}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-white hover:text-primary"
+                              onClick={() => onImageView(attachment.url, attachment.filename)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-white hover:text-primary"
+                              onClick={() => onDownload(attachment.url, attachment.filename)}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                      )
-                    )}
-                  </div>
+                      ) : (
+                        <DocumentPreview attachment={attachment} senderName={message.name} />
+                      )}
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
+            
+            
+
+            {/* Message text */}
+            {message.message && (
+              <div
+                className={cn(
+                  "whitespace-pre-wrap break-words text-[15px] leading-relaxed",
+                  isUserMessage
+                    ? "text-primary-foreground/95 font-medium text-right"
+                    : "text-foreground"
+                )}
+              >
+                {formatMessageWithMentions(message.message)}
+              </div>
+            )}
           </div>
 
-          {/* Time for non-new messages - subtle timestamp on hover */}
-          {!isNewSender && (
-            <div
-              className={cn(
-                "text-[10px] opacity-0 group-hover/message:opacity-70 text-muted-foreground mt-1 transition-opacity",
-                isUserMessage
-                  ? "text-right mr-1"
-                  : "ml-1"
-              )}
-            >
-              {format(messageDate, "h:mm a")}
-              {message.edited && " (edited)"}
-            </div>
-          )}
+          {/* Message timestamp */}
+          <div
+            className={cn(
+              "text-[10px] opacity-0 group-hover/message:opacity-70 text-muted-foreground mt-1 transition-opacity",
+              isUserMessage ? "text-right mr-1" : "ml-1"
+            )}
+          >
+            {format(messageDate, "h:mm a")}
+            {message.edited && " (edited)"}
+          </div>
 
-          {/* Edit/delete buttons - Make them more visible on hover */}
+          {/* Edit/delete buttons */}
           {isUserMessage && (
             <div
               className={cn(
-                "absolute scale-90 opacity-0 group-hover/message:scale-100 group-hover/message:opacity-100 transition-all duration-150",
+                "absolute invisible group-hover/message:visible opacity-0 group-hover/message:opacity-100 transition-opacity duration-150",
                 "top-0 shadow-md rounded-full border bg-background/95 backdrop-blur-sm z-10",
                 "left-0 transform -translate-x-[110%] flex"
               )}
@@ -677,6 +417,7 @@ export default function ChatPage() {
   const [currentImage, setCurrentImage] = useState<{
     url: string;
     filename: string;
+    senderName: string;
   } | null>(null);
   const [imageViewerZoom, setImageViewerZoom] = useState(1);
   const [imageRotation, setImageRotation] = useState(0);
@@ -697,6 +438,58 @@ export default function ChatPage() {
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
+
+
+
+  useEffect(() => {
+    const updateOnlineStatus = async (isOnline: boolean) => {
+      try {
+        await fetch("/api/chat/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isOnline }),
+        });
+      } catch (error) {
+        console.error("Failed to update online status:", error);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        updateOnlineStatus(false);
+      } else {
+        updateOnlineStatus(true);
+      }
+    };
+
+    const handleStorageEvent = (event: StorageEvent) => {
+      if (event.key === "chat_online_status" && event.newValue === "false") {
+        updateOnlineStatus(false);
+      }
+    };
+
+    // Mark user as online when the component mounts
+    updateOnlineStatus(true);
+    localStorage.setItem("chat_online_status", "true");
+
+    // Listen for visibility changes and storage events
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("storage", handleStorageEvent);
+
+    // Set up a heartbeat to keep the user online
+    const heartbeat = setInterval(() => {
+      updateOnlineStatus(true);
+    }, 20000); // Send heartbeat every 30 seconds
+
+    // Mark user as offline when the component unmounts
+    return () => {
+      clearInterval(heartbeat);
+      updateOnlineStatus(false);
+      localStorage.setItem("chat_online_status", "false");
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("storage", handleStorageEvent);
+    };
+  }, []);
 
   // Close emoji picker when clicking outside
   useEffect(() => {
@@ -817,13 +610,22 @@ export default function ChatPage() {
   }, []);
 
   // Handle initial scroll to bottom after messages load
+  // useEffect(() => {
+  //   if (messages.length && messagesLoaded && shouldScrollToBottom.current) {
+  //     requestAnimationFrame(() => {
+  //       scrollToBottom();
+  //     });
+  //   }
+  // }, [messages, messagesLoaded, scrollToBottom]);
+  //   YEH UPAR WALA useEffect, yeh scroll karega, top to bottom, yeh niche wala direct botttom se khol ke dega.
   useEffect(() => {
     if (messages.length && messagesLoaded && shouldScrollToBottom.current) {
-      requestAnimationFrame(() => {
-        scrollToBottom();
-      });
+      if (messageContainerRef.current) {
+        // Directly set scrollTop to scrollHeight for instant scroll
+        messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+      }
     }
-  }, [messages, messagesLoaded, scrollToBottom]);
+  }, [messages, messagesLoaded]);
 
   // Manual scroll handler
   useEffect(() => {
@@ -1023,17 +825,34 @@ export default function ChatPage() {
 
           // Regular chat message
           if (!messageIdsRef.current.has(data.id)) {
-            messageIdsRef.current.add(data.id);
+            // Check if the message has attachments
+            if (data.attachments?.length > 0) {
+              // For messages with attachments, skip the `data.name !== session?.user?.name` check
+              messageIdsRef.current.add(data.id);
 
-            setMessages((prev) => {
-              const newMessages = [...prev, data];
+              setMessages((prev) => {
+                const newMessages = [...prev, data];
 
-              if (isScrolling) {
-                setUnreadCount((prev) => prev + 1);
-              }
+                if (isScrolling) {
+                  setUnreadCount((prev) => prev + 1);
+                }
 
-              return newMessages;
-            });
+                return newMessages;
+              });
+            } else if (data.name !== session?.user?.name) {
+              // For messages without attachments, check `data.name !== session?.user?.name`
+              messageIdsRef.current.add(data.id);
+
+              setMessages((prev) => {
+                const newMessages = [...prev, data];
+
+                if (isScrolling) {
+                  setUnreadCount((prev) => prev + 1);
+                }
+
+                return newMessages;
+              });
+            }
           }
         } catch (error) {
           console.error("Error parsing message:", error);
@@ -1181,22 +1000,24 @@ export default function ChatPage() {
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
       const newFiles = Array.from(e.target.files);
-
+  
       // Limit to 3 files at a time
       if (attachments.length + newFiles.length > 3) {
         toast.error("You can only attach up to 3 files at a time");
+        e.target.value = ""; // Reset file input
         return;
       }
-
+  
       // Check file size (limit to 10MB per file)
       const overSizedFiles = newFiles.filter(
         (file) => file.size > 10 * 1024 * 1024
       );
       if (overSizedFiles.length > 0) {
         toast.error("Files must be smaller than 10MB");
+        e.target.value = ""; // Reset file input
         return;
       }
-
+  
       // Process images if needed
       const processedFiles = await Promise.all(
         newFiles.map(async (file) => {
@@ -1206,9 +1027,11 @@ export default function ChatPage() {
           return file;
         })
       );
-
+  
       setAttachments((prev) => [...prev, ...processedFiles]);
     }
+  
+    e.target.value = ""; // Reset file input to allow re-selection of the same file
   }, [attachments, compressImageIfNeeded]);
 
   // Remove an attachment before sending
@@ -1235,6 +1058,10 @@ export default function ChatPage() {
       message: input,
       sentAt: new Date().toISOString(),
     };
+
+    if (attachments.length === 0) {
+      setMessages((prev) => [...prev, newMessage]);
+    }
 
     // Clear input immediately for better UX
     setInput("");
@@ -1424,40 +1251,9 @@ export default function ChatPage() {
     return format(date, "MMM d, yyyy");
   }, []);
 
-  // Helper function to handle downloads with feedback
-  const handleDownload = useCallback(async (url: string, filename: string) => {
-    try {
-      setDownloading(filename);
-
-      // Fetch the file from the URL
-      const response = await fetch(url);
-      const blob = await response.blob();
-
-      // Create a temporary download link
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = filename;
-
-      // Trigger the download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Clean up
-      window.URL.revokeObjectURL(downloadUrl);
-      toast.success(`Downloaded ${filename}`);
-    } catch (error) {
-      toast.error("Failed to download file");
-      console.error("Download error:", error);
-    } finally {
-      setDownloading(null);
-    }
-  }, []);
-
   // Function to open image viewer
   const openImageViewer = useCallback((url: string, filename: string) => {
-    setCurrentImage({ url, filename });
+    setCurrentImage({ url, filename, senderName: "" });
     setImageViewerOpen(true);
     setImageViewerZoom(1);
     setImageRotation(0);
@@ -1488,20 +1284,22 @@ export default function ChatPage() {
         </div>
 
         {!sidebarCollapsed && (
-          <div className="flex flex-col p-4 border-b">
-            <div className="flex items-center justify-center">
-              <h2 className="font-semibold text-lg">Team Members</h2>
-            </div>
-            <div className="mt-2 relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search users..."
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                className="pl-8"
-              />
-            </div>
+          <>
+          <div className="flex flex-col p-4 border-b h-[60px]">
+          <div className="flex items-center justify-center">
+            <h2 className="font-semibold text-lg">Team Members</h2>
           </div>
+        </div>
+        <div className="mt-2 py-1 relative px-4">
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search users..."
+            value={userSearch}
+            onChange={(e) => setUserSearch(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        </>
         )}
 
         {/* Sidebar content */}
@@ -1728,7 +1526,7 @@ export default function ChatPage() {
       {/* Chat main area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <Card className="flex-1 flex flex-col overflow-hidden border-0 rounded-none shadow-none">
-          <CardHeader className="py-2 px-4 flex flex-row items-center justify-center border-b bg-card h-[60px] z-10">
+          <CardHeader className="py-2 px-4 flex flex-row items-center justify-center border-b bg-card h-[36px] z-10">
             <div>
               <CardTitle className="text-lg">Chat Room</CardTitle>
               <CardDescription className="flex items-center gap-2 justify-center">
@@ -1778,7 +1576,7 @@ export default function ChatPage() {
             {/* Standard scrollable messages list */}
             <div
               ref={messageContainerRef}
-              className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-muted/50 scrollbar-track-transparent hover:scrollbar-thumb-muted/70 bg-gradient-to-b from-card/40 to-background/80 px-6"
+              className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-muted/50 scrollbar-track-transparent hover:scrollbar-thumb-muted/70 px-6"
             >
               {isLoadingMore && (
                 <div className="flex justify-center p-2">
@@ -1811,7 +1609,7 @@ export default function ChatPage() {
                       onDelete={deleteMessage}
                       onEdit={startEditingMessage}
                       onImageView={openImageViewer}
-                      onDownload={handleDownload}
+                      onDownload={(url, filename) => handleDownload(url, filename, message.name)}
                       formatMessageWithMentions={formatMessageWithMentions}
                       getMessageDate={getMessageDate}
                     />
@@ -1894,7 +1692,7 @@ export default function ChatPage() {
                   placeholder="Type a message..."
                   value={input}
                   onChange={handleInputChange}
-                  className="pr-24 py-6 shadow-sm border-muted"
+                  className="pr-24 py-6 shadow-sm border-muted rounded-full"
                   disabled={isUploading || !!editingMessage}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
@@ -2123,7 +1921,7 @@ export default function ChatPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => currentImage && handleDownload(currentImage.url, currentImage.filename)}
+                onClick={() => currentImage && handleDownload(currentImage.url, currentImage.filename, currentImage.senderName)}
               >
                 {downloading === currentImage?.filename ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />

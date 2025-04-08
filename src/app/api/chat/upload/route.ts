@@ -15,55 +15,47 @@ cloudinary.config({
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
+
     // Parse the form data
     const formData = await req.formData();
     const files = formData.getAll("files") as File[];
-    const messageId = formData.get("messageId") as string;
-    
-    if (!files?.length || !messageId) {
-      return NextResponse.json({ error: "No files provided or missing message ID" }, { status: 400 });
+
+    if (!files?.length) {
+      return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
-    
-    // Create a folder path for better organization
-    const folderPath = `office_management/chat/${messageId}`;
-    
+
     // Process each file and upload to Cloudinary
     const attachments = await Promise.all(
       files.map(async (file) => {
         try {
           // Generate a unique file ID
           const fileId = uuidv4();
-          
+
           // Convert File to buffer for Cloudinary upload
           const bytes = await file.arrayBuffer();
           const buffer = Buffer.from(bytes);
-          
-          // Get file extension for proper handling
+
+          // Get file extension and MIME type
           const fileExt = file.name.split(".").pop() || "";
-          
-          // Base file name for storage
-          const uniqueFileName = `${fileId}.${fileExt}`;
-          
+          const mimeType = file.type || "application/octet-stream";
+          console.log(`Uploading file: ${file.name}, Type: ${mimeType}, Extension: ${fileExt}`);
+
+          // Determine resource type based on file type
+          const resourceType = mimeType.startsWith("image/")
+            ? "image"
+            : "raw"; // Use "raw" for non-image files like PDFs
+
           // Upload to Cloudinary using buffer upload
-          // Using async/await with promises for better error handling
           const uploadResult = await new Promise<any>((resolve, reject) => {
-            // Create a buffer upload stream
             const uploadStream = cloudinary.uploader.upload_stream(
               {
-                folder: folderPath,
-                public_id: fileId, 
-                resource_type: "auto", // Let Cloudinary detect the resource type
-                // Optional transformation parameters
-                transformation: file.type.startsWith("image/") ? [
-                  { quality: "auto" },
-                  { fetch_format: "auto" },
-                  { dpr: "auto" }
-                ] : [],
+                folder: "office_management/chat", // Updated folder path
+                public_id: fileId,
+                resource_type: resourceType, // Explicitly set resource type
               },
               (error, result) => {
                 if (error) {
@@ -74,22 +66,24 @@ export async function POST(req: NextRequest) {
                 }
               }
             );
-            
+
             // Write buffer to stream
-            const Readable = require('stream').Readable;
+            const Readable = require("stream").Readable;
             const readableInstanceStream = new Readable({
               read() {
                 this.push(buffer);
                 this.push(null);
-              }
+              },
             });
-            
+
             readableInstanceStream.pipe(uploadStream);
           });
-          
+
+          console.log("Upload successful:", uploadResult);
+
           // Determine file type for the frontend
-          const type = file.type.startsWith("image/") ? "image" : "document";
-          
+          const type = mimeType.startsWith("image/") ? "image" : "document";
+
           // Return attachment metadata
           return {
             id: fileId,
@@ -101,11 +95,11 @@ export async function POST(req: NextRequest) {
           };
         } catch (error) {
           console.error(`Error uploading file ${file.name}:`, error);
-          throw error; // Re-throw to be caught by the main try/catch
+          throw error;
         }
       })
     );
-    
+
     return NextResponse.json({ success: true, attachments });
   } catch (error) {
     console.error("Error uploading files:", error);
@@ -116,6 +110,6 @@ export async function POST(req: NextRequest) {
 export const config = {
   api: {
     bodyParser: false,
-    responseLimit: '50mb',
+    responseLimit: "50mb",
   },
 };
