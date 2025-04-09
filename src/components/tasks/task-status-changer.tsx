@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
@@ -13,27 +13,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { 
-  CheckCircle as CheckCircleIcon,
-  Clock as ClockIcon,
-  PlayCircle as PlayCircleIcon, 
-  AlertCircle as AlertCircleIcon,
-  XCircle as XCircleIcon,
-  Loader2 as SpinnerIcon
+  CheckCircle,
+  Clock,
+  PlayCircle, 
+  AlertCircle,
+  XCircle,
+  Loader2,
+  Receipt
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TASK_STATUSES = [
-  { value: "pending", label: "Pending", icon: ClockIcon, color: "text-gray-500" },
-  { value: "in-progress", label: "In Progress", icon: PlayCircleIcon, color: "text-blue-500" },
-  { value: "review", label: "Under Review", icon: AlertCircleIcon, color: "text-yellow-500" },
-  { value: "completed", label: "Completed", icon: CheckCircleIcon, color: "text-green-500" },
-  { value: "cancelled", label: "Cancelled", icon: XCircleIcon, color: "text-red-500" },
+  { value: "pending", label: "Pending", icon: Clock, color: "text-gray-500" },
+  { value: "in-progress", label: "In Progress", icon: PlayCircle, color: "text-blue-500" },
+  { value: "review", label: "Under Review", icon: AlertCircle, color: "text-yellow-500" },
+  { value: "completed", label: "Completed", icon: CheckCircle, color: "text-green-500" },
+  { value: "cancelled", label: "Cancelled", icon: XCircle, color: "text-red-500" },
 ];
 
 interface TaskStatusChangerProps {
   taskId: string;
   currentStatus: string;
-  onStatusChange?: (newStatus: string) => void;
+  billingStatus?: string;
+  clientId?: string | null;
+  isGuestClient?: boolean;
+  userRole?: string;
+  onStatusChange?: (newStatus: string, newBillingStatus?: string) => void;
   disabled?: boolean;
   className?: string;
 }
@@ -41,13 +46,19 @@ interface TaskStatusChangerProps {
 export function TaskStatusChanger({
   taskId,
   currentStatus,
+  billingStatus = "not_billed",
+  clientId,
+  isGuestClient = false,
+  userRole = "BUSINESS_EXECUTIVE",
   onStatusChange,
   disabled = false,
   className,
 }: TaskStatusChangerProps) {
   const router = useRouter();
   const [status, setStatus] = useState(currentStatus);
+  const [pendingBilling, setPendingBilling] = useState(billingStatus === "pending_billing");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isAdmin = userRole === "ADMIN";
 
   const handleStatusChange = async (newStatus: string) => {
     if (newStatus === status) return;
@@ -55,15 +66,22 @@ export function TaskStatusChanger({
     setIsSubmitting(true);
     
     try {
-      const response = await axios.patch(`/api/tasks/${taskId}`, {
+      const response = await axios.patch(`/api/tasks/${taskId}/status`, {
         status: newStatus
       });
       
       setStatus(newStatus);
-      toast.success(`Task status updated to ${getStatusLabel(newStatus)}`);
+      
+      // Check if response includes a billingStatus field update
+      if (response.data.billingStatus === "pending_billing") {
+        setPendingBilling(true);
+        toast.success(`Task marked as completed and pending billing`);
+      } else {
+        toast.success(`Task status updated to ${getStatusLabel(newStatus)}`);
+      }
       
       if (onStatusChange) {
-        onStatusChange(newStatus);
+        onStatusChange(newStatus, response.data.billingStatus);
       }
       
       // Refresh the page data
@@ -83,6 +101,11 @@ export function TaskStatusChanger({
   };
   
   const getStatusIcon = (statusValue: string) => {
+    // For "completed" tasks that are pending billing for permanent clients, show a receipt icon
+    if (statusValue === "completed" && pendingBilling) {
+      return <Receipt className="h-4 w-4 mr-2 text-amber-500" />;
+    }
+    
     const status = TASK_STATUSES.find(s => s.value === statusValue);
     if (!status) return null;
     
@@ -90,19 +113,26 @@ export function TaskStatusChanger({
     return <Icon className={cn("h-4 w-4 mr-2", status.color)} />;
   };
 
+  const getDisplayStatus = () => {
+    if (status === "completed" && pendingBilling) {
+      return "Pending Billing";
+    }
+    return getStatusLabel(status);
+  }
+
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <Select
-        disabled={disabled || isSubmitting}
+        disabled={disabled || isSubmitting || pendingBilling}
         value={status}
         onValueChange={handleStatusChange}
       >
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className={cn("w-[180px]", pendingBilling && "bg-amber-50 text-amber-800 border-amber-300")}>
           <SelectValue>
             <div className="flex items-center">
               {getStatusIcon(status)}
-              {getStatusLabel(status)}
-              {isSubmitting && <SpinnerIcon className="ml-2 h-4 w-4 animate-spin" />}
+              {getDisplayStatus()}
+              {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
             </div>
           </SelectValue>
         </SelectTrigger>

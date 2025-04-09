@@ -6,6 +6,7 @@ import { use } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -37,6 +38,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UnifiedHistoryTab } from "@/components/clients/unified-history-tab";
 
 interface Client {
   id: string;
@@ -68,9 +70,9 @@ interface Client {
     } | null;
   }>;
 }
-
 export default function ClientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const { data: session } = useSession();
 
   // Correctly unwrap the params promise
   const resolvedParams = use(params);
@@ -435,29 +437,13 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
           </Card>
         </TabsContent>
 
-        {/* Placeholder for History Tab - will be implemented in detail separately */}
+        {/* History Tab */}
         <TabsContent value="history" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Client History</CardTitle>
-              <CardDescription>Record of client interactions and changes</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <Clock className="h-12 w-12 mx-auto text-muted-foreground opacity-20 mb-2" />
-                <h3 className="text-lg font-medium mb-2">
-                  {client.isGuest 
-                    ? "History not available for guest clients" 
-                    : "No history records yet"}
-                </h3>
-                <p className="text-muted-foreground">
-                  {client.isGuest 
-                    ? "History tracking is only available for permanent clients" 
-                    : "Start adding history records to keep track of client interactions"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <UnifiedHistoryTab
+            clientId={client.id}
+            isPermanent={!client.isGuest}
+            isAdmin={session?.user?.role === "ADMIN"}
+          />
         </TabsContent>
 
         {/* Placeholder for Documents Tab - will be implemented in detail separately */}

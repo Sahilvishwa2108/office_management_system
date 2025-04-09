@@ -42,6 +42,7 @@ model User {
   activities              Activity[]
   managedClients          Client[]       // Staff who manages clients
   taskComments            TaskComment[]
+  clientHistories         ClientHistory[] @relation("CreatedBy")
 }
 
 model Client {
@@ -63,6 +64,7 @@ model Client {
   manager        User         @relation(fields: [managerId], references: [id])
   tasks          Task[]       // Tasks associated with this client
   attachments    Attachment[] // Attachments related to this client
+  history        ClientHistory[] // Client history entries
   
   @@index([managerId])
   @@index([contactPerson]) // Index for searching by contact person name
@@ -77,6 +79,11 @@ model Task {
   status       String    @default("pending") // "pending", "in-progress", "review", "completed", "cancelled"
   priority     String    @default("medium")  // "low", "medium", "high"
   dueDate      DateTime?
+  
+  // Billing related fields
+  billingStatus String?   @default("not_billed") // "not_billed", "pending_billing", "billed"
+  billingDate   DateTime?
+  scheduledDeletionDate DateTime?
   
   // Relations
   assignedById String
@@ -94,6 +101,7 @@ model Task {
   @@index([assignedById])
   @@index([assignedToId])
   @@index([clientId])
+  @@index([billingStatus])
 }
 
 model Attachment {
@@ -168,4 +176,28 @@ model TaskComment {
 
   @@index([taskId])
   @@index([userId])
+}
+
+model ClientHistory {
+  id                String    @id @default(uuid())
+  clientId          String
+  client            Client    @relation(fields: [clientId], references: [id])
+  content           String    // Description/content of the history entry
+  type              String    @default("general")
+  createdAt         DateTime  @default(now())
+  createdById       String
+  createdBy         User      @relation("CreatedBy", fields: [createdById], references: [id])
+  
+  // Task related fields
+  taskId            String?
+  taskTitle         String?
+  taskDescription   String?
+  taskStatus        String?
+  taskCompletedDate DateTime?
+  taskBilledDate    DateTime?
+  billingDetails    Json?
+
+  @@index([clientId])
+  @@index([createdById])
+  @@index([taskId])
 }

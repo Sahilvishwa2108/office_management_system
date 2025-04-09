@@ -1,22 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../../auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { z } from "zod";
 
-// Schema for history entry creation
-const historyEntrySchema = z.object({
-  description: z.string().min(1, "Description is required"),
-});
-
-// GET - Fetch history entries for a specific client
 export async function GET(
-  _req: NextRequest, // Fixed: underscore for unused parameter
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -31,10 +24,13 @@ export async function GET(
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
     }
 
-    // Fetch all history entries for this client, ordered by most recent first
+    // Get history entries for this client
     const historyEntries = await prisma.clientHistory.findMany({
-      where: { clientId },
-      orderBy: { createdAt: "desc" },
+      where: {
+        clientId,
+        // Get only general history entries (not task specific)
+        type: "general",
+      },
       include: {
         createdBy: {
           select: {
@@ -45,17 +41,12 @@ export async function GET(
           },
         },
       },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
 
-    // Map response to match the expected format in the frontend
-    const mappedEntries = historyEntries.map((entry: any) => ({
-      id: entry.id,
-      description: entry.content, // Map content field to description
-      createdAt: entry.createdAt.toISOString(),
-      createdBy: entry.createdBy,
-    }));
-
-    return NextResponse.json({ historyEntries: mappedEntries });
+    return NextResponse.json({ historyEntries });
   } catch (error) {
     console.error("Error fetching client history:", error);
     return NextResponse.json(
@@ -65,48 +56,34 @@ export async function GET(
   }
 }
 
-// POST - Add a new history entry for a client
 export async function POST(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const clientId = params.id;
-    const userId = session.user.id;
+    const body = await request.json();
 
-    // Check if client exists
-    const client = await prisma.client.findUnique({
-      where: { id: clientId },
-    });
-
-    if (!client) {
-      return NextResponse.json({ error: "Client not found" }, { status: 404 });
-    }
-
-    // Parse and validate request body
-    const body = await req.json();
-    const validationResult = historyEntrySchema.safeParse(body);
-
-    if (!validationResult.success) {
+    // Validate required fields
+    if (!body.description) {
       return NextResponse.json(
-        { errors: validationResult.error.flatten().fieldErrors },
+        { error: "Description is required" },
         { status: 400 }
       );
     }
 
-    const { description } = validationResult.data;
-
-    // Create new history entry - using correct field name "content" instead of "description"
+    // Create history entry
     const historyEntry = await prisma.clientHistory.create({
       data: {
+        content: body.description,
+        type: "general", // Mark as general history (not task-related)
         clientId,
-        content: description, // FIXED: Use content field instead of description
-        createdById: userId,
+        createdById: session.user.id,
       },
       include: {
         createdBy: {
@@ -120,40 +97,32 @@ export async function POST(
       },
     });
 
-    // Format response to match expected structure in the frontend
-    const formattedEntry = {
-      id: historyEntry.id,
-      description: historyEntry.content, // Map content to description for frontend
-      createdAt: historyEntry.createdAt.toISOString(),
-      createdBy: historyEntry.createdBy,
-    };
-
-    return NextResponse.json({
-      message: "History entry added successfully",
-      historyEntry: formattedEntry,
-    });
+    return NextResponse.json({ historyEntry }, { status: 201 });
   } catch (error) {
-    console.error("Error adding client history entry:", error);
+    console.error("Error creating history entry:", error);
     return NextResponse.json(
-      { error: "Failed to add history entry" },
+      { error: "Failed to create history entry" },
       { status: 500 }
     );
   }
 }
 
-// DELETE - Remove a history entry
 export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } } // Fixed: properly typed params
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !["ADMIN", "PARTNER"].includes(session.user.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (session?.user?.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Only admins can delete history entries" },
+        { status: 403 }
+      );
     }
 
-    // Get the entry ID from the query parameter
-    const entryId = req.nextUrl.searchParams.get("entryId");
+    const clientId = params.id;
+    const { searchParams } = new URL(request.url);
+    const entryId = searchParams.get("entryId");
 
     if (!entryId) {
       return NextResponse.json(
@@ -162,9 +131,12 @@ export async function DELETE(
       );
     }
 
-    // Check if entry exists
-    const entry = await prisma.clientHistory.findUnique({
-      where: { id: entryId },
+    // Check if entry exists and belongs to the client
+    const entry = await prisma.clientHistory.findFirst({
+      where: {
+        id: entryId,
+        clientId,
+      },
     });
 
     if (!entry) {
@@ -176,106 +148,16 @@ export async function DELETE(
 
     // Delete the entry
     await prisma.clientHistory.delete({
-      where: { id: entryId },
-    });
-
-    return NextResponse.json({
-      message: "History entry deleted successfully",
-    });
-  } catch (error) {
-    console.error("Error deleting client history entry:", error);
-    return NextResponse.json(
-      { error: "Failed to delete history entry" },
-      { status: 500 }
-    );
-  }
-}
-
-// Update history entry - Fixed implementation
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Get client ID from params
-    const clientId = params.id;
-
-    // Parse request body to get entry ID and updated content
-    const body = await req.json();
-    const { entryId, content } = body;
-
-    if (!entryId || !content) {
-      return NextResponse.json(
-        {
-          error: "Entry ID and content are required",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Verify the entry exists and belongs to the specified client
-    const existingEntry = await prisma.clientHistory.findFirst({
       where: {
         id: entryId,
-        clientId: clientId,
       },
     });
 
-    if (!existingEntry) {
-      return NextResponse.json(
-        {
-          error: "History entry not found or doesn't belong to this client",
-        },
-        { status: 404 }
-      );
-    }
-
-    // Update the history entry
-    const updatedEntry = await prisma.clientHistory.update({
-      where: { id: entryId },
-      data: { content }, // Using content field which exists in schema
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            role: true,
-          },
-        },
-      },
-    });
-
-    // Log the activity
-    await prisma.activity.create({
-      data: {
-        type: "client",
-        action: "updated history",
-        target: `Client history entry for ${clientId}`,
-        userId: session.user.id,
-      },
-    });
-
-    // Format response to match expected structure in the frontend
-    const formattedEntry = {
-      id: updatedEntry.id,
-      description: updatedEntry.content,
-      createdAt: updatedEntry.createdAt.toISOString(),
-      createdBy: updatedEntry.createdBy,
-    };
-
-    return NextResponse.json({
-      message: "History entry updated successfully",
-      historyEntry: formattedEntry,
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error updating client history entry:", error);
+    console.error("Error deleting history entry:", error);
     return NextResponse.json(
-      { error: "Failed to update history entry" },
+      { error: "Failed to delete history entry" },
       { status: 500 }
     );
   }

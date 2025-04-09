@@ -29,6 +29,7 @@ import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/loading/dashboard-skeleton";
+import { PendingBillingTasks } from "@/components/admin/pending-billing-tasks";
 
 interface Task {
   id: string;
@@ -383,47 +384,51 @@ export default function AdminDashboard() {
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <DashboardCard title="Recent Activity" className="col-span-4" loading={loading}>
-              <ActivityFeed 
-                fetchUrl="/api/activities"
-                loading={loading} 
-                showUserInfo={true}
-                showRoleInfo={true}
-              />
-            </DashboardCard>
+          <div className="grid gap-6">
+            <PendingBillingTasks />
             
-            <Card className="col-span-3">
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <Link href="/dashboard/admin/users">
-                  <Button variant="outline" className="w-full justify-between">
-                    Manage Users
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-                <Link href="/dashboard/admin/clients">
-                  <Button variant="outline" className="w-full justify-between">
-                    Manage Clients
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-                <Link href="/dashboard/tasks">
-                  <Button variant="outline" className="w-full justify-between">
-                    View All Tasks
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-                <Link href="/dashboard/admin/documents">
-                  <Button variant="outline" className="w-full justify-between">
-                    Document Repository
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+              <DashboardCard title="Recent Activity" className="col-span-4" loading={loading}>
+                <ActivityFeed 
+                  fetchUrl="/api/activities"
+                  loading={loading} 
+                  showUserInfo={true}
+                  showRoleInfo={true}
+                />
+              </DashboardCard>
+              
+              <Card className="col-span-3">
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  <Link href="/dashboard/admin/users">
+                    <Button variant="outline" className="w-full justify-between">
+                      Manage Users
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/admin/clients">
+                    <Button variant="outline" className="w-full justify-between">
+                      Manage Clients
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/tasks">
+                    <Button variant="outline" className="w-full justify-between">
+                      View All Tasks
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/admin/documents">
+                    <Button variant="outline" className="w-full justify-between">
+                      Document Repository
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
           </div>
           </>
           )}

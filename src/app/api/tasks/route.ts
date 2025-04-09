@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
+    const billingStatus = searchParams.get("billingStatus");
 
     // Build the where clause based on the user's role
     let where: any = {};
@@ -43,10 +44,15 @@ export async function GET(request: NextRequest) {
     if (status && status !== "all") {
       where.status = status;
     }
+    
+    // Apply billing status filter if provided
+    if (billingStatus) {
+      where.billingStatus = billingStatus;
+    }
 
     // Apply role-based filtering
     if (currentUser.role === "ADMIN") {
-      // Admin sees all tasks
+      // Admin sees all tasks (no additional filters)
     } else if (currentUser.role === "PARTNER") {
       // Partner sees tasks they created OR tasks assigned to them
       where.OR = [
@@ -71,11 +77,13 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             contactPerson: true,
+            companyName: true,
+            isGuest: true,
           },
         },
       },
       orderBy: {
-        createdAt: "desc",
+        updatedAt: "desc",
       },
     });
 

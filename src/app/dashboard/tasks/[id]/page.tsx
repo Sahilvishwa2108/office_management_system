@@ -43,6 +43,7 @@ import { TaskComments } from "@/components/tasks/task-comments";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetailSkeleton } from "@/components/loading/task-skeleton";
+import { BillingApprovalButton } from "@/components/tasks/billing-approval-button"; // Add this import for BillingApprovalButton
 
 // Add the missing getInitials function
 const getInitials = (name: string): string => {
@@ -70,6 +71,7 @@ interface Task {
   dueDate: string | null;
   createdAt: string;
   updatedAt: string;
+  billingStatus?: string; // Add billingStatus property
   assignedBy: {
     id: string;
     name: string;
@@ -416,6 +418,19 @@ export default function TaskDetailPage() {
                     View All Tasks
                   </Link>
                 </Button>
+
+                {task.status === "completed" && task.billingStatus === "pending_billing" && currentUser?.role === "ADMIN" && (
+                  <div className="mt-4">
+                    <p className="text-sm text-amber-600 mb-2">
+                      This task is completed and pending billing approval
+                    </p>
+                    <BillingApprovalButton
+                      taskId={task.id}
+                      taskTitle={task.title}
+                      className="w-full"
+                    />
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
