@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
@@ -24,6 +24,7 @@ import {
   ImageIcon,
   X as XIcon,
   Download as DownloadIcon,
+  RefreshCw as RefreshIcon,
 } from "lucide-react";
 import { CloudinaryUpload } from "@/components/cloudinary/cloudinary-upload";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -87,6 +88,8 @@ export function TaskComments({
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [currentImage, setCurrentImage] = useState<{
@@ -102,6 +105,43 @@ export function TaskComments({
     setImageViewerZoom(1);
     setImageRotation(0);
   }, []);
+
+  const fetchLatestComments = useCallback(
+    async (showToast = false) => {
+      try {
+        setRefreshing(true);
+        const response = await axios.get(`/api/tasks/${taskId}/comments`);
+        setComments(response.data);
+        if (showToast) {
+          toast.success("Comments refreshed");
+        }
+      } catch (error) {
+        console.error("Error refreshing comments:", error);
+        if (showToast) {
+          toast.error("Failed to refresh comments");
+        }
+      } finally {
+        setRefreshing(false);
+      }
+    },
+    [taskId]
+  );
+
+  useEffect(() => {
+    refreshTimerRef.current = setInterval(() => {
+      fetchLatestComments();
+    }, 300000);
+
+    return () => {
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current);
+      }
+    };
+  }, [fetchLatestComments]);
+
+  const handleRefreshComments = () => {
+    fetchLatestComments(true);
+  };
 
   const handleAddComment = async () => {
     if (!newComment.trim() && attachments.length === 0) return;
@@ -173,7 +213,6 @@ export function TaskComments({
 
   const getAttachmentUrl = (attachment: Attachment) => {
     if (attachment.resource_type === "raw") {
-      // Add `fl_attachment` transformation for raw files
       return attachment.secure_url.replace(
         "/upload/",
         "/upload/fl_attachment/"
@@ -184,17 +223,52 @@ export function TaskComments({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Task Discussion</CardTitle>
-        <CardDescription>
-          Comment and share files related to this task
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div>
+          <CardTitle>Task Discussion</CardTitle>
+          <CardDescription>
+            Comment and share files related to this task
+          </CardDescription>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefreshComments}
+          disabled={refreshing}
+          className="ml-auto"
+        >
+          {refreshing ? (
+            <SpinnerIcon className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshIcon className="h-4 w-4" />
+          )}
+          <span className="ml-2 hidden sm:inline">Refresh</span>
+        </Button>
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[500px] p-6" type="always">
-          {/* Comment list */}
           <div className="space-y-6 pr-4">
-            {comments.length === 0 ? (
+            {commentsLoading || refreshing ? (
+              <div className="space-y-6 pr-4">
+                {Array(3)
+                  .fill(0)
+                  .map((_, index) => (
+                    <div
+                      key={`comment-skeleton-${index}`}
+                      className="flex gap-4 mb-6"
+                    >
+                      <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                        <Skeleton className="h-16 w-full" />
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ) : comments.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground">
                 No comments yet. Be the first to add a comment!
               </div>
@@ -224,7 +298,6 @@ export function TaskComments({
                       <div className="mt-1">{comment.content}</div>
                     )}
 
-                    {/* Display attachments */}
                     {comment.attachments && comment.attachments.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-2">
                         {comment.attachments.map((attachment, index) => (
@@ -258,31 +331,36 @@ export function TaskComments({
                                     variant="ghost"
                                     className="text-white hover:text-primary"
                                     onClick={async () => {
-                                      const response = await fetch(getAttachmentUrl(attachment));
+                                      const response = await fetch(
+                                        getAttachmentUrl(attachment)
+                                      );
                                       const blob = await response.blob();
-                                      const downloadUrl = window.URL.createObjectURL(blob);
+                                      const downloadUrl =
+                                        window.URL.createObjectURL(blob);
 
-                                      // Get the current date in dd-mm-yyyy format
                                       const now = new Date();
-                                      const formattedDate = `${String(now.getDate()).padStart(2, "0")}-${String(
+                                      const formattedDate = `${String(
+                                        now.getDate()
+                                      ).padStart(2, "0")}-${String(
                                         now.getMonth() + 1
                                       ).padStart(2, "0")}-${now.getFullYear()}`;
 
-                                      // Extract the file extension
-                                      const fileExtension = attachment.format || attachment.url.split(".").pop();
+                                      const fileExtension =
+                                        attachment.format ||
+                                        attachment.url.split(".").pop();
 
-                                      // Construct the new filename
-                                      const newFileName = `${getFileNameFromAttachment(attachment)}_${formattedDate}.${fileExtension}`;
+                                      const newFileName = `${getFileNameFromAttachment(
+                                        attachment
+                                      )}_${formattedDate}.${fileExtension}`;
 
-                                      // Create a temporary download link
-                                      const link = document.createElement("a");
+                                      const link =
+                                        document.createElement("a");
                                       link.href = downloadUrl;
                                       link.download = newFileName;
                                       document.body.appendChild(link);
                                       link.click();
                                       document.body.removeChild(link);
 
-                                      // Clean up
                                       window.URL.revokeObjectURL(downloadUrl);
                                     }}
                                   >
@@ -292,7 +370,6 @@ export function TaskComments({
                               </div>
                             ) : (
                               <div className="flex flex-col gap-1 w-48 m-2.5">
-                                {/* Document Name and Download Icon in the Same Row */}
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
                                     <FileIcon className="h-5 w-5 text-blue-500" />
@@ -303,41 +380,48 @@ export function TaskComments({
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                      <Button
-  size="sm"
-  variant="ghost"
-  className="text-muted-foreground hover:text-primary"
-  onClick={async () => {
-    const response = await fetch(getAttachmentUrl(attachment));
-    const blob = await response.blob();
-    const downloadUrl = window.URL.createObjectURL(blob);
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="text-muted-foreground hover:text-primary"
+                                          onClick={async () => {
+                                            const response = await fetch(
+                                              getAttachmentUrl(attachment)
+                                            );
+                                            const blob = await response.blob();
+                                            const downloadUrl =
+                                              window.URL.createObjectURL(blob);
 
-    // Get the current date in dd-mm-yyyy format
-    const now = new Date();
-    const formattedDate = `${String(now.getDate()).padStart(2, "0")}-${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}-${now.getFullYear()}`;
+                                            const now = new Date();
+                                            const formattedDate = `${String(
+                                              now.getDate()
+                                            ).padStart(2, "0")}-${String(
+                                              now.getMonth() + 1
+                                            ).padStart(2, "0")}-${now.getFullYear()}`;
 
-    // Extract the file extension
-    const fileExtension = attachment.format || attachment.url.split(".").pop();
+                                            const fileExtension =
+                                              attachment.format ||
+                                              attachment.url.split(".").pop();
 
-    // Construct the new filename
-    const newFileName = `${getFileNameFromAttachment(attachment)}_${formattedDate}.${fileExtension}`;
+                                            const newFileName = `${getFileNameFromAttachment(
+                                              attachment
+                                            )}_${formattedDate}.${fileExtension}`;
 
-    // Create a temporary download link
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = newFileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+                                            const link =
+                                              document.createElement("a");
+                                            link.href = downloadUrl;
+                                            link.download = newFileName;
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
 
-    // Clean up
-    window.URL.revokeObjectURL(downloadUrl);
-  }}
->
-  <DownloadIcon className="h-4 w-4" />
-</Button>
+                                            window.URL.revokeObjectURL(
+                                              downloadUrl
+                                            );
+                                          }}
+                                        >
+                                          <DownloadIcon className="h-4 w-4" />
+                                        </Button>
                                       </TooltipTrigger>
                                       <TooltipContent>
                                         <p>Download file</p>
@@ -346,7 +430,6 @@ export function TaskComments({
                                   </TooltipProvider>
                                 </div>
 
-                                {/* Document Type and Size Below */}
                                 <div className="text-xs text-muted-foreground mt-1 pl-1">
                                   Document
                                 </div>
@@ -442,7 +525,6 @@ export function TaskComments({
       <Separator />
 
       <CardFooter className="p-4">
-        {/* Comment form */}
         <div className="flex gap-4 w-full">
           <Avatar className="h-10 w-10 hidden sm:flex">
             <AvatarImage
@@ -458,7 +540,6 @@ export function TaskComments({
               className="min-h-20 resize-none"
             />
 
-            {/* Display pending attachments */}
             {attachments.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {attachments.map((attachment, index) => (
