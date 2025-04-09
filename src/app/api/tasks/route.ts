@@ -19,8 +19,11 @@ const taskCreateSchema = z.object({
 // GET all tasks with optional filtering
 export async function GET(request: NextRequest) {
   try {
+    console.log("🔍 GET /api/tasks - Request received");
     const session = await getServerSession(authOptions);
+    
     if (!session?.user) {
+      console.log("❌ GET /api/tasks - Unauthorized: No session");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -29,13 +32,21 @@ export async function GET(request: NextRequest) {
     });
 
     if (!currentUser) {
+      console.log("❌ GET /api/tasks - User not found");
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get query parameters
+    // Get query parameters and log them
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const billingStatus = searchParams.get("billingStatus");
+    
+    console.log("📝 Query parameters:", {
+      status,
+      billingStatus,
+      url: request.url,
+      searchParams: Object.fromEntries(searchParams.entries())
+    });
 
     // Build the where clause based on the user's role
     let where: any = {};
@@ -43,27 +54,42 @@ export async function GET(request: NextRequest) {
     // Apply status filter if provided
     if (status && status !== "all") {
       where.status = status;
+      console.log(`✅ Filtering by status: ${status}`);
     }
     
     // Apply billing status filter if provided
     if (billingStatus) {
       where.billingStatus = billingStatus;
+      console.log(`✅ Filtering by billingStatus: ${billingStatus}`);
     }
 
-    // Apply role-based filtering
+    // Apply role-based filtering and log it
     if (currentUser.role === "ADMIN") {
-      // Admin sees all tasks (no additional filters)
+      console.log("👑 User is ADMIN - showing all tasks");
     } else if (currentUser.role === "PARTNER") {
-      // Partner sees tasks they created OR tasks assigned to them
       where.OR = [
         { assignedById: currentUser.id },
         { assignedToId: currentUser.id }
       ];
+      console.log("🤝 User is PARTNER - showing created or assigned tasks");
     } else {
-      // Other users only see tasks they're assigned to
       where.assignedToId = currentUser.id;
+      console.log("👤 Regular user - showing only assigned tasks");
     }
 
+    console.log("🔍 Final Prisma where clause:", JSON.stringify(where, null, 2));
+
+    // Check the database directly for completed tasks with pending_billing status
+    const directCheckCount = await prisma.task.count({
+      where: {
+        status: "completed",
+        billingStatus: "pending_billing"
+      }
+    });
+    
+    console.log(`📊 Direct DB check: Found ${directCheckCount} tasks with status=completed AND billingStatus=pending_billing`);
+
+    // Execute the actual query
     const tasks = await prisma.task.findMany({
       where,
       include: {
@@ -87,9 +113,16 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    console.log(`✅ Query returned ${tasks.length} tasks`);
+    console.log("📝 Task statuses:", tasks.map(t => ({ id: t.id, status: t.status, billingStatus: t.billingStatus })));
+
     return NextResponse.json(tasks);
   } catch (error) {
-    console.error("Error fetching tasks:", error);
+    console.error("❌ Error in GET /api/tasks:", error);
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
     return NextResponse.json(
       { error: "Failed to fetch tasks" },
       { status: 500 }

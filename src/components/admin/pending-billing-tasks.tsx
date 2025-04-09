@@ -3,166 +3,186 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatDistanceToNow } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TaskStatusBadge } from "@/components/tasks/task-status-badge";
 import { BillingApprovalButton } from "@/components/tasks/billing-approval-button";
-import { Calendar, Clock, Building, User, ArrowUpRight } from "lucide-react";
+import { Receipt, RefreshCcw, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
 
 interface Task {
   id: string;
   title: string;
+  description?: string;
   status: string;
   billingStatus: string;
-  clientId: string;
-  dueDate: string | null;
-  updatedAt: string;
-  client: {
-    id: string;
-    contactPerson: string;
-    companyName: string | null;
-  };
-  assignedTo: {
+  assignedTo?: {
     id: string;
     name: string;
-  } | null;
+  };
+  client?: {
+    id: string;
+    contactPerson: string;
+    companyName?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function PendingBillingTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  useEffect(() => {
-    const fetchPendingBillingTasks = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get("/api/tasks?billingStatus=pending_billing");
-        setTasks(response.data || []);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching pending billing tasks:", err);
-        setError("Failed to load pending billing tasks");
-        toast.error("Failed to load pending billing tasks");
-      } finally {
-        setLoading(false);
+  // Function to fetch pending billing tasks
+  const fetchPendingBillingTasks = async () => {
+    try {
+      setLoading(true);
+      console.log("🔍 Fetching pending billing tasks...");
+      
+      // Log the request params for verification
+      console.log("📤 Request params:", {
+        status: "completed",
+        billingStatus: "pending_billing"
+      });
+      
+      const response = await axios.get("/api/tasks", {
+        params: {
+          status: "completed",
+          billingStatus: "pending_billing"
+        }
+      });
+      
+      // Log the raw response to see its structure
+      console.log("📥 Raw API response:", response);
+      console.log("📄 Response data:", response.data);
+      console.log("📊 Number of tasks returned:", Array.isArray(response.data) ? response.data.length : "Not an array");
+      
+      // Check if response.data exists and is an array
+      if (!response.data) {
+        console.warn("⚠️ Response data is null or undefined");
+      } else if (!Array.isArray(response.data)) {
+        console.warn("⚠️ Response data is not an array:", typeof response.data);
       }
-    };
+      
+      setTasks(response.data || []);
+      setError(null);
+    } catch (err) {
+      console.error("❌ Error fetching pending billing tasks:", err);
+      if (axios.isAxiosError(err)) {
+        console.error("❌ Axios error details:", {
+          status: err.response?.status,
+          statusText: err.response?.statusText,
+          data: err.response?.data
+        });
+      }
+      setError("Failed to load pending billing tasks");
+      toast.error("Failed to load pending billing tasks");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Initial fetch and refresh handling
+  useEffect(() => {
     fetchPendingBillingTasks();
-  }, []);
+  }, [refreshTrigger]);
 
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Pending Billing</CardTitle>
-          <CardDescription>Tasks awaiting billing approval</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="mb-4 p-4 border rounded-lg animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Pending Billing</CardTitle>
-          <CardDescription>Tasks awaiting billing approval</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center text-red-500 py-4">{error}</div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (tasks.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Pending Billing</CardTitle>
-          <CardDescription>Tasks awaiting billing approval</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center text-muted-foreground py-4">
-            No tasks pending billing approval
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Refresh function to be called after approval
+  const refreshData = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Pending Billing</CardTitle>
-        <CardDescription>Tasks awaiting billing approval</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-amber-500" />
+            Pending Billing Approval
+          </CardTitle>
+        </div>
+        <Button variant="outline" size="sm" onClick={refreshData} disabled={loading}>
+          <RefreshCcw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
-        {tasks.map((task) => (
-          <div key={task.id} className="border rounded-lg p-4">
-            <div className="flex justify-between items-start mb-3">
-              <h3 className="font-medium">{task.title}</h3>
-              <div className="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">
-                Pending Billing
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-              <div className="flex items-center gap-1.5">
-                <Building className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>
-                  {task.client.companyName || task.client.contactPerson}
-                </span>
-              </div>
-              
-              {task.assignedTo && (
-                <div className="flex items-center gap-1.5">
-                  <User className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span>{task.assignedTo.name}</span>
+        {loading ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="border rounded-lg p-4">
+                <Skeleton className="h-5 w-3/5 mb-3" />
+                <Skeleton className="h-4 w-4/5 mb-2" />
+                <div className="flex gap-2 mt-3">
+                  <Skeleton className="h-9 w-32" />
+                  <Skeleton className="h-9 w-24" />
                 </div>
-              )}
-              
-              <div className="flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>
-                  {format(new Date(task.updatedAt), "MMM d, yyyy")}
-                </span>
               </div>
-              
-              {task.dueDate && (
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span>
-                    {format(new Date(task.dueDate), "MMM d, yyyy")}
-                  </span>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex gap-2">
-              <BillingApprovalButton 
-                taskId={task.id} 
-                taskTitle={task.title}
-              />
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/dashboard/tasks/${task.id}`}>
-                  <ArrowUpRight className="h-4 w-4 mr-1" /> View Task
-                </Link>
-              </Button>
-            </div>
+            ))}
           </div>
-        ))}
+        ) : error ? (
+          <div className="text-center py-6">
+            <p className="text-muted-foreground">{error}</p>
+            <Button variant="outline" size="sm" onClick={refreshData} className="mt-2">
+              Try Again
+            </Button>
+          </div>
+        ) : tasks.length === 0 ? (
+          <div className="text-center py-8 border rounded-lg">
+            <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-20" />
+            <p className="text-muted-foreground">No tasks pending for billing approval</p>
+          </div>
+        ) : (
+          tasks.map((task) => (
+            <div key={task.id} className="border rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium text-lg">{task.title}</h3>
+                <TaskStatusBadge status={task.status} billingStatus={task.billingStatus} />
+              </div>
+              
+              {task.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                  {task.description}
+                </p>
+              )}
+              
+              <div className="flex items-center text-sm text-muted-foreground mb-3">
+                {task.client ? (
+                  <span>
+                    Client: <strong>{task.client.companyName || task.client.contactPerson}</strong>
+                  </span>
+                ) : (
+                  <span>No client attached</span>
+                )}
+                <span className="mx-2">•</span>
+                <span>
+                  Completed {formatDistanceToNow(new Date(task.updatedAt), { addSuffix: true })}
+                </span>
+              </div>
+              
+              <div className="flex gap-2">
+                <BillingApprovalButton
+                  taskId={task.id}
+                  taskTitle={task.title}
+                  onApproved={() => {
+                    refreshData();
+                    toast.success(`Billing approved for task "${task.title}"`);
+                  }}
+                />
+                <Link href={`/dashboard/tasks/${task.id}`} passHref>
+                  <Button variant="ghost" size="sm">
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    View Details
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ))
+        )}
       </CardContent>
     </Card>
   );

@@ -38,12 +38,15 @@ import {
   UserPlus,
   Trash2 as Trash2Icon,
   ListTodo, // Add this import for ListTodo
+  CheckCircle,
+  Receipt,
 } from "lucide-react";
 import { TaskComments } from "@/components/tasks/task-comments";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetailSkeleton } from "@/components/loading/task-skeleton";
 import { BillingApprovalButton } from "@/components/tasks/billing-approval-button"; // Add this import for BillingApprovalButton
+import { TaskStatusBadge } from "@/components/tasks/task-status-badge"; // Add this import for TaskStatusBadge
 
 // Add the missing getInitials function
 const getInitials = (name: string): string => {
@@ -109,11 +112,11 @@ const canReassignTask = (currentUser: any) => {
   return currentUser.role === "ADMIN" || currentUser.role === "PARTNER";
 };
 
-export default function TaskDetailPage() {
+export default function TaskDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const params = useParams();
-  const taskId = params.id as string;
+  const taskId = params.id;
   const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
 
   const [task, setTask] = useState<Task | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -123,6 +126,15 @@ export default function TaskDetailPage() {
   const [updating, setUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState<string | null>(null);
 
+  // Add a state variable to track billing status changes
+  const [currentBillingStatus, setCurrentBillingStatus] = useState(task?.billingStatus);
+
+  // Add handler for billing approval
+  const handleBillingApproved = () => {
+    setCurrentBillingStatus("billed");
+    toast.success("Task billing has been approved");
+  };
+
   // Memoized data fetching functions
   const fetchTask = useCallback(async () => {
     try {
@@ -130,6 +142,7 @@ export default function TaskDetailPage() {
       const response = await axios.get(`/api/tasks/${taskId}`);
       setTask(response.data);
       setNewStatus(response.data.status);
+      setCurrentBillingStatus(response.data.billingStatus); // Update billing status
       return response.data;
     } catch (error) {
       console.error("Error fetching task:", error);
@@ -419,16 +432,40 @@ export default function TaskDetailPage() {
                   </Link>
                 </Button>
 
-                {task.status === "completed" && task.billingStatus === "pending_billing" && currentUser?.role === "ADMIN" && (
+                {task.status === "completed" && (currentBillingStatus === "pending_billing") && isAdmin && (
                   <div className="mt-4">
-                    <p className="text-sm text-amber-600 mb-2">
-                      This task is completed and pending billing approval
-                    </p>
-                    <BillingApprovalButton
-                      taskId={task.id}
-                      taskTitle={task.title}
-                      className="w-full"
-                    />
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                      <div className="flex items-start gap-3">
+                        <Receipt className="h-5 w-5 text-amber-600 mt-0.5" />
+                        <div>
+                          <h3 className="font-medium">Billing Approval Required</h3>
+                          <p className="text-sm text-amber-800 mb-3">
+                            This task has been marked as completed and is awaiting billing approval.
+                          </p>
+                          <BillingApprovalButton 
+                            taskId={task.id} 
+                            taskTitle={task.title}
+                            onApproved={() => {
+                              setTask(prev => prev ? { ...prev, billingStatus: "billed" } : null);
+                              toast.success("Task billing approved successfully");
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {task.status === "completed" && currentBillingStatus === "billed" && (
+                  <div className="mt-4">
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <p className="text-sm text-green-700">
+                          This task has been completed and billed
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

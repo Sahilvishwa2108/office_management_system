@@ -44,9 +44,7 @@ const editUserSchema = z.object({
     "ADMIN", 
     "PARTNER", 
     "BUSINESS_EXECUTIVE", 
-    "BUSINESS_CONSULTANT", 
-    "PERMANENT_CLIENT", 
-    "GUEST_CLIENT"
+    "BUSINESS_CONSULTANT"
   ], {
     required_error: "Please select a role",
   }),
@@ -220,12 +218,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                         </SelectItem>
                         <SelectItem value="BUSINESS_CONSULTANT">
                           Business Consultant
-                        </SelectItem>
-                        <SelectItem value="PERMANENT_CLIENT">
-                          Permanent Client
-                        </SelectItem>
-                        <SelectItem value="GUEST_CLIENT">
-                          Guest Client
                         </SelectItem>
                       </SelectContent>
                     </Select>

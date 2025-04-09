@@ -11,6 +11,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     
+    // Authorization checks
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -100,9 +101,13 @@ export async function POST(
       }
     });
 
+    // Return more detailed success response
     return NextResponse.json({
       success: true,
-      message: "Task billing approved successfully"
+      message: "Task billing approved successfully",
+      taskId: taskId,
+      billingStatus: "billed",
+      billingDate: new Date()
     });
   } catch (error) {
     console.error("Error approving task billing:", error);

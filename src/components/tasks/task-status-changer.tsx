@@ -101,9 +101,11 @@ export function TaskStatusChanger({
   };
   
   const getStatusIcon = (statusValue: string) => {
-    // For "completed" tasks that are pending billing for permanent clients, show a receipt icon
-    if (statusValue === "completed" && pendingBilling) {
+    // For "completed" tasks that are pending billing, show a receipt icon
+    if (statusValue === "completed" && billingStatus === "pending_billing") {
       return <Receipt className="h-4 w-4 mr-2 text-amber-500" />;
+    } else if (statusValue === "completed" && billingStatus === "billed") {
+      return <CheckCircle className="h-4 w-4 mr-2 text-green-500" />;
     }
     
     const status = TASK_STATUSES.find(s => s.value === statusValue);
@@ -114,9 +116,13 @@ export function TaskStatusChanger({
   };
 
   const getDisplayStatus = () => {
-    if (status === "completed" && pendingBilling) {
+    // If completed and pending billing, prioritize showing the billing status
+    if (status === "completed" && billingStatus === "pending_billing") {
       return "Pending Billing";
+    } else if (status === "completed" && billingStatus === "billed") {
+      return "Completed & Billed";
     }
+    
     return getStatusLabel(status);
   }
 
