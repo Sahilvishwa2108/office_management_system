@@ -121,6 +121,7 @@ export async function sendActivityNotificationEmail(
 }
 
 export async function sendTaskAssignmentEmail(
+  taskId: string,
   email: string,
   name: string,
   taskTitle: string,

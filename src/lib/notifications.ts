@@ -3,17 +3,20 @@ import { prisma } from "@/lib/prisma";
 import { getTaskAssignmentTemplate, getTaskReassignedTemplate } from "../../emails/templates/task-templates";
 // Remove or comment this import since it's causing errors
 // import { sendWhatsAppMessage } from './email';
+import { sendWhatsAppNotification } from "./whatsapp";
+import { sendActivityNotificationEmail, sendTaskAssignmentEmail, sendTaskReassignedEmail } from "./email";
+
 
 interface NotificationOptions {
   title: string;
   content: string;
   sentById: string;
   sentToId: string;
+  taskId?: string; // Added taskId property
   sendEmail?: boolean;
   emailSubject?: string;
   emailHtml?: string;
   sendWhatsApp?: boolean;
-  whatsAppMessage?: string;
 }
 
 export async function createNotification({
@@ -21,11 +24,11 @@ export async function createNotification({
   content,
   sentById,
   sentToId,
+  taskId,
   sendEmail = false,
   emailSubject,
   emailHtml,
   sendWhatsApp = false,
-  whatsAppMessage,
 }: NotificationOptions) {
   try {
     // Create in-app notification
@@ -42,28 +45,78 @@ export async function createNotification({
     });
 
     // Send email if requested
-    if (sendEmail && notification.sentTo.email) {
-      // Email implementation would go here
-      // For example:
-      // await sendEmail({
-      //   to: notification.sentTo.email,
-      //   subject: emailSubject || title,
-      //   html: emailHtml || `<p>${content}</p>`,
-      // });
+    // if (sendEmail && notification.sentTo.email) {
+    //   // Email implementation would go here
+    //   // For example:
+    //   // await sendEmail({
+    //   //   to: notification.sentTo.email,
+    //   //   subject: emailSubject || title,
+    //   //   html: emailHtml || <p>${content}</p>,
+    //   // });
+    // }
+
+     // Send email if requested
+     if (sendEmail && notification.sentTo.email) {
+      try {
+        if (taskId) {
+          // Use task-specific email templates
+          await sendTaskAssignmentEmail(
+            taskId,
+            notification.sentTo.email,
+            notification.sentTo.name || 'User',
+            title,
+            content
+          );
+        } else {
+          // Fallback to generic email logic
+          const subject = emailSubject || `Notification: ${title}`;
+          const html = emailHtml || `<p>${content}</p>`;
+          await sendActivityNotificationEmail(
+            notification.sentTo.email,
+            notification.sentTo.name || 'User',
+            subject,
+            content,
+            'notification'
+          );
+        }
+        console.log('Email sent successfully');
+      } catch (error) {
+        console.error('Failed to send email:', error);
+      }
     }
 
-    // Send WhatsApp message if requested - CURRENTLY DISABLED
+
+
+
+
+
+    //Working code of whatsapp notification
+    // try {
+    //   await sendWhatsAppNotification(
+    //     process.env.NEXT_PUBLIC_SENDER_PHONE_NUMBER || '+918305401380', // WhatsApp number
+    //     'hello_world' // Template name
+    //   );
+    //   console.log('WhatsApp notification sent successfully');
+    // } catch (error) {
+    //   if (error instanceof Error) {
+    //     console.error('Failed to send WhatsApp notification:', error.message);
+    //   } else {
+    //     console.error('Failed to send WhatsApp notification:', error);
+    //   }
+    // }
+
     if (sendWhatsApp && notification.sentTo.phone) {
-      // WhatsApp implementation would go here
-      // Currently disabled pending implementation
-      console.log('WhatsApp notification would be sent to:', notification.sentTo.phone);
-      
-      // Comment out or remove this call since the function is not implemented
-      // await sendWhatsAppMessage({
-      //   to: notification.sentTo.phone,
-      //   message: whatsAppMessage || content
-      // });
+      try {
+        await sendWhatsAppNotification(
+          notification.sentTo.phone, // WhatsApp number
+          'new_task', // Template name
+        );
+        console.log('WhatsApp notification sent successfully');
+      } catch (error) {
+        console.error('Failed to send WhatsApp notification:', error instanceof Error ? error.message : error);
+      }
     }
+
 
     return notification;
   } catch (error) {
@@ -106,14 +159,13 @@ export async function sendTaskAssignedNotification(
 
     await createNotification({
       title: "New Task Assigned",
-      content: notificationContent,
+      content: `${assigner.name} assigned you a task: ${taskTitle}${note ? ` - Note: ${note}` : ''}`,
       sentById: assignerUserId,
       sentToId: assigneeUserId,
       sendEmail: true,
       emailSubject: `Task Assigned: ${taskTitle}`,
       emailHtml,
       sendWhatsApp: !!assignee.phone,
-      whatsAppMessage: notificationContent,
     });
 
     // Log activity
@@ -154,14 +206,14 @@ export async function sendTaskReassignedNotification(
     
     await createNotification({
       title: "Task Assigned",
-      content: newAssigneeNotification,
+      content: `${reassigner.name} reassigned the task "${taskTitle}" to you.`,
+      taskId,
       sentById: reassignerUserId,
       sentToId: newAssigneeId,
       sendEmail: true,
       emailSubject: `Task Assigned: ${taskTitle}`,
       emailHtml: getTaskAssignmentTemplate(taskTitle, reassigner.name),
       sendWhatsApp: !!newAssignee.phone,
-      whatsAppMessage: newAssigneeNotification,
     });
 
     // If there was a previous assignee, notify them as well
@@ -171,18 +223,15 @@ export async function sendTaskReassignedNotification(
       });
 
       if (previousAssignee) {
-        const previousAssigneeNotification = `Your task "${taskTitle}" has been reassigned to ${newAssignee.name}`;
-        
         await createNotification({
           title: "Task Reassigned",
-          content: previousAssigneeNotification,
+          content: `Your task "${taskTitle}" has been reassigned to ${newAssignee.name}.`,
           sentById: reassignerUserId,
           sentToId: previousAssigneeId,
           sendEmail: true,
           emailSubject: `Task Reassigned: ${taskTitle}`,
           emailHtml: getTaskReassignedTemplate(taskTitle, newAssignee.name),
           sendWhatsApp: !!previousAssignee.phone,
-          whatsAppMessage: previousAssigneeNotification,
         });
       }
     }
@@ -255,7 +304,6 @@ export async function sendTaskStatusUpdateNotification(
       emailSubject: `Task Status Update: ${taskTitle}`,
       emailHtml,
       sendWhatsApp: !!creator.phone,
-      whatsAppMessage: notificationContent,
     });
 
     // Log activity

@@ -15,6 +15,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // Define notification types
 export interface Notification {
@@ -26,6 +27,7 @@ export interface Notification {
   sentById?: string;
   sentByName?: string;
   type?: "info" | "success" | "warning" | "error";
+  taskId?: string; // Added taskId property
 }
 
 interface NotificationContextProps {
@@ -63,17 +65,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   // Fetch notifications
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
       const response = await axios.get("/api/notifications");
-      setNotifications(response.data.data || []);
-      return response.data;
+      const data = response.data as { data: Notification[] };
+      setNotifications(data.data || []);
     } catch (err) {
       console.error("Failed to load notifications:", err);
       setError("Failed to load notifications");
-      return { data: [] };
     } finally {
       setLoading(false);
     }
@@ -151,6 +152,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 export function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useNotifications();
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   
   // Get icon for notification type
   const getNotificationIcon = (type?: string) => {
@@ -159,6 +161,12 @@ export function NotificationBell() {
       case 'warning': return "⚠️";
       case 'error': return "❌";
       default: return "ℹ️";
+    }
+  };
+
+  const handleNotificationClick = (taskId?: string) => {
+    if (taskId) {
+      router.push(`/dashboard/tasks/${taskId}`);
     }
   };
 
@@ -220,12 +228,7 @@ export function NotificationBell() {
                   className={`p-3 cursor-pointer hover:bg-muted transition-colors ${
                     !notification.isRead ? "bg-muted/50" : ""
                   }`}
-                  onClick={() => {
-                    if (!notification.isRead) {
-                      markAsRead(notification.id);
-                    }
-                    setOpen(false);
-                  }}
+                  onClick={() => handleNotificationClick(notification.taskId)}
                 >
                   <div className="flex gap-2">
                     <div className="mt-0.5 text-lg">
