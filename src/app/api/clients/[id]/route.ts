@@ -17,7 +17,7 @@ const clientUpdateSchema = z.object({
   accessExpiry: z.string().optional().nullable(),
 });
 
-// GET specific client
+// GET specific client - keep accessible to all authenticated users
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -80,7 +80,7 @@ export async function GET(
   }
 }
 
-// PATCH update client
+// PATCH update client - restrict to Admin only
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -90,6 +90,14 @@ export async function PATCH(
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Add role-based access control
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Only administrators can update clients" },
+        { status: 403 }
+      );
     }
 
     // Fix: Access id safely from params object 
@@ -174,7 +182,7 @@ export async function PATCH(
   }
 }
 
-// DELETE client
+// DELETE client - restrict to Admin only
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -182,9 +190,16 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
 
-    // Only admins can delete clients
-    if (!session || !["ADMIN", "PARTNER"].includes(session.user.role)) {
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Add role-based access control
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Only administrators can delete clients" },
+        { status: 403 }
+      );
     }
 
     // Fix: Access id safely from params object

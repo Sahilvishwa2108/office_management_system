@@ -98,9 +98,9 @@ export default function DashboardLayout({
     },
     {
       title: "Clients",
-      href: "/dashboard/admin/clients",
+      href: "/dashboard/clients",
       icon: <Briefcase className="h-6 w-6" />,
-      role: ["ADMIN"],
+      role: ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"],
       category: "management",
     },
     // Services and resources
@@ -109,27 +109,6 @@ export default function DashboardLayout({
       href: "/dashboard/client/services",
       icon: <Briefcase className="h-6 w-6" />,
       role: ["PERMANENT_CLIENT", "GUEST_CLIENT"],
-      category: "resources",
-    },
-    {
-      title: "Documents",
-      href:
-        userRole === "ADMIN"
-          ? "/dashboard/upcoming/admin/documents"
-          : userRole === "PARTNER"
-          ? "/dashboard/upcoming/partner/documents"
-          : userRole.includes("CLIENT")
-          ? "/dashboard/upcoming/client/documents"
-          : "/dashboard/upcoming/documents",
-      icon: <FileText className="h-6 w-6" />,
-      role: [
-        "ADMIN",
-        "PARTNER",
-        "BUSINESS_CONSULTANT",
-        "BUSINESS_EXECUTIVE",
-        "PERMANENT_CLIENT",
-        "GUEST_CLIENT",
-      ],
       category: "resources",
     },
     // Communication

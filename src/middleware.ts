@@ -24,8 +24,11 @@ const routePermissions = {
   "/dashboard/junior": ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"],
   // Client management routes - accessible to all staff
   "/dashboard/clients": ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"],
-  "/dashboard/clients/create": ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE"],
-  "/dashboard/clients/guest/create": ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE"],
+  "/dashboard/clients/[id]": ["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"],
+  // Restrict creation and modification to ADMIN only
+  "/dashboard/clients/create": ["ADMIN"],
+  "/dashboard/clients/guest/create": ["ADMIN"],
+  "/dashboard/clients/[id]/edit": ["ADMIN"],
   // Task management routes - admin only
   "/dashboard/tasks/create": ["ADMIN", "PARTNER"],
   "/dashboard/tasks/[id]/edit": ["ADMIN"],

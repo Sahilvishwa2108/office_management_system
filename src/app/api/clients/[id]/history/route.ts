@@ -66,6 +66,14 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Add role-based access control
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Only administrators can add history entries" },
+        { status: 403 }
+      );
+    }
+
     const clientId = params.id;
     const body = await request.json();
 

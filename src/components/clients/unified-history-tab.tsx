@@ -14,6 +14,8 @@ import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Trash2, Clock, RefreshCcw, CalendarIcon, XCircle, CheckCircle, Receipt } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 // Types for different history entries
 interface GeneralHistoryEntry {
@@ -263,40 +265,53 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
 
   return (
     <div className="space-y-6">
-      {/* Add new entry form */}
-      <Card>
-        <CardContent className="pt-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(addHistoryEntry)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Add New History Entry</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Record client interaction, meeting notes, changes, etc."
-                        className="min-h-24"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="submit"
-                  disabled={adding}
-                >
-                  {adding ? 'Adding...' : 'Add Entry'}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+      {/* Add new entry form - only show for admins */}
+      {isAdmin && (
+        <Card>
+          <CardContent className="pt-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(addHistoryEntry)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Add New History Entry</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Record client interaction, meeting notes, changes, etc."
+                          className="min-h-24"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="submit"
+                    disabled={adding}
+                  >
+                    {adding ? 'Adding...' : 'Add Entry'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* If not admin, show read-only notice */}
+      {!isAdmin && isPermanent && (
+        <Alert variant="default">
+          <Info className="h-4 w-4" />
+          <AlertTitle>Read-only access</AlertTitle>
+          <AlertDescription>
+            You can view client history but cannot add or modify entries.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* History tabs and content */}
       <div className="space-y-4">
@@ -366,6 +381,7 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
                           </div>
                         </div>
                         
+                        {/* Only show delete button for admin users */}
                         {isAdmin && (
                           <Button 
                             variant="ghost" 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -16,7 +16,8 @@ import {
   BarChart,
   BadgePlus,
   Filter,
-  ListFilter
+  ListFilter,
+  Users2
 } from "lucide-react";
 import { TaskCard } from "@/components/dashboard/task-card";
 import { DashboardCard } from "@/components/ui/dashboard-card";
@@ -275,26 +276,30 @@ export default function JuniorDashboard() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="col-span-3 lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Clients</CardTitle>
+                <CardDescription>View client information</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-center p-6">
+                  <div className="text-center">
+                    <Users2 className="mx-auto h-10 w-10 text-muted-foreground opacity-50" />
+                    <h3 className="mt-3 font-medium">Client Directory</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      View client information (read-only access)
+                    </p>
+                    <Button className="mt-4" variant="outline" asChild>
+                      <Link href="/dashboard/clients">
+                        Browse Clients
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-          
-          {/* <DashboardCard title="Recent Activity" className="col-span-4" loading={loading}>
-            {error ? (
-              <div className="flex flex-col items-center justify-center p-6 text-center">
-                <AlertTriangle className="h-10 w-10 text-muted-foreground mb-2 opacity-20" />
-                <p className="text-sm text-muted-foreground">{error}</p>
-              </div>
-            ) : (
-              <ScrollArea className="h-[320px]">
-                <ActivityFeed 
-                  fetchUrl="/api/activities"
-                  loading={loading}
-                  viewAllUrl="/dashboard/activities"
-                  showUserInfo={true}
-                  showRoleInfo={true}
-                />
-              </ScrollArea>
-            )}
-          </DashboardCard> */}
           </>
           )}
         </TabsContent>

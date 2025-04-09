@@ -115,16 +115,24 @@ export default function UserDetailsPage({
     if (!user) return;
 
     setActionLoading(true);
+
+    // Determine what action we're performing based on current status
+    // If user.isActive isn't false, the button says "Block User"
+    const isBlocking = user.isActive !== false;
+    // Toggle the status as before
     const newStatus = !user.isActive;
 
     try {
       await axios.patch(`/api/users/${userId}/status`, { isActive: newStatus });
       setUser({ ...user, isActive: newStatus });
-      toast.success(`User ${newStatus ? "activated" : "blocked"} successfully`);
+
+      // Use the action we're performing to determine the toast message
+      // rather than the new status value
+      toast.success(`User ${isBlocking ? "blocked" : "activated"} successfully`);
     } catch (error: any) {
       toast.error(
         error.response?.data?.error ||
-          `Failed to ${newStatus ? "activate" : "block"} user`
+          `Failed to ${isBlocking ? "block" : "activate"} user`
       );
     } finally {
       setActionLoading(false);

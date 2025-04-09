@@ -65,29 +65,19 @@ export async function PATCH(
 
         // Update task to pending_billing status
         const updatedTask = await prisma.task.update({
-          where: { id: taskId },
+          where: { id: params.id },
           data: {
-            status,
-            billingStatus: "pending_billing",
+            status: status,
+            // Set billingStatus to "pending_billing" when task is completed
+            ...(status === "completed" ? { billingStatus: "pending_billing" } : {})
           },
         });
-
-        // Log activity
-        await prisma.activity.create({
-          data: {
-            type: "task",
-            action: "status_changed",
-            target: task.title,
-            details: {
-              oldStatus: task.status,
-              newStatus: status,
-              pendingBilling: true,
-            },
-            userId: currentUser.id,
-          },
+        
+        return NextResponse.json({
+          message: `Task status updated to ${status}`,
+          status: updatedTask.status,
+          billingStatus: updatedTask.billingStatus
         });
-
-        return NextResponse.json(updatedTask);
       }
     }
 
@@ -107,7 +97,7 @@ export async function PATCH(
           oldStatus: task.status,
           newStatus: status,
         },
-        userId: currentUser.id,
+        userId: currentUser?.id || '',
       },
     });
 

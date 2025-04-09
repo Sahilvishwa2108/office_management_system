@@ -2,31 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activity-logger";
 
 export async function POST(
-  request: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
     
-    // Only admins can approve billing
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Only administrators can approve billing" },
-        { status: 403 }
-      );
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Only admin can approve billing
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
     }
 
     const taskId = params.id;
 
-    // Get the task with client and comments
+    // Get the task with client information
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: {
         client: true,
-        comments: true,
-      },
+        assignedBy: { select: { id: true, name: true } },
+        assignedTo: { select: { id: true, name: true } }
+      }
     });
 
     if (!task) {
@@ -35,88 +38,76 @@ export async function POST(
 
     if (task.billingStatus !== "pending_billing") {
       return NextResponse.json(
-        { error: "Task is not pending billing" },
+        { error: "Task is not pending billing approval" },
         { status: 400 }
       );
     }
 
-    // Find the existing client history record for this task
-    const existingHistory = await prisma.clientHistory.findFirst({
-      where: { 
-        taskId: task.id,
-        type: "task_completed" 
-      },
-    });
+    // Use a transaction to ensure data consistency
+    await prisma.$transaction(async (tx) => {
+      // 1. Create client history entry if task has a client
+      if (task.clientId) {
+        await tx.clientHistory.create({
+          data: {
+            clientId: task.clientId,
+            content: `Task "${task.title}" was completed and billing approved.`,
+            type: "task_completed",
+            createdById: session.user.id,
+            taskId: task.id,
+            taskTitle: task.title,
+            taskDescription: task.description || "",
+            taskStatus: "completed",
+            taskCompletedDate: new Date(),
+            taskBilledDate: new Date(),
+            billingDetails: {
+              billedBy: session.user.id,
+              billedByName: session.user.name,
+              billedAt: new Date().toISOString()
+            }
+          }
+        });
+      }
 
-    if (!existingHistory) {
-      // If no history exists (which shouldn't happen), create one
-      await prisma.clientHistory.create({
+      // 2. Update task billing status
+      const updatedTask = await tx.task.update({
+        where: { id: taskId },
         data: {
-          clientId: task.clientId!,
-          content: `Task completed and billed: ${task.title}`,
-          type: "task_completed",
-          createdById: session.user.id,
-          taskId: task.id,
-          taskTitle: task.title,
-          taskDescription: task.description || "",
-          taskStatus: "completed",
-          taskCompletedDate: new Date(),
-          taskBilledDate: new Date(),
-          billingDetails: { 
-            billedBy: session.user.id,
-            billedByName: session.user.name,
-            billedAt: new Date().toISOString(),
-          },
-        },
+          billingStatus: "billed",
+          billingDate: new Date(),
+          // Schedule task for deletion after history is created
+          scheduledDeletionDate: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours later
+        }
       });
-    } else {
-      // Update the existing history entry with billing info
-      await prisma.clientHistory.update({
-        where: { id: existingHistory.id },
-        data: {
-          taskBilledDate: new Date(),
-          billingDetails: { 
-            billedBy: session.user.id,
-            billedByName: session.user.name,
-            billedAt: new Date().toISOString(),
-          },
-        },
-      });
-    }
 
-    // Log the activity
-    await prisma.activity.create({
-      data: {
-        type: "billing",
-        action: "approved",
-        target: `Task billed: ${task.title}`,
-        userId: session.user.id,
-        details: {
+      // 3. Log the activity
+      await logActivity(
+        "task",
+        "billing_approved",
+        task.title,
+        session.user.id,
+        {
           taskId: task.id,
           clientId: task.clientId,
-          commentsDeleted: task.comments.length
+          previousStatus: task.billingStatus
         }
+      );
+
+      // 4. Delete task immediately if it's not linked to a client
+      if (!task.clientId) {
+        await tx.task.delete({
+          where: { id: taskId }
+        });
       }
-    });
-
-    // Delete all comments first (to avoid foreign key constraints)
-    await prisma.taskComment.deleteMany({
-      where: { taskId: task.id },
-    });
-
-    // Delete the task
-    await prisma.task.delete({
-      where: { id: task.id },
     });
 
     return NextResponse.json({
       success: true,
-      message: "Task billed and deleted successfully",
+      message: "Task billing approved successfully"
     });
   } catch (error) {
     console.error("Error approving task billing:", error);
     return NextResponse.json(
-      { error: "Failed to approve billing" },
+      { error: "Failed to approve task billing" },
       { status: 500 }
     );
   }

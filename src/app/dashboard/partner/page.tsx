@@ -9,6 +9,7 @@ import Link from "next/link";
 import {
   BarChart,
   Users,
+  Users2,
   CheckCircle,
   Clock,
   Activity,
@@ -272,6 +273,29 @@ export default function PartnerDashboard() {
                 </div>
               )}
             </DashboardCard>
+
+            <Card className="col-span-3">
+              <CardHeader>
+                <CardTitle>Client Management</CardTitle>
+                <CardDescription>View client information (read-only)</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-center p-6">
+                  <div className="text-center">
+                    <Users2 className="mx-auto h-10 w-10 text-muted-foreground opacity-50" />
+                    <h3 className="mt-3 font-medium">Client Directory</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Access client information in read-only mode
+                    </p>
+                    <Button className="mt-4" asChild>
+                      <Link href="/dashboard/clients">
+                        View Clients
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">

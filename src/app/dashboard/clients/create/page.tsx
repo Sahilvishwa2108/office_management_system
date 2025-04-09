@@ -32,6 +32,9 @@ import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { canModifyClient } from "@/lib/permissions";
+import { useSession } from "next-auth/react";
+import { useEffect } from "react";
 
 // Schema for permanent client
 const clientFormSchema = z.object({
@@ -50,6 +53,32 @@ export default function CreateClientPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  // Check for permissions when component mounts
+  useEffect(() => {
+    // Redirect if not admin
+    if (status !== "loading" && !canModifyClient(session)) {
+      toast.error("You don't have permission to create clients");
+      router.push("/dashboard/clients");
+    }
+  }, [session, status, router]);
+
+  // Prevent rendering the form for non-admin users
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Checking permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canModifyClient(session)) {
+    return null; // Will redirect in the useEffect
+  }
 
   // Pre-set default values
   const form = useForm<ClientFormValues>({

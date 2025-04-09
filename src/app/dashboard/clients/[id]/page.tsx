@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { use } from "react";
 import axios from "axios";
@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UnifiedHistoryTab } from "@/components/clients/unified-history-tab";
+import { canModifyClient } from "@/lib/permissions";
 
 interface Client {
   id: string;
@@ -81,6 +82,11 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if user has write access
+  const hasWriteAccess = useMemo(() => {
+    return canModifyClient(session);
+  }, [session]);
 
   // Fetch client details
   useEffect(() => {
@@ -189,18 +195,24 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
               {client.isGuest && client.accessExpiry && isClientExpired(client) && (
                 <Badge variant="destructive">Expired</Badge>
               )}
+              {!hasWriteAccess && (
+                <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                  Read Only
+                </Badge>
+              )}
             </div>
           </div>
         </div>
 
-        <Button asChild>
-          <Link href={`/dashboard/clients/${client.id}/edit`}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit Client
-          </Link>
-        </Button>
+        {hasWriteAccess && (
+          <Button asChild>
+            <Link href={`/dashboard/clients/${client.id}/edit`}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit Client
+            </Link>
+          </Button>
+        )}
       </div>
-
       {/* Main content with tabs */}
       <Tabs defaultValue="details" className="space-y-4">
         <TabsList>
@@ -356,11 +368,13 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
                   Tasks associated with this client
                 </CardDescription>
               </div>
-              <Button asChild size="sm">
-                <Link href={`/dashboard/tasks/create?clientId=${client.id}`}>
-                  Add New Task
-                </Link>
-              </Button>
+              {hasWriteAccess && (
+                <Button asChild size="sm">
+                  <Link href={`/dashboard/tasks/create?clientId=${client.id}`}>
+                    Add New Task
+                  </Link>
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {client.tasks && client.tasks.length > 0 ? (
@@ -426,11 +440,13 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
                   <p className="text-muted-foreground mb-4">
                     This client doesn't have any tasks assigned yet
                   </p>
-                  <Button asChild>
-                    <Link href={`/dashboard/tasks/create?clientId=${client.id}`}>
-                      Create First Task
-                    </Link>
-                  </Button>
+                  {hasWriteAccess && (
+                    <Button asChild>
+                      <Link href={`/dashboard/tasks/create?clientId=${client.id}`}>
+                        Create First Task
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -442,7 +458,7 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
           <UnifiedHistoryTab
             clientId={client.id}
             isPermanent={!client.isGuest}
-            isAdmin={session?.user?.role === "ADMIN"}
+            isAdmin={hasWriteAccess}
           />
         </TabsContent>
 

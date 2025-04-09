@@ -36,6 +36,8 @@ import {
 import { toast } from "sonner";
 import { ArrowLeft, CalendarIcon, Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { canModifyClient } from "@/lib/permissions";
+import { useSession } from "next-auth/react";
 
 // Form schema with conditional validation
 const clientFormSchema = z.object({
@@ -71,6 +73,7 @@ export default function EditClientPage({
   params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   // Unwrap params Promise at the top level of the component
   const resolvedParams = use(params);
@@ -99,6 +102,15 @@ export default function EditClientPage({
 
   // Watch the isGuest field to conditionally display the expiry date field
   const isGuest = form.watch("isGuest");
+
+  // Check for permissions when component mounts
+  useEffect(() => {
+    // Redirect if not admin
+    if (status !== "loading" && !canModifyClient(session)) {
+      toast.error("You don't have permission to edit clients");
+      router.push(`/dashboard/clients/${clientId}`);
+    }
+  }, [session, status, clientId, router]);
 
   // Fetch client details
   useEffect(() => {
@@ -171,6 +183,21 @@ export default function EditClientPage({
       setSaving(false);
     }
   };
+
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Checking permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canModifyClient(session)) {
+    return null; // Will redirect in the useEffect
+  }
 
   if (loading) {
     return (

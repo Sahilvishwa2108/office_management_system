@@ -60,39 +60,33 @@ export function BillingApprovalButton({
         <Receipt className="mr-2 h-4 w-4" />
         Approve Billing
       </Button>
-
+      
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Approve Billing</DialogTitle>
+            <DialogTitle>Approve Task Billing</DialogTitle>
             <DialogDescription>
-              This will permanently delete all task comments and discussions, 
-              and move the task details to client history. This action cannot be undone.
+              Are you sure you want to approve the billing for "{taskTitle}"?
+              <br /><br />
+              <strong>This will:</strong>
+              <ul className="list-disc pl-5 mt-2">
+                <li>Mark this task as billed</li>
+                <li>Move this task to client history</li>
+                <li>Remove the task from active tasks</li>
+              </ul>
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="py-4">
-            <p className="font-medium">Task: {taskTitle}</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Task comments and attachments will be permanently deleted
-              to optimize database storage. Only the task details will be
-              preserved in client history.
-            </p>
-          </div>
-          
           <DialogFooter>
             <Button 
               variant="outline" 
-              onClick={() => setConfirmDialogOpen(false)}
+              onClick={() => setConfirmDialogOpen(false)} 
               disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
-              variant="default" 
               onClick={handleApprove}
               disabled={isSubmitting}
-              className="bg-amber-600 hover:bg-amber-700"
             >
               {isSubmitting ? (
                 <>
@@ -100,7 +94,7 @@ export function BillingApprovalButton({
                   Processing...
                 </>
               ) : (
-                <>Confirm Billing</>
+                "Confirm Approval"
               )}
             </Button>
           </DialogFooter>

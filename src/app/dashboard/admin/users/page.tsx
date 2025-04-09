@@ -244,7 +244,7 @@ export default function UsersPage() {
       );
 
       toast.success(
-        `User ${currentStatus ? "blocked" : "activated"} successfully`
+        `User ${!currentStatus ? "activated" : "blocked"} successfully`
       );
     } catch (error: any) {
       toast.error(

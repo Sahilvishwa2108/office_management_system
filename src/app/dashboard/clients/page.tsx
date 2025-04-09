@@ -61,6 +61,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { canModifyClient } from "@/lib/permissions";
 
 interface Client {
   id: string;
@@ -157,17 +158,19 @@ const ClientListItem = ({
             </Link>
           </Button>
           
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-            className="h-8"
-          >
-            <Link href={`/dashboard/clients/${client.id}/edit`}>
-              <Edit className="h-3.5 w-3.5 mr-1" />
-              Edit
-            </Link>
-          </Button>
+          {canDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="h-8"
+            >
+              <Link href={`/dashboard/clients/${client.id}/edit`}>
+                <Edit className="h-3.5 w-3.5 mr-1" />
+                Edit
+              </Link>
+            </Button>
+          )}
           
           {canDelete && (
             <Button
@@ -224,6 +227,11 @@ export default function ClientsPage() {
   // Check if user can delete clients
   const canDeleteClients = useMemo(() => {
     return session?.user?.role === "ADMIN" || session?.user?.role === "PARTNER";
+  }, [session]);
+
+  // Check if user can modify clients
+  const hasWriteAccess = useMemo(() => {
+    return canModifyClient(session);
   }, [session]);
 
   // Handle view mode toggle
@@ -419,25 +427,31 @@ export default function ClientsPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Client Management</h1>
-          <p className="text-muted-foreground">Manage client information and tasks</p>
+          <p className="text-muted-foreground">
+            {hasWriteAccess 
+              ? "Manage client information and tasks" 
+              : "View client information and tasks"}
+          </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button asChild>
-            <Link href="/dashboard/clients/create">
-              <Building className="mr-2 h-4 w-4" />
-              Add Permanent Client
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/dashboard/clients/guest/create">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Guest Client
-            </Link>
-          </Button>
-        </div>
+        {/* Only show create buttons for admin users */}
+        {hasWriteAccess && (
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button asChild>
+              <Link href="/dashboard/clients/create">
+                <Building className="mr-2 h-4 w-4" />
+                Add Permanent Client
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/clients/guest/create">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Guest Client
+              </Link>
+            </Button>
+          </div>
+        )}
       </div>
-
       {/* Client tabs and search */}
       <Card>
         <CardHeader className="pb-3">
@@ -621,13 +635,15 @@ export default function ClientsPage() {
                                   View Details
                                 </Link>
                               </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/clients/${client.id}/edit`}>
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit Client
-                                </Link>
-                              </DropdownMenuItem>
-                              {canDeleteClients && (
+                              {hasWriteAccess && (
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/dashboard/clients/${client.id}/edit`}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit Client
+                                  </Link>
+                                </DropdownMenuItem>
+                              )}
+                              {hasWriteAccess && (
                                 <DropdownMenuItem
                                   className="text-red-600 focus:text-red-600"
                                   onClick={() => confirmDelete(client.id)}
@@ -652,7 +668,7 @@ export default function ClientsPage() {
                     key={client.id} 
                     client={client} 
                     confirmDelete={confirmDelete} 
-                    canDelete={canDeleteClients}
+                    canDelete={hasWriteAccess}
                   />
                 ))}
               </div>
