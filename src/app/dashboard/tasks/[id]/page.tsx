@@ -139,7 +139,7 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
   const fetchTask = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/tasks/${taskId}`);
+      const response = await axios.get<Task>(`/api/tasks/${taskId}`);
       setTask(response.data);
       setNewStatus(response.data.status);
       setCurrentBillingStatus(response.data.billingStatus); // Update billing status
@@ -156,7 +156,7 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
   const fetchComments = useCallback(async () => {
     try {
       setCommentsLoading(true);
-      const response = await axios.get(`/api/tasks/${taskId}/comments`);
+      const response = await axios.get<Comment[]>(`/api/tasks/${taskId}/comments`);
       setComments(response.data);
     } catch (error) {
       console.error("Error fetching comments:", error);
@@ -170,7 +170,7 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
 
   const fetchCurrentUser = useCallback(async () => {
     try {
-      const response = await axios.get('/api/users/me');
+      const response = await axios.get<{ id: string; name: string; email: string; role: string }>('/api/users/me');
       setCurrentUser(response.data);
     } catch (error) {
       console.error("Error fetching current user:", error);

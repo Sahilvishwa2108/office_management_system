@@ -105,15 +105,65 @@ export async function createNotification({
     //   }
     // }
 
+    // if (sendWhatsApp && notification.sentTo.phone) {
+    //   try {
+    //     await sendWhatsAppNotification(
+    //       notification.sentTo.phone, // WhatsApp number
+    //       'new_task', // Template name
+    //     );
+    //     console.log('WhatsApp notification sent successfully');
+    //   } catch (error) {
+    //     console.error('Failed to send WhatsApp notification:', error instanceof Error ? error.message : error);
+    //   }
+    // }
+
     if (sendWhatsApp && notification.sentTo.phone) {
       try {
-        await sendWhatsAppNotification(
-          notification.sentTo.phone, // WhatsApp number
-          'new_task', // Template name
-        );
-        console.log('WhatsApp notification sent successfully');
+        // Fetch the assigner's name
+        const assigner = await prisma.user.findUnique({
+          where: { id: sentById },
+        });
+    
+        if (!assigner) {
+          throw new Error("Assigner not found");
+        }
+    
+        // Handle task details
+        let taskDetails = {
+          title: "No title provided",
+          note: "No additional note provided",
+          dueDate: "No due date",
+        };
+    
+        if (taskId) {
+          const task = await prisma.task.findUnique({
+            where: { id: taskId },
+          });
+    
+          if (task) {
+            taskDetails = {
+              title: task.title || "No title provided",
+              note: task.description || "No additional note provided",
+              dueDate: task.dueDate
+                ? new Date(task.dueDate).toLocaleDateString()
+                : "No due date",
+            };
+          }
+        }
+    
+        // Define variables as an ordered array for numbered placeholders
+        const variables = [
+          taskDetails.title, // {{1}}
+          assigner.name || "Unknown", // {{2}}
+          taskDetails.note, // {{3}}
+          taskDetails.dueDate, // {{4}}
+        ];
+    
+        // Call the WhatsApp notification function
+        await sendWhatsAppNotification(notification.sentTo.phone, "new_task", variables);
+        console.log("WhatsApp notification sent successfully");
       } catch (error) {
-        console.error('Failed to send WhatsApp notification:', error instanceof Error ? error.message : error);
+        console.error("Failed to send WhatsApp notification:", error instanceof Error ? error.message : error);
       }
     }
 
@@ -159,9 +209,10 @@ export async function sendTaskAssignedNotification(
 
     await createNotification({
       title: "New Task Assigned",
-      content: `${assigner.name} assigned you a task: ${taskTitle}${note ? ` - Note: ${note}` : ''}`,
+      content: notificationContent,
       sentById: assignerUserId,
       sentToId: assigneeUserId,
+      taskId,
       sendEmail: true,
       emailSubject: `Task Assigned: ${taskTitle}`,
       emailHtml,

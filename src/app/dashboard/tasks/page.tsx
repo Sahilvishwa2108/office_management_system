@@ -347,7 +347,7 @@ export default function TasksPage() {
         url.searchParams.append("search", debouncedSearchTerm);
       }
 
-      const response = await axios.get(url.toString(), { timeout: 8000 });
+      const response = await axios.get<Task[]>(url.toString(), { timeout: 8000 });
       setTasks(response.data);
     } catch (error) {
       console.error("Error fetching tasks:", error);

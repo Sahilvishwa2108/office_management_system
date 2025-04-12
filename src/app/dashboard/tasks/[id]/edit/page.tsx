@@ -97,11 +97,11 @@ export default function EditTaskPage() {
   // Fetch clients with proper error handling
   const fetchClients = async () => {
     try {
-      const response = await axios.get("/api/clients");
+      const response = await axios.get<{ clients?: Client[] }>("/api/clients");
       
       if (Array.isArray(response.data)) {
         setClients(response.data);
-      } else if (response.data?.clients && Array.isArray(response.data.clients)) {
+      } else if (response.data.clients && Array.isArray(response.data.clients)) {
         setClients(response.data.clients);
       } else {
         setClients([]);
@@ -122,11 +122,11 @@ export default function EditTaskPage() {
 
         // Fetch task data
         const taskResponse = await axios.get(`/api/tasks/${taskId}`);
-        const taskData = taskResponse.data;
+        const taskData = taskResponse.data as TaskFormValues;
 
         // Fetch users (only staff who can be assigned tasks)
         const usersResponse = await axios.get('/api/users');
-        setUsers(usersResponse.data.filter((user: User) =>
+        setUsers((usersResponse.data as User[]).filter((user: User) =>
           ['BUSINESS_EXECUTIVE', 'BUSINESS_CONSULTANT', 'PARTNER'].includes(user.role)
         ));
 

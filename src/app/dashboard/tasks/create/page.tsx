@@ -98,8 +98,8 @@ export default function CreateTaskPage() {
     const fetchData = async () => {
       try {
         // Fetch users (only staff who can be assigned tasks)
-        const usersResponse = await axios.get('/api/users');
-        setUsers(usersResponse.data.filter((user: User) => 
+        const usersResponse = await axios.get<User[]>('/api/users');
+        setUsers(usersResponse.data.filter((user) => 
           ['BUSINESS_EXECUTIVE', 'BUSINESS_CONSULTANT', 'PARTNER'].includes(user.role)
         ));
         
@@ -122,7 +122,7 @@ export default function CreateTaskPage() {
   // Fetch clients with proper error handling
   const fetchClients = async () => {
     try {
-      const response = await axios.get("/api/clients");
+      const response = await axios.get<{ clients?: Client[] }>("/api/clients");
       
       // More robust handling of the response data
       if (response.data && response.data.clients && Array.isArray(response.data.clients)) {

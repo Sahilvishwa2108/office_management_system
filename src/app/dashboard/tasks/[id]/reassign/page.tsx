@@ -56,12 +56,12 @@ export default function ReassignTaskPage() {
         setLoading(true);
         
         // Fetch task data
-        const taskResponse = await axios.get(`/api/tasks/${taskId}`);
+        const taskResponse = await axios.get<Task>(`/api/tasks/${taskId}`);
         setTask(taskResponse.data);
         
         // Fetch users (only staff who can be assigned tasks)
-        const usersResponse = await axios.get('/api/users');
-        setUsers(usersResponse.data.filter((user: User) => 
+        const usersResponse = await axios.get<User[]>('/api/users');
+        setUsers(usersResponse.data.filter((user) => 
           ['BUSINESS_EXECUTIVE', 'BUSINESS_CONSULTANT', 'PARTNER'].includes(user.role)
         ));
         

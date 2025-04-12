@@ -5,6 +5,7 @@ const ACCESS_TOKEN = process.env.NEXT_PUBLIC_WHATSAPP_ACCESS_TOKEN;
 export const sendWhatsAppNotification = async (
   to: string, 
   templateName: string,
+  variables?: string[] // Change to accept an array of strings
 ) => {
   try {
     const response = await fetch(`${WHATSAPP_API_URL}/${PHONE_NUMBER_ID}/messages`, {
@@ -20,6 +21,17 @@ export const sendWhatsAppNotification = async (
         template: {
           name: templateName,
           language: { code: 'en' },
+          components: variables
+            ? [
+                {
+                  type: 'body',
+                  parameters: variables.map((value) => ({
+                    type: 'text',
+                    text: value || 'N/A', // Fallback to 'N/A' if value is missing
+                  })),
+                },
+              ]
+            : undefined,
         },
       }),
     });
