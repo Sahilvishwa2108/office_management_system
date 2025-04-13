@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link"; // Add this import for Link
 import axios from "axios";
@@ -112,9 +112,11 @@ const canReassignTask = (currentUser: any) => {
   return currentUser.role === "ADMIN" || currentUser.role === "PARTNER";
 };
 
-export default function TaskDetailPage({ params }: { params: { id: string } }) {
+export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const taskId = params.id;
+  // Properly type the unwrapped params
+  const resolvedParams = React.use(params) as { id: string };
+  const taskId = resolvedParams.id;
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN";
 

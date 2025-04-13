@@ -66,6 +66,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
+import { canDeleteTask } from "@/lib/permissions";
 
 interface Task {
   id: string;
@@ -73,6 +74,7 @@ interface Task {
   status: string;
   priority: string;
   dueDate: string | null;
+  assignedById: string;
   assignedTo: {
     id: string;
     name: string;
@@ -368,6 +370,11 @@ export default function TasksPage() {
     return session?.user?.role === "ADMIN" || session?.user?.role === "PARTNER";
   }, [session]);
 
+  // Permission check based on the current task
+  const canDeleteForTask = useCallback((task: Task) => {
+    return canDeleteTask(session, task);
+  }, [session]);
+
   // Filter tasks based on search and status
   const filteredTasks = useMemo(() => {
     if (!tasks || !Array.isArray(tasks)) return [];
@@ -645,7 +652,7 @@ export default function TasksPage() {
                         key={task.id} 
                         task={task}
                         confirmDelete={confirmDelete}
-                        canDelete={canManageTasks}
+                        canDelete={canDeleteForTask(task)} // Apply permission check
                       />
                     ))}
                   </TableBody>
@@ -661,7 +668,7 @@ export default function TasksPage() {
                     key={task.id} 
                     task={task}
                     confirmDelete={confirmDelete}
-                    canDelete={canManageTasks}
+                    canDelete={canDeleteForTask(task)} // Apply permission check
                   />
                 ))}
               </div>

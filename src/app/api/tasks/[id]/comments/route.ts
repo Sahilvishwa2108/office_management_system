@@ -229,3 +229,17 @@ export async function GET(
     );
   }
 }
+
+// API endpoint returning task data
+const tasks = await prisma.task.findMany({
+  // other filters
+  include: {
+    assignedBy: {
+      select: {
+        id: true,
+        name: true,
+      },
+    },
+    // other fields to include
+  },
+});

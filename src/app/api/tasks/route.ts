@@ -92,7 +92,14 @@ export async function GET(request: NextRequest) {
     // Execute the actual query
     const tasks = await prisma.task.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        priority: true,
+        dueDate: true,
+        billingStatus: true,
+        assignedById: true, // Make sure this is included
         assignedTo: {
           select: {
             id: true,
@@ -103,8 +110,6 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             contactPerson: true,
-            companyName: true,
-            isGuest: true,
           },
         },
       },
