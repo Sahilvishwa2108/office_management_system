@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { sendEmail } from "@/lib/email";
+import { sendTaskReassignedNotification } from "@/lib/notifications";
 
 // Schema for reassignment
 const reassignSchema = z.object({
@@ -42,7 +43,7 @@ export async function PATCH(
       );
     }
 
-    // Get the task to check ownership
+    // Get the task
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: {
@@ -55,23 +56,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // Permission check: Only admin or task creator can edit
-    if (currentUser.role !== "ADMIN" && task.assignedById !== currentUser.id) {
+    // Enhanced permission check: 
+    // - Admin can reassign any task
+    // - Partner can only reassign tasks that were assigned to them
+    if (currentUser.role === "PARTNER" && task.assignedToId !== currentUser.id) {
       return NextResponse.json(
-        { error: "You don't have permission to edit this task" },
-        { status: 403 }
-      );
-    }
-
-    // Check if user has permission to reassign this task
-    const canReassign =
-      currentUser.role === "ADMIN" ||
-      currentUser.role === "PARTNER" ||
-      task.assignedById === currentUser.id;
-
-    if (!canReassign) {
-      return NextResponse.json(
-        { error: "You don't have permission to reassign this task" },
+        { error: "You can only reassign tasks that were assigned to you" },
         { status: 403 }
       );
     }
@@ -132,17 +122,46 @@ export async function PATCH(
       },
     });
 
-    // Create notification for the new assignee
-    await prisma.notification.create({
-      data: {
-        title: "Task Assigned",
-        content: `${currentUser.name} assigned you a task: ${task.title}${
-          validatedData.note ? ` - Note: ${validatedData.note}` : ""
-        }`,
-        sentById: currentUser.id,
-        sentToId: validatedData.assignedToId,
-      },
-    });
+    // Use the dedicated notification function if available
+    try {
+      await sendTaskReassignedNotification(
+        task.id,
+        task.title,
+        currentUser.id,
+        task.assignedToId,
+        validatedData.assignedToId
+      );
+    } catch (error) {
+      console.error("Failed to send reassignment notification:", error);
+      
+      // Fallback to manual notification creation
+      await prisma.notification.create({
+        data: {
+          title: "Task Assigned",
+          content: `${currentUser.name} assigned you a task: ${task.title}${
+            validatedData.note ? ` - Note: ${validatedData.note}` : ""
+          }`,
+          sentById: currentUser.id,
+          sentToId: validatedData.assignedToId,
+        },
+      });
+
+      // If there was a previous assignee, notify them
+      if (
+        task.assignedToId &&
+        task.assignedToId !== validatedData.assignedToId &&
+        task.assignedTo
+      ) {
+        await prisma.notification.create({
+          data: {
+            title: "Task Reassigned",
+            content: `Your task "${task.title}" has been reassigned to ${newAssignee.name}`,
+            sentById: currentUser.id,
+            sentToId: task.assignedToId,
+          },
+        });
+      }
+    }
 
     // Send email notification to the new assignee
     if (newAssignee.email) {
@@ -166,22 +185,6 @@ export async function PATCH(
       } catch (error) {
         console.error("Failed to send email notification:", error);
       }
-    }
-
-    // If there was a previous assignee, notify them
-    if (
-      task.assignedToId &&
-      task.assignedToId !== validatedData.assignedToId &&
-      task.assignedTo
-    ) {
-      await prisma.notification.create({
-        data: {
-          title: "Task Reassigned",
-          content: `Your task "${task.title}" has been reassigned to ${newAssignee.name}`,
-          sentById: currentUser.id,
-          sentToId: task.assignedToId,
-        },
-      });
     }
 
     return NextResponse.json(updatedTask);

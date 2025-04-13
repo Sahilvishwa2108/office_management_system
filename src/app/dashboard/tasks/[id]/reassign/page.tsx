@@ -93,7 +93,7 @@ export default function ReassignTaskPage() {
       });
       
       toast.success("Task reassigned successfully");
-      router.push(`/dashboard/tasks/${taskId}`);
+      router.push(`/dashboard/tasks`);
       
     } catch (error) {
       console.error("Error reassigning task:", error);
