@@ -33,6 +33,7 @@ model User {
   isActive                Boolean        @default(true)
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
+  updatedById             String?        // ID of the user who last updated this user
   // Relations
   assignedTasks           Task[]         @relation("AssignedToUser")
   createdTasks            Task[]         @relation("AssignedByUser")
