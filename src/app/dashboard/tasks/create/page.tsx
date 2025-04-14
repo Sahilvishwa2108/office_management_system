@@ -22,6 +22,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -42,15 +43,20 @@ import { Calendar } from "@/components/ui/calendar";
 import { TaskPageLayout } from "@/components/layouts/task-page-layout";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, ChevronDown, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
-// Define schema for task creation
+// Update the task form schema
 const taskFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
   priority: z.enum(["low", "medium", "high"]),
   status: z.enum(["pending", "in-progress", "review", "completed", "cancelled"]),
   dueDate: z.date().optional().nullable(),
+  // Change to array for multiple assignees
+  assignedToIds: z.array(z.string()).optional().default([]),
+  // Keep for backward compatibility
   assignedToId: z.string().optional().nullable(),
   clientId: z.string().optional().nullable(),
 });
@@ -70,6 +76,105 @@ interface Client {
   companyName?: string;
 }
 
+// Create a multi-select component for assignees
+function MultiSelect({
+  options,
+  selected,
+  onChange,
+  placeholder = "Select options"
+}: {
+  options: { value: string; label: string }[];
+  selected: string[];
+  onChange: (selected: string[]) => void;
+  placeholder?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleSelect = (value: string) => {
+    const newSelected = selected.includes(value)
+      ? selected.filter(item => item !== value)
+      : [...selected, value];
+    onChange(newSelected);
+  };
+
+  return (
+    <div className="relative">
+      <div
+        className={cn(
+          "relative w-full cursor-pointer rounded-md border border-input bg-transparent text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+          isOpen && "ring-1 ring-ring"
+        )}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div className="flex min-h-10 flex-wrap items-center gap-1 p-1 pe-10">
+          {selected.length === 0 && (
+            <div className="px-2 py-1.5 text-muted-foreground">{placeholder}</div>
+          )}
+          {selected.map(value => {
+            const option = options.find(o => o.value === value);
+            return option ? (
+              <Badge key={value} variant="secondary" className="m-0.5">
+                {option.label}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-1 h-4 w-4 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelect(value);
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                  <span className="sr-only">Remove</span>
+                </Button>
+              </Badge>
+            ) : null;
+          })}
+        </div>
+        <div className="absolute right-3 top-3">
+          <ChevronDown className="h-4 w-4 opacity-50" />
+        </div>
+      </div>
+      {isOpen && (
+        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover shadow-md">
+          {options.map(option => (
+            <div
+              key={option.value}
+              className={cn(
+                "flex cursor-pointer items-center p-2 hover:bg-accent",
+                selected.includes(option.value) && "bg-accent"
+              )}
+              onClick={() => handleSelect(option.value)}
+            >
+              {/* Custom checkbox element */}
+              <div className="mr-2 h-4 w-4 rounded-[4px] border flex items-center justify-center">
+                {selected.includes(option.value) && (
+                  <svg 
+                    width="10" 
+                    height="10" 
+                    viewBox="0 0 10 10" 
+                    fill="none" 
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path 
+                      d="M8.5 2.5L3.5 7.5L1.5 5.5" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </div>
+              <span>{option.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CreateTaskPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -79,7 +184,7 @@ export default function CreateTaskPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Initialize form with defaults
+  // Initialize form with updated defaults
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
@@ -88,7 +193,8 @@ export default function CreateTaskPage() {
       priority: "medium",
       status: "pending",
       dueDate: null,
-      assignedToId: null,
+      assignedToIds: [], // Initialize as empty array
+      assignedToId: null, // Keep for compatibility
       clientId: clientId || null,
     },
   });
@@ -141,15 +247,24 @@ export default function CreateTaskPage() {
     }
   };
   
-  // Form submission handler
+  // Updated form submission handler
   const onSubmit = async (data: TaskFormValues) => {
     try {
       setIsLoading(true);
       
-      // Handle "null" string cases
+      // Set primary assignee from assignedToIds if available
+      if (data.assignedToIds && data.assignedToIds.length > 0 && !data.assignedToId) {
+        data.assignedToId = data.assignedToIds[0];
+      }
+      
+      // Format data as needed
       const taskData = {
         ...data,
-        // Convert "null" strings to actual null
+        // Convert empty arrays to undefined to avoid validation issues
+        assignedToIds: data.assignedToIds && data.assignedToIds.length > 0 
+          ? data.assignedToIds 
+          : undefined,
+        // Keep for backward compatibility
         assignedToId: data.assignedToId === "null" ? null : data.assignedToId,
         clientId: data.clientId === "null" ? null : data.clientId,
         dueDate: data.dueDate ? data.dueDate.toISOString() : null,
@@ -180,7 +295,7 @@ export default function CreateTaskPage() {
         <CardHeader>
           <CardTitle>Task Details</CardTitle>
           <CardDescription>
-            Create a new task and assign it to a team member
+            Create a new task and assign it to team members
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -253,42 +368,13 @@ export default function CreateTaskPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="assignedToId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Assign To</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value || "null"} // Use "null" string instead of empty string
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select assignee" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="null">Unassigned</SelectItem> {/* Use "null" string instead of empty string */}
-                          {users.map(user => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.name} ({user.role.replace(/_/g, " ")})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="clientId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Client (Optional)</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
-                        defaultValue={field.value || "null"} // Use "null" string instead of empty string
+                        defaultValue={field.value || "null"}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -296,7 +382,7 @@ export default function CreateTaskPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="null">No Client</SelectItem> {/* Use "null" string instead of empty string */}
+                          <SelectItem value="null">No Client</SelectItem>
                           {clients.map(client => (
                             <SelectItem key={client.id} value={client.id}>
                               {client.companyName || client.contactPerson}
@@ -308,51 +394,77 @@ export default function CreateTaskPage() {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Due Date (Optional)</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>No due date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={field.value || undefined}
+                            onSelect={field.onChange}
+                            initialFocus
+                          />
+                          <div className="p-3 border-t border-border">
+                            <Button
+                              variant="ghost"
+                              className="w-full"
+                              onClick={() => field.onChange(null)}
+                            >
+                              Clear
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
+              {/* NEW: Multi-select assignees field */}
               <FormField
                 control={form.control}
-                name="dueDate"
+                name="assignedToIds"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Due Date (Optional)</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>No due date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={field.value || undefined}
-                          onSelect={field.onChange}
-                          initialFocus
-                        />
-                        <div className="p-3 border-t border-border">
-                          <Button
-                            variant="ghost"
-                            className="w-full"
-                            onClick={() => field.onChange(null)}
-                          >
-                            Clear
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                  <FormItem>
+                    <FormLabel>Assign to team members</FormLabel>
+                    <FormControl>
+                      <MultiSelect
+                        selected={field.value || []}
+                        options={users.map(user => ({
+                          value: user.id,
+                          label: `${user.name} (${user.role.replace(/_/g, " ")})`
+                        }))}
+                        onChange={(selected) => field.onChange(selected)}
+                        placeholder="Select team members"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Assign this task to one or more team members
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

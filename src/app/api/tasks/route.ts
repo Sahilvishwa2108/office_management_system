@@ -12,6 +12,9 @@ const taskCreateSchema = z.object({
   priority: z.enum(["low", "medium", "high"]),
   status: z.enum(["pending", "in-progress", "review", "completed", "cancelled"]),
   dueDate: z.string().optional().nullable(),
+  // Change to accept an array of IDs and allow empty array
+  assignedToIds: z.array(z.string()).optional().default([]),
+  // Keep this for backward compatibility
   assignedToId: z.string().optional().nullable(),
   clientId: z.string().optional().nullable(),
 });
@@ -19,11 +22,9 @@ const taskCreateSchema = z.object({
 // GET all tasks with optional filtering
 export async function GET(request: NextRequest) {
   try {
-    console.log("🔍 GET /api/tasks - Request received");
     const session = await getServerSession(authOptions);
     
     if (!session?.user) {
-      console.log("❌ GET /api/tasks - Unauthorized: No session");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -32,7 +33,6 @@ export async function GET(request: NextRequest) {
     });
 
     if (!currentUser) {
-      console.log("❌ GET /api/tasks - User not found");
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -41,12 +41,6 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const billingStatus = searchParams.get("billingStatus");
     
-    console.log("📝 Query parameters:", {
-      status,
-      billingStatus,
-      url: request.url,
-      searchParams: Object.fromEntries(searchParams.entries())
-    });
 
     // Build the where clause based on the user's role
     let where: any = {};
@@ -54,30 +48,24 @@ export async function GET(request: NextRequest) {
     // Apply status filter if provided
     if (status && status !== "all") {
       where.status = status;
-      console.log(`✅ Filtering by status: ${status}`);
     }
     
     // Apply billing status filter if provided
     if (billingStatus) {
       where.billingStatus = billingStatus;
-      console.log(`✅ Filtering by billingStatus: ${billingStatus}`);
     }
 
     // Apply role-based filtering and log it
     if (currentUser.role === "ADMIN") {
-      console.log("👑 User is ADMIN - showing all tasks");
     } else if (currentUser.role === "PARTNER") {
       where.OR = [
         { assignedById: currentUser.id },
         { assignedToId: currentUser.id }
       ];
-      console.log("🤝 User is PARTNER - showing created or assigned tasks");
     } else {
       where.assignedToId = currentUser.id;
-      console.log("👤 Regular user - showing only assigned tasks");
     }
 
-    console.log("🔍 Final Prisma where clause:", JSON.stringify(where, null, 2));
 
     // Check the database directly for completed tasks with pending_billing status
     const directCheckCount = await prisma.task.count({
@@ -87,7 +75,7 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    console.log(`📊 Direct DB check: Found ${directCheckCount} tasks with status=completed AND billingStatus=pending_billing`);
+  
 
     // Execute the actual query
     const tasks = await prisma.task.findMany({
@@ -99,7 +87,7 @@ export async function GET(request: NextRequest) {
         priority: true,
         dueDate: true,
         billingStatus: true,
-        assignedById: true, // Make sure this is included
+        assignedById: true,
         assignedTo: {
           select: {
             id: true,
@@ -112,18 +100,24 @@ export async function GET(request: NextRequest) {
             contactPerson: true,
           },
         },
+        assignees: {
+          select: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+              }
+            }
+          }
+        }
       },
       orderBy: {
         updatedAt: "desc",
       },
     });
 
-    console.log(`✅ Query returned ${tasks.length} tasks`);
-    console.log("📝 Task statuses:", tasks.map(t => ({ id: t.id, status: t.status, billingStatus: t.billingStatus })));
-
     return NextResponse.json(tasks);
   } catch (error) {
-    console.error("❌ Error in GET /api/tasks:", error);
     if (error instanceof Error) {
       console.error("Error message:", error.message);
       console.error("Error stack:", error.stack);
@@ -163,18 +157,52 @@ export async function POST(request: NextRequest) {
     // Validate request data
     const validatedData = taskCreateSchema.parse(body);
 
-    // Create the task
-    const task = await prisma.task.create({
-      data: {
-        title: validatedData.title,
-        description: validatedData.description,
-        priority: validatedData.priority,
-        status: validatedData.status,
-        dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
-        assignedById: currentUser.id,
-        assignedToId: validatedData.assignedToId,
-        clientId: validatedData.clientId,
-      },
+    // Start a transaction to create task and assignees
+    const result = await prisma.$transaction(async (tx) => {
+      // Create the task with backwards compatibility for single assignee
+      const task = await tx.task.create({
+        data: {
+          title: validatedData.title,
+          description: validatedData.description,
+          priority: validatedData.priority,
+          status: validatedData.status,
+          dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
+          assignedById: currentUser.id,
+          // Keep assignedToId for backward compatibility
+          assignedToId: validatedData.assignedToId,
+          clientId: validatedData.clientId,
+        },
+      });
+
+      // Process multiple assignees if provided
+      if (validatedData.assignedToIds && validatedData.assignedToIds.length > 0) {
+        // Create a set to deduplicate user IDs (in case assignedToId is also in assignedToIds)
+        const uniqueAssigneeIds = new Set<string>(validatedData.assignedToIds);
+        if (validatedData.assignedToId) uniqueAssigneeIds.add(validatedData.assignedToId);
+        
+        // Create TaskAssignee records for each assignee
+        const assigneePromises = Array.from(uniqueAssigneeIds).map(userId => 
+          tx.taskAssignee.create({
+            data: {
+              taskId: task.id,
+              userId: userId,
+            },
+          })
+        );
+        
+        await Promise.all(assigneePromises);
+      } 
+      // Handle the case where only assignedToId is provided (for backward compatibility)
+      else if (validatedData.assignedToId) {
+        await tx.taskAssignee.create({
+          data: {
+            taskId: task.id,
+            userId: validatedData.assignedToId,
+          },
+        });
+      }
+
+      return task;
     });
 
     // Create activity log
@@ -183,15 +211,30 @@ export async function POST(request: NextRequest) {
         type: "task",
         action: "created",
         target: validatedData.title,
-        details: { taskId: task.id },
+        details: { taskId: result.id },
         userId: currentUser.id,
       },
     });
 
-    // Send notification if task is assigned to someone else
-    if (validatedData.assignedToId && validatedData.assignedToId !== currentUser.id) {
+    // Send notifications to all assignees
+    if (validatedData.assignedToIds && validatedData.assignedToIds.length > 0) {
+      for (const assigneeId of validatedData.assignedToIds) {
+        if (assigneeId !== currentUser.id) {
+          await sendTaskAssignedNotification(
+            result.id,
+            validatedData.title,
+            currentUser.id,
+            assigneeId,
+            undefined,
+            validatedData.dueDate ? new Date(validatedData.dueDate) : undefined
+          );
+        }
+      }
+    } 
+    // Handle legacy single assignment notification
+    else if (validatedData.assignedToId && validatedData.assignedToId !== currentUser.id) {
       await sendTaskAssignedNotification(
-        task.id,
+        result.id,
         validatedData.title,
         currentUser.id,
         validatedData.assignedToId,
@@ -200,7 +243,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(task, { status: 201 });
+    return NextResponse.json(result, { status: 201 });
   } catch (error) {
     console.error("Error creating task:", error);
     if (error instanceof z.ZodError) {

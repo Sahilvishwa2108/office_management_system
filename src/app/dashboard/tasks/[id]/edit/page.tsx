@@ -22,6 +22,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription
 } from "@/components/ui/form";
 import {
   Select,
@@ -42,15 +43,20 @@ import { Calendar } from "@/components/ui/calendar";
 import { TaskPageLayout } from "@/components/layouts/task-page-layout";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CalendarIcon, ChevronDown, Loader2, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
-// Define schema for task editing (same as creation schema)
+// Update the task form schema to include assignedToIds
 const taskFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
   priority: z.enum(["low", "medium", "high"]),
   status: z.enum(["pending", "in-progress", "review", "completed", "cancelled"]),
   dueDate: z.date().optional().nullable(),
+  // Add support for array of assignees
+  assignedToIds: z.array(z.string()).optional().default([]),
+  // Keep for backward compatibility
   assignedToId: z.string().optional().nullable(),
   clientId: z.string().optional().nullable(),
 });
@@ -89,6 +95,7 @@ export default function EditTaskPage() {
       priority: "medium",
       status: "pending",
       dueDate: null,
+      assignedToIds: [], // Initialize as empty array
       assignedToId: null,
       clientId: null,
     },
@@ -122,31 +129,43 @@ export default function EditTaskPage() {
 
         // Fetch task data
         const taskResponse = await axios.get(`/api/tasks/${taskId}`);
-        const taskData = taskResponse.data as TaskFormValues;
+        const taskData = taskResponse.data;
 
         // Fetch users (only staff who can be assigned tasks)
         const usersResponse = await axios.get('/api/users');
         setUsers((usersResponse.data as User[]).filter((user: User) =>
           ['BUSINESS_EXECUTIVE', 'BUSINESS_CONSULTANT', 'PARTNER'].includes(user.role)
         ));
-
+        
         // Fetch clients
         await fetchClients();
+        
+        // Create array of assignee IDs from the task data
+        interface Assignee {
+          userId: string;
+        }
 
-        // Format the data for the form
+        const assigneeIds: string[] = taskData.assignees?.map((a: Assignee) => a.userId) || [];
+        // Fallback to legacy assignedToId if assignees is empty
+        if (assigneeIds.length === 0 && taskData.assignedToId) {
+          assigneeIds.push(taskData.assignedToId);
+        }
+        
+        // Set form values
         form.reset({
           title: taskData.title,
           description: taskData.description || "",
           priority: taskData.priority,
           status: taskData.status,
           dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
-          assignedToId: taskData.assignedToId || null,
-          clientId: taskData.clientId || null,
+          assignedToIds: assigneeIds,
+          assignedToId: taskData.assignedToId,
+          clientId: taskData.clientId,
         });
       } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error('Failed to load task data');
-        router.push('/dashboard/tasks');
+        console.error("Error fetching data:", error);
+        toast.error("Failed to load task data");
+        router.push("/dashboard/tasks");
       } finally {
         setIsFetching(false);
       }
@@ -165,6 +184,11 @@ export default function EditTaskPage() {
       // Format data as needed
       const taskData = {
         ...data,
+        // Include the array of assignee IDs
+        assignedToIds: data.assignedToIds && data.assignedToIds.length > 0 
+          ? data.assignedToIds 
+          : undefined,
+        // Keep for backward compatibility
         assignedToId: data.assignedToId === "null" ? null : data.assignedToId,
         clientId: data.clientId === "null" ? null : data.clientId,
         dueDate: data.dueDate ? data.dueDate.toISOString() : null,
@@ -271,28 +295,53 @@ export default function EditTaskPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="assignedToId"
+                  name="assignedToIds"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Assign To</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value || "null"}
-                      >
+                      <div className="relative">
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select assignee" />
-                          </SelectTrigger>
+                          <div className="flex flex-wrap gap-1 p-2 border rounded-md">
+                            {field.value?.length > 0 ? (
+                              field.value.map(assigneeId => {
+                                const user = users.find(u => u.id === assigneeId);
+                                return user ? (
+                                  <Badge key={assigneeId} variant="secondary" className="flex items-center gap-1">
+                                    {user.name}
+                                    <X 
+                                      className="h-3 w-3 cursor-pointer" 
+                                      onClick={() => {
+                                        field.onChange(field.value.filter(id => id !== assigneeId));
+                                      }}
+                                    />
+                                  </Badge>
+                                ) : null;
+                              })
+                            ) : (
+                              <div className="text-muted-foreground">No assignees selected</div>
+                            )}
+                          </div>
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="null">Unassigned</SelectItem>
-                          {users.map(user => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.name} ({user.role.replace(/_/g, " ")})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <Select 
+                          onValueChange={(value) => {
+                            if (value !== "null" && !field.value.includes(value)) {
+                              field.onChange([...field.value, value]);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="mt-2">
+                            <SelectValue placeholder="Add assignee" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="null">Unassigned</SelectItem>
+                            {users.map(user => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.name} ({user.role.replace(/_/g, " ")})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -6,9 +6,10 @@ import { z } from "zod";
 import { sendEmail } from "@/lib/email";
 import { sendTaskReassignedNotification } from "@/lib/notifications";
 
-// Schema for reassignment
+// Update the reassignment schema
 const reassignSchema = z.object({
-  assignedToId: z.string(),
+  // Change to array of user IDs
+  assignedToIds: z.array(z.string()),
   note: z.string().optional(),
 });
 
@@ -47,6 +48,7 @@ export async function PATCH(
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: {
+        assignees: true,
         assignedBy: true,
         assignedTo: true,
       },
@@ -56,9 +58,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // Enhanced permission check: 
-    // - Admin can reassign any task
-    // - Partner can only reassign tasks that were assigned to them
+    // Enhanced permission check remains the same
     if (currentUser.role === "PARTNER" && task.assignedToId !== currentUser.id) {
       return NextResponse.json(
         { error: "You can only reassign tasks that were assigned to you" },
@@ -70,40 +70,95 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = reassignSchema.parse(body);
 
-    // Check if the user being assigned exists
-    const newAssignee = await prisma.user.findUnique({
-      where: { id: validatedData.assignedToId },
+    // Verify all users being assigned exist
+    const assignees = await prisma.user.findMany({
+      where: { id: { in: validatedData.assignedToIds } },
     });
 
-    if (!newAssignee) {
+    if (assignees.length !== validatedData.assignedToIds.length) {
       return NextResponse.json(
-        { error: "Selected user does not exist" },
+        { error: "One or more selected users do not exist" },
         { status: 400 }
       );
     }
 
-    // Update the task with new assignee
-    const updatedTask = await prisma.task.update({
-      where: { id: taskId },
-      data: {
-        assignedToId: validatedData.assignedToId,
-      },
-      include: {
-        assignedBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    // Track previous assignees for notifications
+    const previousAssigneeIds = task.assignees.map(a => a.userId);
+    const primaryPreviousAssigneeId = task.assignedToId;
+
+    // Execute reassignment in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Update legacy field (keep for backward compatibility)
+      const primaryAssigneeId = validatedData.assignedToIds.length > 0 ? 
+        validatedData.assignedToIds[0] : null;
+        
+      await tx.task.update({
+        where: { id: taskId },
+        data: {
+          assignedToId: primaryAssigneeId,
+        },
+      });
+      
+      // Get existing assignees
+      const existingAssignees = task.assignees.map(a => a.userId);
+      const newAssignees = validatedData.assignedToIds;
+      
+      // Determine which assignees to add and remove
+      const assigneesToAdd = newAssignees.filter(id => !existingAssignees.includes(id));
+      const assigneesToRemove = existingAssignees.filter(id => !newAssignees.includes(id));
+      
+      // Remove assignees who are no longer assigned
+      if (assigneesToRemove.length > 0) {
+        await tx.taskAssignee.deleteMany({
+          where: {
+            taskId: taskId,
+            userId: { in: assigneesToRemove }
+          }
+        });
+      }
+      
+      // Add new assignees
+      for (const userId of assigneesToAdd) {
+        await tx.taskAssignee.create({
+          data: {
+            taskId: taskId,
+            userId: userId,
+          }
+        });
+      }
+
+      // Return updated task
+      return tx.task.findUnique({
+        where: { id: taskId },
+        include: {
+          assignees: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  role: true,
+                }
+              }
+            }
+          },
+          assignedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+      });
     });
 
     // Log activity
@@ -114,80 +169,72 @@ export async function PATCH(
         target: task.title,
         details: {
           taskId: task.id,
-          previousAssigneeId: task.assignedToId,
-          newAssigneeId: validatedData.assignedToId,
+          previousAssigneeIds: previousAssigneeIds,
+          newAssigneeIds: validatedData.assignedToIds,
           note: validatedData.note,
         },
         userId: currentUser.id,
       },
     });
 
-    // Use the dedicated notification function if available
-    try {
-      await sendTaskReassignedNotification(
-        task.id,
-        task.title,
-        currentUser.id,
-        task.assignedToId,
-        validatedData.assignedToId
-      );
-    } catch (error) {
-      console.error("Failed to send reassignment notification:", error);
-      
-      // Fallback to manual notification creation
-      await prisma.notification.create({
-        data: {
-          title: "Task Assigned",
-          content: `${currentUser.name} assigned you a task: ${task.title}${
-            validatedData.note ? ` - Note: ${validatedData.note}` : ""
-          }`,
-          sentById: currentUser.id,
-          sentToId: validatedData.assignedToId,
-        },
-      });
-
-      // If there was a previous assignee, notify them
-      if (
-        task.assignedToId &&
-        task.assignedToId !== validatedData.assignedToId &&
-        task.assignedTo
-      ) {
+    // Send notifications to new assignees
+    for (const assigneeId of validatedData.assignedToIds) {
+      // Skip notification to self and existing assignees
+      if (assigneeId !== currentUser.id) {
         await prisma.notification.create({
           data: {
-            title: "Task Reassigned",
-            content: `Your task "${task.title}" has been reassigned to ${newAssignee.name}`,
+            title: "Task Assigned",
+            content: `${currentUser.name} assigned you a task: ${task.title}${
+              validatedData.note ? ` - Note: ${validatedData.note}` : ""
+            }`,
             sentById: currentUser.id,
-            sentToId: task.assignedToId,
+            sentToId: assigneeId,
           },
         });
       }
     }
 
-    // Send email notification to the new assignee
-    if (newAssignee.email) {
-      try {
-        await sendEmail({
-          to: newAssignee.email,
-          subject: `Task Assigned: ${task.title}`,
-          html: `
-            <h2>You've been assigned a new task</h2>
-            <p><strong>Task:</strong> ${task.title}</p>
-            <p><strong>Assigned by:</strong> ${currentUser.name}</p>
-            ${validatedData.note ? `<p><strong>Note:</strong> ${validatedData.note}</p>` : ""}
-            <p><strong>Due date:</strong> ${
-              task.dueDate
-                ? new Date(task.dueDate).toLocaleDateString()
-                : "No due date"
-            }</p>
-            <p>Log in to the system to view task details.</p>
-          `,
+    // Notify previous assignees if they are no longer assigned
+    for (const previousAssigneeId of previousAssigneeIds) {
+      if (!validatedData.assignedToIds.includes(previousAssigneeId)) {
+        await prisma.notification.create({
+          data: {
+            title: "Task Reassigned",
+            content: `Your task "${task.title}" has been reassigned to another user`,
+            sentById: currentUser.id,
+            sentToId: previousAssigneeId,
+          },
         });
-      } catch (error) {
-        console.error("Failed to send email notification:", error);
       }
     }
 
-    return NextResponse.json(updatedTask);
+    // Send email notifications to new assignees
+    for (const assignee of assignees) {
+      if (assignee.email) {
+        try {
+          await sendEmail({
+            to: assignee.email,
+            subject: `Task Assigned: ${task.title}`,
+            html: `
+              <h2>You've been assigned a new task</h2>
+              <p><strong>Task:</strong> ${task.title}</p>
+              <p><strong>Assigned by:</strong> ${currentUser.name}</p>
+              ${validatedData.note ? `<p><strong>Note:</strong> ${validatedData.note}</p>` : ""}
+              <p><strong>Due date:</strong> ${
+                task.dueDate
+                  ? new Date(task.dueDate).toLocaleDateString()
+                  : "No due date"
+              }</p>
+              <p>Log in to the system to view task details.</p>
+            `,
+          });
+        } catch (error) {
+          console.error("Failed to send email notification:", error);
+        }
+      }
+    }
+
+    return NextResponse.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 });

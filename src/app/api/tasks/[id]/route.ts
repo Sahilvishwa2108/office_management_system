@@ -4,7 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { sendTaskStatusUpdateNotification, sendTaskAssignedNotification } from "@/lib/notifications";
 import { v2 as cloudinary } from "cloudinary";
-
+import { z } from "zod";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -13,7 +13,20 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-
+// Task update schema
+const taskUpdateSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters").optional(),
+  description: z.string().optional(),
+  priority: z.enum(["low", "medium", "high"]).optional(),
+  status: z.enum(["pending", "in-progress", "review", "completed", "cancelled"]).optional(),
+  dueDate: z.string().optional().nullable(),
+  // Add support for array of assignees
+  assignedToIds: z.array(z.string()).optional(),
+  // Keep for backward compatibility
+  assignedToId: z.string().optional().nullable(),
+  clientId: z.string().optional().nullable(),
+  note: z.string().optional(),
+});
 
 export async function GET(
   request: NextRequest,
@@ -37,7 +50,7 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Fetch the task with related data
+    // Fetch the task with related data, including all assignees
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: {
@@ -57,6 +70,19 @@ export async function GET(
             role: true,
           },
         },
+        // Add this inclusion for all assignees
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              }
+            }
+          }
+        },
         client: {
           select: {
             id: true,
@@ -75,10 +101,15 @@ export async function GET(
     const canViewTask =
       currentUser.role === "ADMIN" ||
       task.assignedById === currentUser.id ||
-      task.assignedToId === currentUser.id;
+      task.assignedToId === currentUser.id ||
+      // Add check for being in assignees list
+      task.assignees.some(a => a.userId === currentUser.id);
 
     if (!canViewTask) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      return NextResponse.json(
+        { error: "You don't have permission to view this task" },
+        { status: 403 }
+      );
     }
 
     return NextResponse.json(task);
@@ -117,13 +148,20 @@ export async function PATCH(
     // Fetch the task first, before using it in permission checks
     const task = await prisma.task.findUnique({
       where: { id: taskId },
+      include: {
+        assignees: {
+          include: {
+            user: true
+          }
+        }
+      }
     });
 
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // Now check permissions after task is fetched
+    // Maintain original permission checks
     if (currentUser.role !== "ADMIN") {
       // Partners can update the status of any task
       if (currentUser.role === "PARTNER" && Object.keys(body).length === 1 && body.hasOwnProperty("status")) {
@@ -139,6 +177,15 @@ export async function PATCH(
           { error: "You can only update the task status" },
           { status: 403 }
         );
+      }
+    }
+
+    // Validate update data
+    try {
+      const validatedData = taskUpdateSchema.parse(body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return NextResponse.json({ error: validationError.errors }, { status: 400 });
       }
     }
 

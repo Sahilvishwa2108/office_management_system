@@ -37,6 +37,7 @@ model User {
   // Relations
   assignedTasks           Task[]         @relation("AssignedToUser")
   createdTasks            Task[]         @relation("AssignedByUser")
+  taskAssignments         TaskAssignee[] @relation("UserTaskAssignments")
   messages                Message[]
   notificationsSent       Notification[] @relation("SentBy")
   notificationsReceived   Notification[] @relation("SentTo")
@@ -74,35 +75,52 @@ model Client {
 }
 
 model Task {
-  id           String    @id @default(uuid())
-  title        String
-  description  String?
-  status       String    @default("pending") // "pending", "in-progress", "review", "completed", "cancelled"
-  priority     String    @default("medium")  // "low", "medium", "high"
-  dueDate      DateTime?
+  id             String    @id @default(uuid())
+  title          String
+  description    String?
+  status         String    @default("pending") 
+  priority       String    @default("medium")  
+  dueDate        DateTime?
+  billingStatus  String?   @default("pending_billing") // "pending_billing", "billed", "paid"
+  billingDate    DateTime?
   
-  // Billing related fields
-  billingStatus String?   @default("pending_billing") // "not_billed", "pending_billing", "billed"
-  billingDate   DateTime?
-  scheduledDeletionDate DateTime?
+  // Keep the original assignment fields (for backward compatibility)
+  assignedById   String
+  assignedBy     User      @relation("AssignedByUser", fields: [assignedById], references: [id])
+  assignedToId   String?   // This will remain but become optional
+  assignedTo     User?     @relation("AssignedToUser", fields: [assignedToId], references: [id])
   
-  // Relations
-  assignedById String
-  assignedBy   User      @relation("AssignedByUser", fields: [assignedById], references: [id])
-  assignedToId String?
-  assignedTo   User?     @relation("AssignedToUser", fields: [assignedToId], references: [id])
+  // Add new many-to-many relation
+  assignees      TaskAssignee[]
   
-  clientId     String?   // Tasks can optionally be associated with a client
-  client       Client?   @relation(fields: [clientId], references: [id])
-  comments     TaskComment[]
+  // Keep other existing relations
+  client         Client?   @relation(fields: [clientId], references: [id])
+  clientId       String?
+  comments       TaskComment[]
+  // Any other existing fields/relations
   
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([assignedById])
   @@index([assignedToId])
   @@index([clientId])
   @@index([billingStatus])
+}
+
+// New join table for many-to-many task assignments
+model TaskAssignee {
+  id          String    @id @default(uuid())
+  taskId      String
+  userId      String
+  assignedAt  DateTime  @default(now())
+  
+  // Relations
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user        User      @relation("UserTaskAssignments", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Unique constraint
+  @@unique([taskId, userId])
 }
 
 model Attachment {

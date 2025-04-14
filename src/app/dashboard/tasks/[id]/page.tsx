@@ -47,6 +47,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetailSkeleton } from "@/components/loading/task-skeleton";
 import { BillingApprovalButton } from "@/components/tasks/billing-approval-button"; // Add this import for BillingApprovalButton
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge"; // Add this import for TaskStatusBadge
+import { TaskAssignees } from "@/components/tasks/task-assignees";
 
 // Add the missing getInitials function
 const getInitials = (name: string): string => {
@@ -63,6 +64,17 @@ interface User {
   name: string;
   email: string;
   role: string;
+}
+
+// Update Task interface to include assignees
+interface TaskAssignee {
+  userId: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  }
 }
 
 interface Task {
@@ -87,6 +99,8 @@ interface Task {
     email: string;
     role: string;
   } | null;
+  // Add assignees array
+  assignees: TaskAssignee[];
   client: {
     id: string;
     contactPerson: string;
@@ -323,16 +337,11 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 
                 <div>
                   <h3 className="text-sm font-medium mb-1">Assigned To</h3>
-                  {task.assignedTo ? (
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarFallback>{getInitials(task.assignedTo.name)}</AvatarFallback>
-                      </Avatar>
-                      <div className="text-sm">{task.assignedTo.name}</div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground">Unassigned</div>
-                  )}
+                  <TaskAssignees 
+                    assignees={task.assignees} 
+                    legacyAssignedTo={task.assignedTo}
+                    showTooltip={true}
+                  />
                 </div>
                 
                 {task.client && (
