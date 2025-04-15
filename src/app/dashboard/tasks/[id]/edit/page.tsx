@@ -46,6 +46,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, ChevronDown, Loader2, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { SearchableMultiSelect } from "@/components/tasks/searchable-multi-select";
 
 // Update the task form schema to include assignedToIds
 const taskFormSchema = z.object({
@@ -299,49 +300,19 @@ export default function EditTaskPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Assign To</FormLabel>
-                      <div className="relative">
-                        <FormControl>
-                          <div className="flex flex-wrap gap-1 p-2 border rounded-md">
-                            {field.value?.length > 0 ? (
-                              field.value.map(assigneeId => {
-                                const user = users.find(u => u.id === assigneeId);
-                                return user ? (
-                                  <Badge key={assigneeId} variant="secondary" className="flex items-center gap-1">
-                                    {user.name}
-                                    <X 
-                                      className="h-3 w-3 cursor-pointer" 
-                                      onClick={() => {
-                                        field.onChange(field.value.filter(id => id !== assigneeId));
-                                      }}
-                                    />
-                                  </Badge>
-                                ) : null;
-                              })
-                            ) : (
-                              <div className="text-muted-foreground">No assignees selected</div>
-                            )}
-                          </div>
-                        </FormControl>
-                        <Select 
-                          onValueChange={(value) => {
-                            if (value !== "null" && !field.value.includes(value)) {
-                              field.onChange([...field.value, value]);
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="mt-2">
-                            <SelectValue placeholder="Add assignee" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="null">Unassigned</SelectItem>
-                            {users.map(user => (
-                              <SelectItem key={user.id} value={user.id}>
-                                {user.name} ({user.role.replace(/_/g, " ")})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <FormControl>
+                        <SearchableMultiSelect
+                          options={users.map(user => ({
+                            value: user.id,
+                            label: user.name,
+                            role: user.role,
+                            email: user.email
+                          }))}
+                          selected={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select team members"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

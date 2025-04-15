@@ -108,58 +108,61 @@ export async function POST(req: NextRequest) {
 }
 
 // Get all users (with filtering based on role)
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    // Get session and check authorization
     const session = await getServerSession(authOptions);
-    
-    // Check if user is authenticated
-    if (!session || !session.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { role } = session.user;
-    const { searchParams } = new URL(req.url);
-    const roleFilter = searchParams.get("role");
+    // Get search parameters
+    const { searchParams } = new URL(request.url);
     
-    // Prepare filter based on user role
+    // Get multiple roles if provided (comma-separated)
+    const rolesParam = searchParams.get("roles");
+    const roles = rolesParam ? rolesParam.split(",") : [];
+    
+    // Get status filter
+    const status = searchParams.get("status");
+
+    // Build where clause
     let where: any = {};
     
-    // Apply role filter if provided
-    if (roleFilter) {
-      where.role = roleFilter;
+    // Apply role filter - if multiple roles are specified
+    if (roles.length > 0) {
+      where.role = { in: roles };
     }
     
-    // Partners can only see junior employees
-    if (role === "PARTNER") {
-      where.role = {
-        in: ["BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"]
-      };
+    // Apply status filter
+    if (status === "active") {
+      where.isActive = true;
+    } else if (status === "inactive") {
+      where.isActive = false;
     }
 
+    // Rest of your user fetching logic...
     const users = await prisma.user.findMany({
       where,
+      orderBy: {
+        createdAt: "desc",
+      },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
-        isActive: true, // Include isActive field
+        isActive: true,
         createdAt: true,
         updatedAt: true,
       },
-      orderBy: {
-        createdAt: "desc"
-      }
     });
 
     return NextResponse.json(users);
   } catch (error) {
     console.error("Error fetching users:", error);
     return NextResponse.json(
-      { error: "Failed to fetch users" },
+      { error: "Failed to load users" },
       { status: 500 }
     );
   }

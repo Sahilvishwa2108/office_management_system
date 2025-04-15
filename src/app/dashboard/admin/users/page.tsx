@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserPlus, MoreVertical, Loader2, Search, Eye, Edit, Lock, Ban, CheckCircle2, MoreHorizontal, KeyIcon, CheckCircle } from "lucide-react";
+import { UserPlus, MoreVertical, Loader2, Search, Eye, Edit, Lock, Ban, CheckCircle2, MoreHorizontal, KeyIcon, CheckCircle, FilterX } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
@@ -43,6 +43,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { UserCount } from "@/components/dashboard/user-count";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RoleFilter } from "@/components/ui/role-filter";
 
 interface User {
   id: string;
@@ -198,18 +199,20 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
 
   // Load users - excluding clients and current user
   const loadUsers = async () => {
     setLoading(true);
     try {
-      let url = "/api/users";
-      if (roleFilter && roleFilter !== "all") {
-        url += `?role=${roleFilter}`;
+      // Use the new roles parameter
+      const params: Record<string, string> = {};
+      if (selectedRoles.length > 0) {
+        params.roles = selectedRoles.join(",");
       }
-      const response = await axios.get(url);
+      
+      const response = await axios.get("/api/users", { params });
       
       // Filter out client users and the current logged-in user
       const filteredUsers = response.data.filter((user: User) => 
@@ -258,7 +261,7 @@ export default function UsersPage() {
     if (session) {
       loadUsers();
     }
-  }, [roleFilter, session]);
+  }, [selectedRoles, session]);
 
   // Filter users based on search term
   const filteredUsers = users.filter(user =>
@@ -350,6 +353,14 @@ export default function UsersPage() {
     );
   }
 
+  // Define the roles available for filtering
+  const availableRoles = [
+    { value: "ADMIN", label: "Admin" },
+    { value: "PARTNER", label: "Partner" },
+    { value: "BUSINESS_EXECUTIVE", label: "Business Executive" },
+    { value: "BUSINESS_CONSULTANT", label: "Business Consultant" },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Title Row with Button */}
@@ -390,21 +401,27 @@ export default function UsersPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Select
-                value={roleFilter}
-                onValueChange={setRoleFilter}
-              >
-                <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="PARTNER">Partner</SelectItem>
-                  <SelectItem value="BUSINESS_EXECUTIVE">Business Executive</SelectItem>
-                  <SelectItem value="BUSINESS_CONSULTANT">Business Consultant</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <RoleFilter
+                  roles={availableRoles}
+                  selectedRoles={selectedRoles}
+                  onChange={setSelectedRoles}
+                />
+                
+                {(selectedRoles.length > 0 || searchTerm) && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setSelectedRoles([]);
+                      setSearchTerm("");
+                    }}
+                  >
+                    <FilterX className="h-4 w-4 mr-2" />
+                    Clear filters
+                  </Button>
+                )}
+              </div>
             </div>
             
             {/* View toggle */}

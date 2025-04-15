@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { UserCount } from "@/components/dashboard/user-count";
+import { RoleFilter } from "@/components/ui/role-filter";
 
 interface User {
   id: string;
@@ -61,7 +62,7 @@ export default function PartnerUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState("all");
 
   // Format the role for display
@@ -76,10 +77,10 @@ export default function PartnerUsersPage() {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      // Add role parameter for filtering on the server side
+      // Add role parameters for filtering on the server side
       const response = await axios.get("/api/users", {
         params: {
-          role: roleFilter !== "all" ? roleFilter : undefined,
+          roles: selectedRoles.length > 0 ? selectedRoles.join(",") : undefined,
           status: statusFilter !== "all" ? statusFilter : undefined,
         },
       });
@@ -103,7 +104,7 @@ export default function PartnerUsersPage() {
   // Initial load
   useEffect(() => {
     loadUsers();
-  }, [roleFilter, statusFilter]);
+  }, [selectedRoles, statusFilter]);
 
   // Filter users based on search term
   const filteredUsers = users.filter(
@@ -114,10 +115,16 @@ export default function PartnerUsersPage() {
 
   // Clear filters
   const clearFilters = () => {
-    setRoleFilter("all");
+    setSelectedRoles([]);
     setStatusFilter("all");
     setSearchTerm("");
   };
+
+  // Define the roles available for filtering
+  const availableRoles = [
+    { value: "BUSINESS_EXECUTIVE", label: "Business Executive" },
+    { value: "BUSINESS_CONSULTANT", label: "Business Consultant" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -161,20 +168,11 @@ export default function PartnerUsersPage() {
             </div>
 
             <div className="flex gap-2">
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="BUSINESS_EXECUTIVE">
-                    Business Executive
-                  </SelectItem>
-                  <SelectItem value="BUSINESS_CONSULTANT">
-                    Business Consultant
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <RoleFilter
+                roles={availableRoles}
+                selectedRoles={selectedRoles}
+                onChange={setSelectedRoles}
+              />
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[180px]">
@@ -187,7 +185,7 @@ export default function PartnerUsersPage() {
                 </SelectContent>
               </Select>
 
-              {(roleFilter !== "all" || statusFilter !== "all" || searchTerm) && (
+              {(selectedRoles.length > 0 || statusFilter !== "all" || searchTerm) && (
                 <Button variant="outline" onClick={clearFilters} size="icon">
                   <FilterX className="h-4 w-4" />
                 </Button>
@@ -204,12 +202,12 @@ export default function PartnerUsersPage() {
             <div className="text-center py-12 border rounded-md bg-background">
               <h3 className="text-lg font-medium mb-2">No staff found</h3>
               <p className="text-muted-foreground mb-6">
-                {searchTerm || roleFilter !== "all" || statusFilter !== "all"
+                {searchTerm || selectedRoles.length > 0 || statusFilter !== "all"
                   ? "No results match your search criteria. Try adjusting your filters."
                   : "No junior staff have been added yet."}
               </p>
 
-              {!searchTerm && roleFilter === "all" && statusFilter === "all" && (
+              {!searchTerm && selectedRoles.length === 0 && statusFilter === "all" && (
                 <Button asChild>
                   <Link href="/dashboard/partner/users/create">
                     <Plus className="h-4 w-4 mr-2" /> Add New Staff

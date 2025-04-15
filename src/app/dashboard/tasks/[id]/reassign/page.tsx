@@ -17,8 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { TaskPageLayout } from "@/components/layouts/task-page-layout";
 import { User as UserIcon, Loader2, ChevronDown, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
+import { SearchableMultiSelect } from "@/components/tasks/searchable-multi-select";
 
 interface User {
   id: string;
@@ -38,90 +37,6 @@ interface Task {
   assignedToId: string | null;
   assignedTo: User | null;
   assignees: TaskAssignee[];
-}
-
-// Multi-select component for assignees
-function MultiSelect({
-  options,
-  selected,
-  onChange,
-  placeholder = "Select options"
-}: {
-  options: { value: string; label: string }[];
-  selected: string[];
-  onChange: (selected: string[]) => void;
-  placeholder?: string;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleSelect = (value: string) => {
-    const newSelected = selected.includes(value)
-      ? selected.filter(item => item !== value)
-      : [...selected, value];
-    onChange(newSelected);
-  };
-
-  return (
-    <div className="relative">
-      <div
-        className={cn(
-          "relative w-full cursor-pointer rounded-md border border-input bg-transparent text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-          isOpen && "ring-1 ring-ring"
-        )}
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <div className="flex min-h-10 flex-wrap items-center gap-1 p-1 pe-10">
-          {selected.length === 0 && (
-            <div className="px-2 py-1.5 text-muted-foreground">{placeholder}</div>
-          )}
-          {selected.map(value => {
-            const option = options.find(o => o.value === value);
-            return option ? (
-              <Badge key={value} variant="secondary" className="m-0.5">
-                {option.label}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-1 h-4 w-4 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSelect(value);
-                  }}
-                >
-                  <X className="h-3 w-3" />
-                  <span className="sr-only">Remove</span>
-                </Button>
-              </Badge>
-            ) : null;
-          })}
-        </div>
-        <div className="absolute right-3 top-3">
-          <ChevronDown className="h-4 w-4 opacity-50" />
-        </div>
-      </div>
-      {isOpen && (
-        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover shadow-md">
-          {options.map(option => (
-            <div
-              key={option.value}
-              className={cn(
-                "flex cursor-pointer items-center p-2 hover:bg-accent",
-                selected.includes(option.value) && "bg-accent"
-              )}
-              onClick={() => handleSelect(option.value)}
-            >
-              <Checkbox
-                checked={selected.includes(option.value)}
-                className="mr-2"
-                onCheckedChange={() => {}}
-              />
-              <span>{option.label}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 export default function ReassignTaskPage() {
@@ -262,10 +177,12 @@ export default function ReassignTaskPage() {
           
           <div className="space-y-2">
             <label className="text-sm font-medium">Reassign To*</label>
-            <MultiSelect
+            <SearchableMultiSelect
               options={users.map(user => ({
                 value: user.id,
-                label: `${user.name} (${user.role.replace(/_/g, " ")})`
+                label: user.name,
+                role: user.role,
+                email: user.email
               }))}
               selected={selectedUserIds}
               onChange={setSelectedUserIds}
