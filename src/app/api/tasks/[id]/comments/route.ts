@@ -57,16 +57,27 @@ export async function POST(
     }
 
     // Check if user has permission to comment on this task
-    const canComment = 
+    let canComment = 
       currentUser.role === "ADMIN" ||
       task.assignedById === currentUser.id ||
       task.assignedToId === currentUser.id;
 
+    // Add check for assignees
     if (!canComment) {
-      return NextResponse.json(
-        { error: "You don't have permission to comment on this task" },
-        { status: 403 }
-      );
+      // Check if user is in the assignees
+      const isTaskAssignee = await prisma.taskAssignee.findFirst({
+        where: {
+          taskId: taskId,
+          userId: currentUser.id,
+        },
+      });
+      
+      if (!isTaskAssignee) {
+        return NextResponse.json(
+          { error: "You don't have permission to comment on this task" },
+          { status: 403 }
+        );
+      }
     }
 
     // Validate request data
@@ -181,26 +192,39 @@ export async function GET(
     }
 
     // Check if user has access to task comments
-    const canAccessComments = 
+    let canAccessComments = 
       currentUser.role === "ADMIN" ||
       task.assignedById === currentUser.id ||
       task.assignedToId === currentUser.id;
       
-    // Also allow access to previous assignees who might have commented
+    // Add a check for being in the assignees list
     if (!canAccessComments) {
-      // Check if user has previously commented on this task
-      const userComments = await prisma.taskComment.findFirst({
+      // Check if user is in the assignees
+      const isTaskAssignee = await prisma.taskAssignee.findFirst({
         where: {
           taskId: taskId,
           userId: currentUser.id,
         },
       });
       
-      if (!userComments) {
-        return NextResponse.json(
-          { error: "You don't have permission to view comments on this task" },
-          { status: 403 }
-        );
+      if (isTaskAssignee) {
+        // User is an assignee, grant access
+        canAccessComments = true;
+      } else {
+        // Check if user has previously commented on this task
+        const userComments = await prisma.taskComment.findFirst({
+          where: {
+            taskId: taskId,
+            userId: currentUser.id,
+          },
+        });
+        
+        if (!userComments) {
+          return NextResponse.json(
+            { error: "You don't have permission to view comments on this task" },
+            { status: 403 }
+          );
+        }
       }
     }
 

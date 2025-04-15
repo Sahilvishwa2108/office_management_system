@@ -57,13 +57,18 @@ export async function GET(request: NextRequest) {
 
     // Apply role-based filtering and log it
     if (currentUser.role === "ADMIN") {
+      // Admin can see all tasks, no additional filtering needed
     } else if (currentUser.role === "PARTNER") {
       where.OR = [
         { assignedById: currentUser.id },
-        { assignedToId: currentUser.id }
+        { assignedToId: currentUser.id },
+        { assignees: { some: { userId: currentUser.id } } } // Add this line
       ];
     } else {
-      where.assignedToId = currentUser.id;
+      where.OR = [
+        { assignedToId: currentUser.id },
+        { assignees: { some: { userId: currentUser.id } } } // Add this line
+      ];
     }
 
 
