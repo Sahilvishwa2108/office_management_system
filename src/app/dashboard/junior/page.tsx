@@ -121,7 +121,6 @@ export default function JuniorDashboard() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="tasks">My Tasks</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
         
@@ -152,13 +151,24 @@ export default function JuniorDashboard() {
               trend={stats.completionRate > 75 ? "up" : stats.completionRate < 50 ? "down" : "neutral"}
               icon={<BarChart className="h-4 w-4 text-muted-foreground" />} 
             />
-            <StatsCard 
-              title="Upcoming Deadlines" 
-              value={loading ? "..." : stats.upcomingDeadlines.toString()} 
-              description={stats.overdueTasksCount > 0 ? `${stats.overdueTasksCount} overdue` : "All on track"}
-              trend={stats.overdueTasksCount > 0 ? "down" : "up"}
-              icon={<Calendar className="h-4 w-4 text-muted-foreground" />} 
-            />
+            <Card>
+              <CardContent className="">
+                <div className="flex items-center justify-center p-1">
+                  <div className="text-center">
+                    <Users2 className="mx-auto h-10 w-10 text-muted-foreground opacity-50" />
+                    <h3 className="mt-2 font-medium">Client Directory</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Access client information in read-only mode
+                    </p>
+                    <Button className="mt-3" asChild>
+                      <Link href="/dashboard/clients">
+                        View Clients
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
           
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
@@ -276,107 +286,10 @@ export default function JuniorDashboard() {
                 </div>
               </CardContent>
             </Card>
-
-            <Card className="col-span-3 lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Clients</CardTitle>
-                <CardDescription>View client information</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-center p-6">
-                  <div className="text-center">
-                    <Users2 className="mx-auto h-10 w-10 text-muted-foreground opacity-50" />
-                    <h3 className="mt-3 font-medium">Client Directory</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      View client information (read-only access)
-                    </p>
-                    <Button className="mt-4" variant="outline" asChild>
-                      <Link href="/dashboard/clients">
-                        Browse Clients
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
           </>
           )}
         </TabsContent>
-        
-        <TabsContent value="tasks" className="space-y-4">
-          <div className="flex justify-between mb-4">
-            <h2 className="text-lg font-semibold">My Assigned Tasks</h2>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <ListFilter className="h-4 w-4 mr-1" />
-                  Filter
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Filter Tasks</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/dashboard/tasks?filter=all")}>
-                  All Tasks
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/tasks?filter=pending")}>
-                  Pending
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/tasks?filter=in-progress")}>
-                  In Progress
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/tasks?filter=high")}>
-                  High Priority
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/tasks?filter=overdue")}>
-                  Overdue
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {loading ? (
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {Array(6).fill(0).map((_, i) => (
-                  <TaskCardSkeleton key={i} />
-                ))}
-              </div>
-            ) : error ? (
-              <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
-                <AlertTriangle className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
-                <p className="text-muted-foreground">{error}</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => window.location.reload()}
-                >
-                  Retry
-                </Button>
-              </div>
-            ) : dashboardData?.tasks && dashboardData.tasks.length > 0 ? (
-              dashboardData.tasks.map(task => (
-                <TaskCard 
-                  key={task.id}
-                  id={task.id}
-                  title={task.title}
-                  description={task.description}
-                  status={task.status}
-                  priority={task.priority}
-                  dueDate={task.dueDate}
-                  progress={task.progress}
-                />
-              ))
-            ) : (
-              <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
-                <CheckCircle className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
-                <p className="text-muted-foreground">No tasks available</p>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-        
         <TabsContent value="activity" className="space-y-4">
           <DashboardCard title="Your Activity History" icon="fileText" loading={loading}>
             {error ? (

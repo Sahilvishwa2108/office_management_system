@@ -197,39 +197,65 @@ export async function PATCH(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // Update the task
-    const updatedTask = await prisma.task.update({
-      where: { id: taskId },
-      data: {
-        ...body,
-        // Ensure we're not changing assignedById through this endpoint
-        assignedById: undefined,
-      },
-      include: {
-        assignedBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
+    // Extract assignedToIds from body and remove it to avoid Prisma error
+    const { assignedToIds, ...updateData } = body;
+
+    // Use a transaction to update everything atomically
+    const updatedTask = await prisma.$transaction(async (tx) => {
+      // Update the task without the assignedToIds field
+      const updated = await tx.task.update({
+        where: { id: taskId },
+        data: {
+          ...updateData,
+          // Ensure we're not changing assignedById through this endpoint
+          assignedById: undefined,
+        },
+        include: {
+          assignedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+            },
+          },
+          client: {
+            select: {
+              id: true,
+              contactPerson: true,
+              companyName: true,
+            },
           },
         },
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-        client: {
-          select: {
-            id: true,
-            contactPerson: true,
-            companyName: true,
-          },
-        },
-      },
+      });
+
+      // If assignedToIds is provided, update the task assignees
+      if (assignedToIds && Array.isArray(assignedToIds)) {
+        // Delete existing assignees
+        await tx.taskAssignee.deleteMany({
+          where: { taskId }
+        });
+
+        // Create new assignee records
+        for (const userId of assignedToIds) {
+          await tx.taskAssignee.create({
+            data: {
+              taskId,
+              userId
+            }
+          });
+        }
+      }
+
+      return updated;
     });
 
     // Log the activity

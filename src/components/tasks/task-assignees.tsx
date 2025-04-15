@@ -10,7 +10,7 @@ interface TaskAssignee {
     id: string;
     name: string;
     email: string;
-    role: string;
+    role?: string;
   }
 }
 
@@ -25,7 +25,7 @@ interface TaskAssigneesProps {
   limit?: number;
   size?: "sm" | "md" | "lg";
   showTooltip?: boolean;
-  showDetails?: boolean; // Added prop to control detailed display
+  showDetails?: boolean;
   className?: string;
 }
 
@@ -35,7 +35,7 @@ export function TaskAssignees({
   limit = 3,
   size = "md",
   showTooltip = true,
-  showDetails = false, // Default to compact view
+  showDetails = false,
   className,
 }: TaskAssigneesProps) {
   // Helper function for initials
@@ -50,7 +50,7 @@ export function TaskAssignees({
   
   // Format role to be more readable
   const formatRole = (role: string): string => {
-    return role.replace(/_/g, ' ').toLowerCase()
+    return role?.replace(/_/g, ' ').toLowerCase()
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
@@ -83,7 +83,7 @@ export function TaskAssignees({
             </Avatar>
             <div>
               <div className="font-medium">{assignee.user.name}</div>
-              <div className="text-xs text-muted-foreground">{formatRole(assignee.user.role)}</div>
+              <div className="text-xs text-muted-foreground">{formatRole(assignee.user.role || "")}</div>
             </div>
           </div>
         ))}
@@ -110,7 +110,9 @@ export function TaskAssignees({
               {showTooltip && (
                 <TooltipContent>
                   <p>{assignee.user.name}</p>
-                  <p className="text-xs text-muted-foreground">{formatRole(assignee.user.role)}</p>
+                  {assignee.user.role && (
+                    <p className="text-xs text-muted-foreground">{formatRole(assignee.user.role)}</p>
+                  )}
                 </TooltipContent>
               )}
             </Tooltip>

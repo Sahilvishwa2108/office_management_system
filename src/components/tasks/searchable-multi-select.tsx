@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { Check, ChevronsUpDown, X } from "lucide-react";
+import { CheckIcon, ChevronsUpDown, Filter, X } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 interface Option {
   value: string;
@@ -38,10 +39,20 @@ export function SearchableMultiSelect({
 }: SearchableMultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [showRoleFilter, setShowRoleFilter] = useState(false);
+  
+  // Extract unique roles from options
+  const uniqueRoles = Array.from(new Set(
+    options
+      .map(option => option.role)
+      .filter(Boolean) as string[]
+  )).sort();
   
   // Format role to be more readable
   const formatRole = (role: string): string => {
-    return role?.replace(/_/g, ' ').toLowerCase()
+    if (!role) return "";
+    return role.replace(/_/g, ' ').toLowerCase()
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
@@ -49,6 +60,7 @@ export function SearchableMultiSelect({
   
   // Get initials for avatar
   const getInitials = (name: string): string => {
+    if (!name) return "";
     return name
       .split(' ')
       .map(word => word[0])
@@ -60,12 +72,46 @@ export function SearchableMultiSelect({
   // Find options matching the selected values
   const selectedOptions = options.filter(option => selected.includes(option.value));
   
-  // Filter options based on search query
-  const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (option.role && formatRole(option.role).toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (option.email && option.email.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Filter options based on search query and role filters
+  const filteredOptions = options.filter(option => {
+    // Apply role filter if any roles are selected
+    if (selectedRoles.length > 0 && option.role) {
+      if (!selectedRoles.includes(option.role)) {
+        return false;
+      }
+    }
+    
+    // If no search query, return all options that passed the role filter
+    const searchLower = searchQuery.toLowerCase().trim();
+    if (!searchLower) return true;
+    
+    // Use a more direct string comparison approach
+    if (option.label && option.label.toLowerCase().includes(searchLower)) {
+      return true;
+    }
+    
+    if (option.email && option.email.toLowerCase().includes(searchLower)) {
+      return true;
+    }
+    
+    if (option.role) {
+      const formattedRole = formatRole(option.role).toLowerCase();
+      if (formattedRole.includes(searchLower)) {
+        return true;
+      }
+    }
+    
+    return false;
+  });
+  
+  // Debug logging
+  useEffect(() => {
+    if (searchQuery) {
+      console.log("Current search query:", searchQuery);
+      console.log("Filtered options count:", filteredOptions.length);
+      console.log("First few filtered options:", filteredOptions.slice(0, 3));
+    }
+  }, [searchQuery, filteredOptions]);
   
   // Toggle selection
   const toggleOption = (value: string) => {
@@ -76,11 +122,25 @@ export function SearchableMultiSelect({
     );
   };
   
+  // Toggle role filter
+  const toggleRoleFilter = (role: string) => {
+    setSelectedRoles(prev => 
+      prev.includes(role)
+        ? prev.filter(r => r !== role)
+        : [...prev, role]
+    );
+  };
+  
   // Remove a selected item
   const removeItem = (value: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onChange(selected.filter(item => item !== value));
+  };
+  
+  // Clear all role filters
+  const clearRoleFilters = () => {
+    setSelectedRoles([]);
   };
   
   return (
@@ -106,7 +166,7 @@ export function SearchableMultiSelect({
                   <AvatarFallback className="text-[10px]">{getInitials(option.label)}</AvatarFallback>
                 </Avatar>
                 <span>{option.label}</span>
-                {/* Replace Button with a span that's styled like a button */}
+                {/* Use span instead of button to avoid nesting issue */}
                 <span
                   onClick={(e) => removeItem(option.value, e)}
                   className="h-4 w-4 p-0 ml-1 cursor-pointer rounded-full hover:bg-gray-200 inline-flex items-center justify-center"
@@ -126,20 +186,75 @@ export function SearchableMultiSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-        <Command>
-          <CommandInput
-            placeholder="Search people..."
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-            className="h-9"
-          />
+        <Command shouldFilter={false}> {/* Important: disable built-in filtering */}
+          <div className="flex items-center border-b px-3">
+            <CommandInput
+              placeholder="Search people..."
+              value={searchQuery}
+              onValueChange={(value) => {
+                console.log("Search query changed to:", value);
+                setSearchQuery(value);
+              }}
+              className="h-9 flex-1"
+              autoFocus
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowRoleFilter(!showRoleFilter)}
+              className={cn(
+                "ml-1 h-8 w-8", 
+                selectedRoles.length > 0 && "text-primary",
+                showRoleFilter && "bg-accent"
+              )}
+              aria-label="Filter by role"
+            >
+              <Filter className="h-4 w-4" />
+              {selectedRoles.length > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] text-primary-foreground flex items-center justify-center">
+                  {selectedRoles.length}
+                </span>
+              )}
+            </Button>
+          </div>
+          
+          {showRoleFilter && (
+            <div className="border-b p-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Filter by role</span>
+                {selectedRoles.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearRoleFilters}
+                    className="h-7 text-xs"
+                  >
+                    Clear all
+                  </Button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {uniqueRoles.map(role => (
+                  <Badge 
+                    key={role} 
+                    variant={selectedRoles.includes(role) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => toggleRoleFilter(role)}
+                  >
+                    {formatRole(role)}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+          
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandEmpty>No matching people found.</CommandEmpty>
             <CommandGroup>
               {filteredOptions.map(option => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
+                  value={option.label} // Important: use label for searching
                   onSelect={() => toggleOption(option.value)}
                   className="flex items-center gap-2"
                 >

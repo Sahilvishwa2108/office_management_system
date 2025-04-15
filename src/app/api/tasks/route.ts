@@ -80,45 +80,58 @@ export async function GET(request: NextRequest) {
       }
     });
     
-  
+    // Get pagination and sorting parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const pageSize = parseInt(searchParams.get("limit") || "10");
+    const sortField = searchParams.get("sortField") || "createdAt";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
+    
+    // Create orderBy object for prisma
+    const orderBy = {
+      [sortField]: sortOrder
+    };
 
     // Execute the actual query
     const tasks = await prisma.task.findMany({
       where,
-      select: {
-        id: true,
-        title: true,
-        status: true,
-        priority: true,
-        dueDate: true,
-        billingStatus: true,
-        assignedById: true,
+      orderBy: orderBy,
+      include: {
+        client: {
+          select: {
+            id: true,
+            companyName: true,
+            contactPerson: true,
+          },
+        },
         assignedTo: {
           select: {
             id: true,
             name: true,
+            email: true,
           },
         },
-        client: {
+        assignedBy: {
           select: {
             id: true,
-            contactPerson: true,
+            name: true,
+            email: true, 
           },
         },
         assignees: {
-          select: {
+          include: {
             user: {
               select: {
                 id: true,
                 name: true,
-              }
-            }
-          }
-        }
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
       },
-      orderBy: {
-        updatedAt: "desc",
-      },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     });
 
     return NextResponse.json(tasks);

@@ -117,8 +117,16 @@ interface Comment {
 
 // Add these helper functions to control permissions
 const canEditTask = (task: Task, currentUser: any) => {
-  if (!task || !currentUser) return false;
-  return currentUser.role === "ADMIN" || task.assignedBy.id === currentUser.id;
+  if (!currentUser) return false;
+  
+  // Admin can edit all tasks
+  if (currentUser.role === "ADMIN") return true;
+  
+  // Creator can edit their own tasks
+  if (task.assignedBy?.id === currentUser.id) return true;
+  
+  // No one else can edit tasks
+  return false;
 };
 
 const canReassignTask = (currentUser: any) => {
@@ -205,12 +213,12 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   }, [fetchTask, fetchComments, fetchCurrentUser, taskId]);
 
   // Memoize helper functions
-  const canEditTask = useMemo(() => {
+  const isEditableByCurrentUser = useMemo(() => {
     if (!task || !currentUser) return false;
     return currentUser.role === "ADMIN" || task.assignedBy.id === currentUser.id;
   }, [task, currentUser]);
 
-  const canReassignTask = useMemo(() => {
+  const canCurrentUserReassign = useMemo(() => {
     if (!currentUser) return false;
     return currentUser.role === "ADMIN" || currentUser.role === "PARTNER";
   }, [currentUser]);
@@ -414,7 +422,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               
               {/* Action buttons */}
               <div className="pt-4 space-y-3 border-t">
-                {canEditTask && (
+                {canEditTask(task, session?.user) && (
                   <Button variant="outline" className="w-full" asChild>
                     <Link href={`/dashboard/tasks/${task.id}/edit`}>
                       <Edit className="mr-2 h-4 w-4" />
@@ -423,7 +431,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                   </Button>
                 )}
                 
-                {canReassignTask && (
+                {canReassignTask(session?.user) && (
                   <Button variant="outline" className="w-full" asChild>
                     <Link href={`/dashboard/tasks/${task.id}/reassign`}>
                       <UserPlus className="mr-2 h-4 w-4" />

@@ -67,6 +67,17 @@ import {
 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { canDeleteTask } from "@/lib/permissions";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { TaskAssignees } from "@/components/tasks/task-assignees";
+
+const getInitials = (name: string): string => {
+  return name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
+};
 
 interface Task {
   id: string;
@@ -83,6 +94,15 @@ interface Task {
     id: string;
     contactPerson: string;
   } | null;
+  assignees?: {
+    userId: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+    }
+  }[];
 }
 
 // Task Card Component
@@ -152,6 +172,26 @@ const TaskListItem = ({
               <span className="text-muted-foreground">
                 Client: {task.client.contactPerson}
               </span>
+            )}
+          </div>
+          <div className="mt-2">
+            <span className="text-sm font-medium">Assigned to: </span>
+            {task.assignees && task.assignees.length > 0 ? (
+              <TaskAssignees 
+                assignees={task.assignees} 
+                limit={3} 
+                size="sm" 
+              />
+            ) : task.assignedTo ? (
+              <div className="flex items-center gap-1.5">
+                <Avatar className="h-5 w-5">
+                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedTo.name}`} />
+                  <AvatarFallback>{getInitials(task.assignedTo.name)}</AvatarFallback>
+                </Avatar>
+                <span className="text-sm">{task.assignedTo.name}</span>
+              </div>
+            ) : (
+              <span className="text-sm text-muted-foreground">Unassigned</span>
             )}
           </div>
         </div>
@@ -249,8 +289,24 @@ const TaskTableRow = ({
       <TableCell>
         {task.dueDate ? format(new Date(task.dueDate), 'MMM dd, yyyy') : '-'}
       </TableCell>
-      <TableCell>
-        {task.assignedTo?.name || 'Unassigned'}
+      <TableCell className="hidden md:table-cell">
+        {task.assignees && task.assignees.length > 0 ? (
+          <TaskAssignees 
+            assignees={task.assignees} 
+            limit={2} 
+            size="sm" 
+          />
+        ) : task.assignedTo ? (
+          <div className="flex items-center gap-1.5">
+            <Avatar className="h-5 w-5">
+              <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedTo.name}`} />
+              <AvatarFallback>{getInitials(task.assignedTo.name)}</AvatarFallback>
+            </Avatar>
+            <span className="text-sm">{task.assignedTo.name}</span>
+          </div>
+        ) : (
+          <span className="text-sm text-muted-foreground">Unassigned</span>
+        )}
       </TableCell>
       <TableCell className="text-right">
         <DropdownMenu>
