@@ -256,7 +256,7 @@ export function NotificationBell() {
         </ScrollArea>
         {notifications.length > 0 && (
           <div className="p-2 border-t">
-            <Link href="/dashboard/notifications">
+            <Link href="/dashboard/settings/notifications">
               <Button variant="ghost" className="w-full text-xs">
                 View all notifications
               </Button>
