@@ -293,13 +293,13 @@ export default function ProfilePage() {
                           <Input 
                             {...field} 
                             className="pl-9"
-                            placeholder="+1 (555) 123-4567"
+                            placeholder="+91xxxxxxxxxx"
                           />
                         </FormControl>
                         <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       </div>
                       <FormDescription>
-                        Used for account recovery and important notifications
+                      Don't forget to add your mobile number with <strong>+91</strong> to receive notifications on WhatsApp.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

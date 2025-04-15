@@ -1066,6 +1066,8 @@ export default function ChatPage() {
 
     // Clear input immediately for better UX
     setInput("");
+    setMentionQuery(""); // Reset mention query
+    setShowMentions(false); // Hide mention suggestions
 
     // Handle file uploads if any
     if (attachments.length > 0) {
