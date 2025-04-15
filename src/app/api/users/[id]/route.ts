@@ -4,6 +4,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { logActivity } from "@/lib/activity-logger";
 import { z } from "zod";
+import { sendActivityNotificationEmail } from "@/lib/email";
+import bcrypt from "bcryptjs";
+import { createNotification } from "@/lib/notifications";
 
 // Schema for user update validation
 const userUpdateSchema = z.object({
@@ -111,7 +114,7 @@ export async function PUT(
     }
 
     // Get request data
-    const { name, email, role: newRole } = await req.json();
+    const { name, email, role: newRole, phone, password } = await req.json();
     const normalizedEmail = email?.toLowerCase().trim();
 
     // Get the user to update
@@ -164,6 +167,26 @@ export async function PUT(
       }
     }
 
+    const updatedFields: string[] = [];
+    const updatedById = session.user.id;
+
+    // Check for changes and update fields
+    if (name && name !== userToUpdate.name) {
+      updatedFields.push(`Name changed from "${userToUpdate.name}" to "${name}"`);
+    }
+    if (email && email !== userToUpdate.email) {
+      updatedFields.push(`Email changed from "${userToUpdate.email}" to "${email}"`);
+    }
+    if (typeof newRole !== "undefined" && newRole !== userToUpdate.role) {
+      updatedFields.push(`Role changed from "${userToUpdate.role}" to "${newRole}"`);
+    }
+    if (phone && phone !== userToUpdate.phone) {
+      updatedFields.push(`Phone number changed from "${userToUpdate.phone}" to "${phone}"`);
+    }
+    if (password) {
+      updatedFields.push("Password was updated");
+    }
+
     // Update user
     const updatedUser = await prisma.user.update({
       where: { id: userId },
@@ -171,7 +194,31 @@ export async function PUT(
         name,
         email: normalizedEmail,
         role: newRole,
+        phone,
+        password: password ? await bcrypt.hash(password, 10) : undefined,
+        updatedById,
       },
+    });
+
+    // Send notifications
+    const isSelfUpdate = updatedById === userId;
+    const updaterName = isSelfUpdate ? "You" : session.user.name;
+
+    const notificationTitle = isSelfUpdate
+      ? "Your profile was updated"
+      : `${updaterName} updated your profile`;
+
+    const notificationContent = updatedFields.join(", ");
+
+    // In-app notification
+    await createNotification({
+      title: notificationTitle,
+      content: notificationContent,
+      sentById: updatedById,
+      sentToId: userId,
+      sendEmail: true,
+      emailSubject: notificationTitle,
+      emailHtml: `<p>${notificationContent}</p>`,
     });
 
     // Log activity for role change

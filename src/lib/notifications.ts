@@ -44,6 +44,33 @@ export async function createNotification({
       },
     });
 
+    // Ensure variables are properly passed to this function
+    const isSelfUpdate = sentById === sentToId;
+    const updaterName = isSelfUpdate ? "You" : "Another User"; // Replace with actual updater name if available
+
+    // const notificationTitle = isSelfUpdate
+    //   ? "Your profile was updated"
+    //   : `${updaterName} updated your profile`;
+
+    // const notificationContent = content;
+
+    // Send email if requested
+    if (sendEmail && notification.sentTo.email) {
+      try {
+        const subject = emailSubject || `Notification: ${title}`;
+        const html = emailHtml || `<p>${content}</p>`;
+        await sendActivityNotificationEmail(
+          notification.sentTo.email,
+          notification.sentTo.name || "User",
+          emailSubject || title,
+          content
+        );
+        console.log("Email sent successfully");
+      } catch (error) {
+        console.error("Failed to send email:", error);
+      }
+    }
+
     // Send email if requested
     // if (sendEmail && notification.sentTo.email) {
     //   // Email implementation would go here
@@ -55,35 +82,34 @@ export async function createNotification({
     //   // });
     // }
 
-     // Send email if requested
-     if (sendEmail && notification.sentTo.email) {
-      try {
-        if (taskId) {
-          // Use task-specific email templates
-          await sendTaskAssignmentEmail(
-            taskId,
-            notification.sentTo.email,
-            notification.sentTo.name || 'User',
-            title,
-            content
-          );
-        } else {
-          // Fallback to generic email logic
-          const subject = emailSubject || `Notification: ${title}`;
-          const html = emailHtml || `<p>${content}</p>`;
-          await sendActivityNotificationEmail(
-            notification.sentTo.email,
-            notification.sentTo.name || 'User',
-            subject,
-            content,
-            'notification'
-          );
-        }
-        console.log('Email sent successfully');
-      } catch (error) {
-        console.error('Failed to send email:', error);
-      }
-    }
+    //  // Send email if requested
+    //  if (sendEmail && notification.sentTo.email) {
+    //   try {
+    //     if (taskId) {
+    //       // Use task-specific email templates
+    //       await sendTaskAssignmentEmail(
+    //         taskId,
+    //         notification.sentTo.email,
+    //         notification.sentTo.name || 'User',
+    //         title,
+    //         content
+    //       );
+    //     } else {
+    //       // Fallback to generic email logic
+    //       const subject = emailSubject || `Notification: ${title}`;
+    //       const html = emailHtml || `<p>${content}</p>`;
+    //       await sendActivityNotificationEmail(
+    //         notification.sentTo.email,
+    //         notification.sentTo.name || 'User',
+    //         subject,
+    //         content
+    //       );
+    //     }
+    //     console.log('Email sent successfully');
+    //   } catch (error) {
+    //     console.error('Failed to send email:', error);
+    //   }
+    // }
 
 
 

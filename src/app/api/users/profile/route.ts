@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
+import { createNotification } from "@/lib/notifications"; // Adjust the path as needed
 
 // Get user profile
 export async function GET(req: NextRequest) {
@@ -74,13 +75,35 @@ export async function PUT(request: Request) {
     const { name, email, phone } = await request.json();
     const userId = session.user.id;
 
+    // Fetch the current user data
+    const userToUpdate = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!userToUpdate) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const updatedFields: string[] = [];
+
+    // Check for changes and update fields
+    if (name && name !== userToUpdate.name) {
+      updatedFields.push(`Name changed from "${userToUpdate.name}" to "${name}"`);
+    }
+    if (email && email !== userToUpdate.email) {
+      updatedFields.push(`Email changed from "${userToUpdate.email}" to "${email}"`);
+    }
+    if (phone && phone !== userToUpdate.phone) {
+      updatedFields.push(`Phone number changed from "${userToUpdate.phone}" to "${phone}"`);
+    }
+
     // Update user data
     const userData: any = { name };
-    if (session.user.role === "ADMIN" && email) {
+    if (email) {
       userData.email = email;
     }
     if (phone !== undefined) {
-      userData.phone = phone; // Updated to include phone field in User model
+      userData.phone = phone;
     }
 
     // Update user record
@@ -88,6 +111,23 @@ export async function PUT(request: Request) {
       where: { id: userId },
       data: userData,
     });
+
+    // Send notifications
+    if (updatedFields.length > 0) {
+      const notificationTitle = "Your profile was updated";
+      const notificationContent = updatedFields.join(", ");
+
+      // In-app notification
+      await createNotification({
+        title: notificationTitle,
+        content: notificationContent,
+        sentById: userId,
+        sentToId: userId,
+        sendEmail: true,
+        emailSubject: notificationTitle,
+        emailHtml: `<p>${notificationContent}</p>`,
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

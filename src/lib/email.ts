@@ -95,28 +95,21 @@ export async function sendActivityNotificationEmail(
   email: string,
   name: string,
   activityTitle: string,
-  activityDetails: string,
-  activityType: string
+  activityDetails: string
 ) {
-  // Add console log for debugging
-  console.log(`Sending email to ${email} for activity: ${activityTitle}`);
-  
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-  const dashboardUrl = `${baseUrl}/dashboard`;
-  const activityIcon = getActivityIcon(activityType);
-
-  const html = getActivityNotificationTemplate(
-    name,
-    activityTitle,
-    activityDetails,
-    activityIcon,
-    dashboardUrl
-  );
+  const html = `
+    <div>
+      <h1>${activityTitle}</h1>
+      <p>Hi ${name},</p>
+      <p>${activityDetails}</p>
+      <p>Thank you,<br>Office Management Team</p>
+    </div>
+  `;
 
   return sendEmail({
     to: email,
-    subject: `New Activity: ${activityTitle} - Office Management System`,
-    html
+    subject: activityTitle,
+    html,
   });
 }
 
