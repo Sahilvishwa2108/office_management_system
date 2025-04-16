@@ -4,7 +4,7 @@ import { useState } from "react";
 import CryptoJS from "crypto-js";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CloudinaryUploadProps {
@@ -68,7 +68,15 @@ export function CloudinaryUpload({ taskId, onUploadComplete, disabled = false }:
         }
       };
   
-      const uploadPromise = new Promise<any>((resolve, reject) => {
+      const uploadPromise = new Promise<{ 
+        url: string; 
+        secure_url: string; 
+        public_id: string; 
+        format: string;
+        resource_type: string;
+        original_filename: string; 
+        size: number;
+      }>((resolve, reject) => {
         xhr.open(
           "POST",
           `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME || "dar1v71xk"}/${resourceType}/upload`

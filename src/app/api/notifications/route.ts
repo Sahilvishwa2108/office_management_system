@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Mark all notifications as read
-export async function PATCH(request: NextRequest) {
+export async function PATCH() {
   try {
     // Get authenticated user
     const session = await getServerSession(authOptions);

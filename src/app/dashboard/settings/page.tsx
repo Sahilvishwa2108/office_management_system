@@ -5,8 +5,6 @@ import { AlertCircle, Shield } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 export default function SettingsPage() {
-  const { data: _session } = useSession();
-  
   return (
     <div className="space-y-6">
       <Card>

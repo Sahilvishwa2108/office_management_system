@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     // Build the where clause
     type ClientWhereClause = {
       isGuest?: boolean;
-      OR?: Array<{[key: string]: any}>;
+      OR?: Array<{[key: string]: unknown}>;
     };
     const where: ClientWhereClause = {};
     

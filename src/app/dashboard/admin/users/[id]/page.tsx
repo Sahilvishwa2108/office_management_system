@@ -55,18 +55,10 @@ interface UserDetails {
   updatedAt: string;
 }
 
-interface ErrorResponse {
-  response?: {
-    data?: {
-      error?: string;
-    };
-  };
-}
-
 export default function UserDetailsPage({
   params,
 }: {
-  params: Promise<UserParams> | UserParams;
+  params: Promise<UserParams>;
 }) {
   const router = useRouter();
   const [user, setUser] = useState<UserDetails | null>(null);
@@ -74,7 +66,7 @@ export default function UserDetailsPage({
   const [actionLoading, setActionLoading] = useState(false);
 
   // Properly unwrap params using React.use()
-  const unwrappedParams = React.use(params as any) as UserParams;
+  const unwrappedParams = React.use(params);
   const userId = unwrappedParams.id;
 
   // Format the user role for display
@@ -157,7 +149,7 @@ export default function UserDetailsPage({
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold mb-2">User Not Found</h2>
         <p className="text-muted-foreground mb-6">
-          The requested user does not exist or you don't have permission to view
+          The requested user does not exist or you don&apos;t have permission to view
           it.
         </p>
         <Button asChild>

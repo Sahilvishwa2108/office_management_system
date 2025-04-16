@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,8 +59,9 @@ const partnerRoleConfigs = [
   { role: "BUSINESS_EXECUTIVE", label: "Business Executives", color: "bg-green-500" },
   { role: "BUSINESS_CONSULTANT", label: "Business Consultants", color: "bg-teal-500" },
 ];
-
 export default function PartnerUsersPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -107,10 +110,14 @@ export default function PartnerUsersPage() {
   }, [selectedRoles, statusFilter]);
 
   useEffect(() => {
-    if (session) {
-      loadUsers();
+    loadUsers();
+  }, [loadUsers]); // Add missing dependency
+
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
     }
-  }, [session, loadUsers]); // Add loadUsers here
+  }, []); // Remove unnecessary 'session' dependency
 
   // Filter users based on search term
   const filteredUsers = users.filter(

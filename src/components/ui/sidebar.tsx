@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -42,7 +41,6 @@ interface SidebarProps {
   collapsed: boolean;
   setCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
   userName: string;
-  userEmail: string;
   userRole: string;
   onSignOut: () => void;
 }
@@ -85,7 +83,6 @@ export function Sidebar({
   collapsed,
   setCollapsed,
   userName,
-  userEmail,
   userRole,
   onSignOut,
 }: SidebarProps) {

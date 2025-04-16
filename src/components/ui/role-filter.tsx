@@ -22,15 +22,6 @@ export function RoleFilter({
 }: RoleFilterProps) {
   const [open, setOpen] = useState(false);
   
-  // Format role to be more readable if needed
-  const formatRole = (role: string): string => {
-    if (!role || typeof role !== 'string') return "";
-    return role.replace(/_/g, ' ').toLowerCase()
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-  
   // Toggle role selection
   const toggleRole = (role: string) => {
     const newSelection = selectedRoles.includes(role)

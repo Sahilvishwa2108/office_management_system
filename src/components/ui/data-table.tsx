@@ -63,7 +63,7 @@ export function DataTable<T>({
                     >
                       {column.cell
                         ? column.cell(item)
-                        : (item as any)[column.accessorKey]}
+                        : String((item as Record<string, unknown>)[column.accessorKey] ?? '')}
                     </TableCell>
                   ))}
                 </TableRow>

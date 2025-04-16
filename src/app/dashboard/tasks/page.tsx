@@ -96,6 +96,7 @@ interface Task {
       role: string;
     }
   }[];
+  [key: string]: unknown; // Add index signature to satisfy canDeleteTask requirements
 }
 
 // Task Card Component
@@ -114,9 +115,9 @@ const TaskListItem = ({
     router.push(`/dashboard/tasks/${task.id}`);
   }, [router, task.id]);
   
-  const handleActionClick = useCallback((e: React.MouseEvent) => {
+  const handleActionClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-  }, []);
+  };
   
   const getStatusColor = (status: string) => {
     switch (status) {

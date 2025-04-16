@@ -182,7 +182,7 @@ export async function PATCH(
 
     // Validate update data
     try {
-      const validatedData = taskUpdateSchema.parse(body);
+      taskUpdateSchema.parse(body);
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
         return NextResponse.json({ error: validationError.errors }, { status: 400 });

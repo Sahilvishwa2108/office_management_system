@@ -89,7 +89,7 @@ export function BillingApprovalButton({
           <AlertDialogHeader>
             <AlertDialogTitle>Approve Billing</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to approve billing for task <strong>{taskTitle}</strong>?
+              <p>Are you sure you want to approve this client&apos;s billing?</p>
               <br /><br />
               This will:
               <ul className="list-disc pl-5 mt-2">

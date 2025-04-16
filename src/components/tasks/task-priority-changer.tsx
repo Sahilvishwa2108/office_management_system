@@ -50,7 +50,7 @@ export function TaskPriorityChanger({
     setIsSubmitting(true);
     
     try {
-      const response = await axios.patch(`/api/tasks/${taskId}`, {
+      await axios.patch(`/api/tasks/${taskId}`, {
         priority: newPriority
       });
       

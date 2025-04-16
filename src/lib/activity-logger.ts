@@ -23,7 +23,7 @@ export async function logActivity(
   action: string,
   target: string,
   userId: string,
-  details?: any
+  details?: Record<string, unknown>
 ) {
   // Skip logging login/logout activities
   if (type === "user" && (action === "login" || action === "logout")) {
@@ -49,7 +49,7 @@ export async function logActivity(
         action,
         target,
         userId,
-        details: details ? details : undefined
+        details: details ? JSON.parse(JSON.stringify(details)) : undefined
       }
     });
 

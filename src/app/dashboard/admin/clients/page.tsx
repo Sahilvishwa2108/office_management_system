@@ -293,7 +293,7 @@ const ClientTableRow = ({
 // Main Component
 export default function ClientsPage() {
   const { data: session } = useSession();
-  const { push } = useRouter();
+  const { replace } = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -417,7 +417,8 @@ export default function ClientsPage() {
       setTotalPages(response.data.pagination?.pages || 1);
       setTotalClients(response.data.pagination?.total || processedClients.length);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      const typedError = error as { response?: { data?: { error?: string } } };
+      const errorMessage = typedError.response?.data?.error || "An unknown error occurred";
       setDataError(errorMessage);
       toast.error(errorMessage);
     } finally {

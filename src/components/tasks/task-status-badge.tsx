@@ -4,13 +4,11 @@ import { Clock, CheckCircle, AlertTriangle, X, Receipt } from "lucide-react";
 interface TaskStatusBadgeProps {
   status: string;
   billingStatus?: string;
-  className?: string;
 }
 
 export function TaskStatusBadge({ 
   status, 
-  billingStatus = "not_billed",
-  className 
+  billingStatus = "not_billed"
 }: TaskStatusBadgeProps) {
   console.log(`🏷️ Rendering TaskStatusBadge: status=${status}, billingStatus=${billingStatus}`);
   

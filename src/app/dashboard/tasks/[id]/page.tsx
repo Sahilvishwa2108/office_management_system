@@ -51,15 +51,6 @@ const getInitials = (name: string): string => {
 };
 
 // Fix any types
-interface ApiError {
-  response?: {
-    data?: {
-      error?: string;
-    };
-  };
-}
-
-
 interface User {
   id: string;
   name: string;
@@ -117,7 +108,7 @@ interface Comment {
 }
 
 // Add these helper functions to control permissions
-const canEditTask = (task: Task, currentUser: any) => {
+const canEditTask = (task: Task, currentUser: User) => {
   if (!currentUser) return false;
   
   // Admin can edit all tasks
@@ -130,7 +121,7 @@ const canEditTask = (task: Task, currentUser: any) => {
   return false;
 };
 
-const canReassignTask = (currentUser: any) => {
+const canReassignTask = (currentUser: User) => {
   if (!currentUser) return false;
   return currentUser.role === "ADMIN" || currentUser.role === "PARTNER";
 };

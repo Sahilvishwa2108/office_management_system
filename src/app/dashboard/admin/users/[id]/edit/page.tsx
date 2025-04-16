@@ -161,7 +161,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         <CardHeader>
           <CardTitle>Update User Information</CardTitle>
           <CardDescription>
-            Edit the user's personal details and role
+            Edit the user&apos;s personal details and role
           </CardDescription>
         </CardHeader>
         <CardContent>

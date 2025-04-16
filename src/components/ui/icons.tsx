@@ -27,7 +27,6 @@ import {
   Laptop,
   Loader2,
   Lock,
-  LucideProps,
   Menu,
   MessageSquare,
   Moon,
@@ -43,7 +42,7 @@ import {
   User,
   Users,
   X,
-  type LucideIcon,
+  type LucideProps,
 } from "lucide-react";
 
 export type Icon = keyof typeof Icons;

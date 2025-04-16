@@ -20,7 +20,7 @@ interface NotificationPreferences {
 }
 
 export default function NotificationsPage() {
-  const { data: session } = useSession();
+  useSession();
   const [preferences, setPreferences] = useState<NotificationPreferences>({
     taskUpdates: true,
     commentMentions: true,
@@ -103,15 +103,6 @@ export default function NotificationsPage() {
     } catch (error) {
       console.error("Failed to clear notifications:", error);
       toast.error("Failed to clear notifications");
-    }
-  };
-
-  const handleToggleSetting = async (settingKey: string, currentValue: boolean) => {
-    try {
-      // ...
-    } catch (error: unknown) {
-      console.error("Error updating notification setting:", error);
-      toast.error("Failed to update notification setting");
     }
   };
 

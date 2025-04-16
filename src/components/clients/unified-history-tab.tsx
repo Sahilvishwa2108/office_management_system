@@ -5,15 +5,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Trash2, Clock, RefreshCcw, CalendarIcon, XCircle, CheckCircle, Receipt } from "lucide-react";
+import { Trash2, Clock, RefreshCcw, CalendarIcon, XCircle, Receipt } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 
@@ -245,10 +245,8 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
 
   // Load history on component mount
   useEffect(() => {
-    if (clientId) {
-      fetchAllHistory();
-    }
-  }, [clientId]);
+    fetchAllHistory();
+  }, [clientId, fetchAllHistory]);
 
   if (!isPermanent) {
     return (

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Activity } from "@prisma/client";
+import { Activity, Prisma } from "@prisma/client";
 
 interface ActivityData {
   type: "user" | "task" | "client" | "document" | "message" | "system";
@@ -46,7 +46,7 @@ export async function logActivity({
         type,
         action,
         target,
-        details: details || {},
+        details: (details || {}) as Prisma.InputJsonValue,
         userId
       },
       include: {
@@ -93,14 +93,14 @@ export async function logActivity({
  * Helper functions for common activity types
  */
 
-export function logUserActivity(action: string, target: string, userId: string, details?: any) {
+export function logUserActivity(action: string, target: string, userId: string, details?: Record<string, unknown>) {
   return logActivity({ type: "user", action, target, userId, details });
 }
 
-export function logClientActivity(action: string, target: string, userId: string, details?: any) {
+export function logClientActivity(action: string, target: string, userId: string, details?: Record<string, unknown>) {
   return logActivity({ type: "client", action, target, userId, details });
 }
 
-export function logSystemActivity(action: string, target: string, userId: string, details?: any) {
+export function logSystemActivity(action: string, target: string, userId: string, details?: Record<string, unknown>) {
   return logActivity({ type: "system", action, target, userId, details });
 }

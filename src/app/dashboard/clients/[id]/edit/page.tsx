@@ -143,9 +143,9 @@ export default function EditClientPage({
         });
 
         setError(null);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching client details:", err);
-        setError(err.response?.data?.error || "Failed to load client details");
+        setError((err as ApiError)?.response?.data?.error || "Failed to load client details");
         toast.error("Failed to load client details");
       } finally {
         setLoading(false);
@@ -169,8 +169,8 @@ export default function EditClientPage({
       // Prepare data for submission (convert Date to ISO string)
       const clientData = {
         ...data,
-        accessExpiry: data.isGuest && data.accessExpiry 
-          ? data.accessExpiry.toISOString() 
+        accessExpiry: data.isGuest && data.accessExpiry
+          ? data.accessExpiry.toISOString()
           : null
       };
 
@@ -321,10 +321,10 @@ export default function EditClientPage({
                   <FormItem>
                     <FormLabel>Address</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="123 Business St, City, Country" 
-                        className="resize-none" 
-                        {...field} 
+                      <Textarea
+                        placeholder="123 Business St, City, Country"
+                        className="resize-none"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -339,10 +339,10 @@ export default function EditClientPage({
                   <FormItem>
                     <FormLabel>Notes</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Additional information about this client" 
-                        className="min-h-[120px]" 
-                        {...field} 
+                      <Textarea
+                        placeholder="Additional information about this client"
+                        className="min-h-[120px]"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -397,9 +397,8 @@ export default function EditClientPage({
                           <FormControl>
                             <Button
                               variant={"outline"}
-                              className={`w-full pl-3 text-left font-normal ${
-                                !field.value ? "text-muted-foreground" : ""
-                              }`}
+                              className={`w-full pl-3 text-left font-normal ${!field.value ? "text-muted-foreground" : ""
+                                }`}
                             >
                               {field.value ? (
                                 format(field.value, "PPP")
@@ -432,15 +431,15 @@ export default function EditClientPage({
               )}
 
               <div className="flex justify-end gap-3">
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   variant="outline"
                   onClick={() => router.push(`/dashboard/clients/${clientId}`)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={saving}
                 >
                   {saving ? (

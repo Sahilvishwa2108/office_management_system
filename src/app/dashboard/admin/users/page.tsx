@@ -219,7 +219,7 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedRoles]); // Include only dependencies that actually change
+  }, [selectedRoles, session?.user?.id]); // Add missing dependency
 
   // Handle toggle status
   const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
@@ -242,8 +242,9 @@ export default function UsersPage() {
         `User ${!currentStatus ? "activated" : "blocked"} successfully`
       );
     } catch (error: unknown) {
+      const typedError = error as { response?: { data?: { error?: string } } };
       toast.error(
-        (error as any).response?.data?.error || "Failed to update user status"
+        typedError.response?.data?.error || "Failed to update user status"
       );
     }
   };
@@ -260,26 +261,6 @@ export default function UsersPage() {
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const renderSkeletonRows = () => {
-    return Array(8).fill(0).map((_, index) => (
-      <TableRow key={`skeleton-${index}`}>
-        <TableCell>
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-8 w-8 rounded-full" />
-            <div>
-              <Skeleton className="h-4 w-32 mb-2" />
-              <Skeleton className="h-3 w-24" />
-            </div>
-          </div>
-        </TableCell>
-        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-      </TableRow>
-    ));
-  };
 
   // Replace the loading spinner with table skeleton
   if (loading) {

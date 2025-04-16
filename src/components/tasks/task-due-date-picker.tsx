@@ -42,7 +42,7 @@ export function TaskDueDatePicker({
     setIsSubmitting(true);
     
     try {
-      const response = await axios.patch(`/api/tasks/${taskId}`, {
+      await axios.patch(`/api/tasks/${taskId}`, {
         dueDate: newDate ? newDate.toISOString() : null,
       });
       
@@ -97,7 +97,7 @@ export function TaskDueDatePicker({
           <Calendar
             mode="single"
             selected={date || undefined}
-            onSelect={(day) => handleDateChange(day)}
+            onSelect={(day) => handleDateChange(day || null)}
             disabled={disabled || isSubmitting}
             initialFocus
           />

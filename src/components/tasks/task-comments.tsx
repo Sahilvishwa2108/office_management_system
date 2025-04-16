@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -83,12 +82,10 @@ export function TaskComments({
   currentUser,
   maxHeight = "500px",
 }: TaskCommentsProps) {
-  const router = useRouter();
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [newComment, setNewComment] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [commentsLoading, setCommentsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -191,27 +188,6 @@ export function TaskComments({
     );
   };
 
-  if (commentsLoading) {
-    return (
-      <div className="space-y-6 pr-4">
-        {Array(3)
-          .fill(0)
-          .map((_, index) => (
-            <div key={`comment-skeleton-${index}`} className="flex gap-4 mb-6">
-              <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-3 w-16" />
-                </div>
-                <Skeleton className="h-16 w-full" />
-              </div>
-            </div>
-          ))}
-      </div>
-    );
-  }
-
   const getAttachmentUrl = (attachment: Attachment) => {
     if (attachment.resource_type === "raw") {
       return attachment.secure_url.replace(
@@ -249,7 +225,7 @@ export function TaskComments({
       <CardContent className="p-0">
         <ScrollArea className="h-[500px] p-6" type="always">
           <div style={{ maxHeight }} className="overflow-auto">
-            {commentsLoading || refreshing ? (
+            {refreshing ? (
               <div className="space-y-6 pr-4">
                 {Array(3)
                   .fill(0)

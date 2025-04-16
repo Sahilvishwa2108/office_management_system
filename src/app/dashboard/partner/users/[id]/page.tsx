@@ -66,9 +66,10 @@ export default function PartnerUserDetailsPage({
       try {
         const response = await axios.get(`/api/users/${userId}`);
         setUser(response.data);
-      } catch (error) {
+      } catch (error: unknown) {
+        const typedError = error as { response?: { data?: { error?: string } } };
         toast.error("Failed to load user details");
-        console.error(error);
+        console.error(typedError);
       } finally {
         setLoading(false);
       }

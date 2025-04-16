@@ -2,8 +2,6 @@ import nodemailer from 'nodemailer';
 import { 
   getPasswordSetupTemplate, 
   getPasswordResetTemplate, 
-  getActivityNotificationTemplate,
-  getActivityIcon,
   getTaskAssignmentTemplate,
   getTaskReassignedTemplate
 } from '../../emails/templates';

@@ -19,7 +19,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft, Lock, Check, Eye, EyeOff, AlertCircle, Info } from "lucide-react";
-import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -39,7 +38,6 @@ const resetPasswordSchema = z.object({
 });
 
 export default function ResetPasswordPage() {
-  const { data: _session } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);

@@ -300,7 +300,7 @@ export default function ProfilePage() {
                         <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       </div>
                       <FormDescription>
-                      Don't forget to add your mobile number with <strong>+91</strong> to receive notifications on WhatsApp.
+                      Don&apos;t forget to add your mobile number with <strong>+91</strong> to receive notifications on WhatsApp.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

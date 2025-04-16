@@ -59,15 +59,16 @@ export default function SetPasswordPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await axios.post("/api/auth/set-password", {
+      await axios.post("/api/auth/set-password", {
         token,
         password: data.password,
       });
 
       toast.success("Password set successfully. You can now log in.");
       router.push("/login");
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to set password");
+    } catch (error: unknown) {
+      const typedError = error as { response?: { data?: { error?: string } } };
+      toast.error(typedError.response?.data?.error || "Failed to set password");
     } finally {
       setIsSubmitting(false);
     }

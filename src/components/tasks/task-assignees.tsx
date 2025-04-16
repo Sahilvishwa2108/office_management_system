@@ -52,7 +52,7 @@ export function TaskAssignees({
   const formatRole = (role: string): string => {
     return role?.replace(/_/g, ' ').toLowerCase()
       .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
   

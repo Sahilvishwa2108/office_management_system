@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import Image from "next/image";
 
 export default function Home() {
   return (
@@ -49,7 +50,7 @@ export default function Home() {
                   Efficient Office Management System
                 </h1>
                 <p className="text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed dark:text-gray-400">
-                  Streamline your team's workflow with our comprehensive office management platform. 
+                  Streamline your team&apos;s workflow with our comprehensive office management platform. 
                   Manage tasks, clients, and communications all in one place.
                 </p>
               </div>
@@ -66,12 +67,12 @@ export default function Home() {
               </div>
             </div>
             <div className="mx-auto lg:mx-0 rounded-xl overflow-hidden border shadow-xl">
-              <img
-                alt="Office dashboard preview"
-                className="aspect-video object-cover w-full"
-                height="310"
-                src="/dashboard-preview.jpg"
-                width="550"
+              <Image 
+                src="/images/dashboard-preview.png" 
+                alt="Dashboard Preview" 
+                width={800} 
+                height={450} 
+                className="rounded-md border shadow-md" 
               />
             </div>
           </div>

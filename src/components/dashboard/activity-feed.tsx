@@ -38,7 +38,6 @@ interface ActivityFeedProps {
   limit?: number;
   loading?: boolean;
   emptyMessage?: string;
-  viewAllUrl?: string;
   maxHeight?: string | number;
   compact?: boolean;
   showUserInfo?: boolean;
@@ -51,7 +50,6 @@ export function ActivityFeed({
   limit = 5, // Default to 5 items
   loading: initialLoading = false,
   emptyMessage = "No recent activity found",
-  viewAllUrl,
   maxHeight = "calc(5 * 72px)", // Height for 5 items
   compact = false,
   showUserInfo = true,

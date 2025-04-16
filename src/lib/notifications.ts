@@ -4,7 +4,7 @@ import { getTaskAssignmentTemplate, getTaskReassignedTemplate } from "../../emai
 // Remove or comment this import since it's causing errors
 // import { sendWhatsAppMessage } from './email';
 import { sendWhatsAppNotification } from "./whatsapp";
-import { sendActivityNotificationEmail, sendTaskAssignmentEmail, sendTaskReassignedEmail } from "./email";
+import { sendActivityNotificationEmail } from "./email";
 
 
 interface NotificationOptions {
@@ -46,19 +46,10 @@ export async function createNotification({
 
     // Ensure variables are properly passed to this function
     const isSelfUpdate = sentById === sentToId;
-    const updaterName = isSelfUpdate ? "You" : "Another User"; // Replace with actual updater name if available
-
-    // const notificationTitle = isSelfUpdate
-    //   ? "Your profile was updated"
-    //   : `${updaterName} updated your profile`;
-
-    // const notificationContent = content;
 
     // Send email if requested
     if (sendEmail && notification.sentTo.email) {
       try {
-        const subject = emailSubject || `Notification: ${title}`;
-        const html = emailHtml || `<p>${content}</p>`;
         await sendActivityNotificationEmail(
           notification.sentTo.email,
           notification.sentTo.name || "User",
@@ -70,78 +61,6 @@ export async function createNotification({
         console.error("Failed to send email:", error);
       }
     }
-
-    // Send email if requested
-    // if (sendEmail && notification.sentTo.email) {
-    //   // Email implementation would go here
-    //   // For example:
-    //   // await sendEmail({
-    //   //   to: notification.sentTo.email,
-    //   //   subject: emailSubject || title,
-    //   //   html: emailHtml || <p>${content}</p>,
-    //   // });
-    // }
-
-    //  // Send email if requested
-    //  if (sendEmail && notification.sentTo.email) {
-    //   try {
-    //     if (taskId) {
-    //       // Use task-specific email templates
-    //       await sendTaskAssignmentEmail(
-    //         taskId,
-    //         notification.sentTo.email,
-    //         notification.sentTo.name || 'User',
-    //         title,
-    //         content
-    //       );
-    //     } else {
-    //       // Fallback to generic email logic
-    //       const subject = emailSubject || `Notification: ${title}`;
-    //       const html = emailHtml || `<p>${content}</p>`;
-    //       await sendActivityNotificationEmail(
-    //         notification.sentTo.email,
-    //         notification.sentTo.name || 'User',
-    //         subject,
-    //         content
-    //       );
-    //     }
-    //     console.log('Email sent successfully');
-    //   } catch (error) {
-    //     console.error('Failed to send email:', error);
-    //   }
-    // }
-
-
-
-
-
-
-    //Working code of whatsapp notification
-    // try {
-    //   await sendWhatsAppNotification(
-    //     process.env.NEXT_PUBLIC_SENDER_PHONE_NUMBER || '+918305401380', // WhatsApp number
-    //     'hello_world' // Template name
-    //   );
-    //   console.log('WhatsApp notification sent successfully');
-    // } catch (error) {
-    //   if (error instanceof Error) {
-    //     console.error('Failed to send WhatsApp notification:', error.message);
-    //   } else {
-    //     console.error('Failed to send WhatsApp notification:', error);
-    //   }
-    // }
-
-    // if (sendWhatsApp && notification.sentTo.phone) {
-    //   try {
-    //     await sendWhatsAppNotification(
-    //       notification.sentTo.phone, // WhatsApp number
-    //       'new_task', // Template name
-    //     );
-    //     console.log('WhatsApp notification sent successfully');
-    //   } catch (error) {
-    //     console.error('Failed to send WhatsApp notification:', error instanceof Error ? error.message : error);
-    //   }
-    // }
 
     if (sendWhatsApp && notification.sentTo.phone) {
       try {
@@ -278,9 +197,6 @@ export async function sendTaskReassignedNotification(
       throw new Error("User not found");
     }
 
-    // Notify new assignee
-    const newAssigneeNotification = `${reassigner.name} assigned you a task: ${taskTitle}`;
-    
     await createNotification({
       title: "Task Assigned",
       content: `${reassigner.name} reassigned the task "${taskTitle}" to you.`,

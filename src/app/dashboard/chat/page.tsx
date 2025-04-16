@@ -191,7 +191,13 @@ const MessageItem = memo(({
   message: Message,
   index: number,
   messages: Message[],
-  session: any,
+  session: {
+    user?: {
+      id?: string;
+      name?: string;
+      role?: string;
+    }
+  },
   onDelete: (id: string) => void,
   onEdit: (message: Message) => void,
   onImageView: (url: string, filename: string) => void,
@@ -522,7 +528,7 @@ export default function ChatPage() {
         body: JSON.stringify({ isTyping }),
       }).catch(console.error);
     }, 500),
-    []
+    [/* Empty array is correct if nothing from component scope is used */]
   );
 
   // Handle typing indicator
@@ -1604,7 +1610,7 @@ export default function ChatPage() {
                       message={message}
                       index={index}
                       messages={messages}
-                      session={session}
+                      session={session || { user: undefined }}
                       onDelete={deleteMessage}
                       onEdit={startEditingMessage}
                       onImageView={openImageViewer}

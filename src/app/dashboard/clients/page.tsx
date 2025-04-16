@@ -213,8 +213,7 @@ export default function ClientsPage() {
   const [totalClients, setTotalClients] = useState(0);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
-
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   // Save view mode preference when it changes
   useEffect(() => {
@@ -297,7 +296,19 @@ export default function ClientsPage() {
       }
 
       // Process clients to ensure data integrity
-      const processedClients = response.data.clients.map((client: any) => ({
+      const processedClients = response.data.clients.map((client: {
+        id: string;
+        contactPerson: string;
+        companyName?: string;
+        email?: string;
+        phone?: string;
+        isGuest: boolean;
+        accessExpiry?: string;
+        createdAt: string;
+        updatedAt: string;
+        activeTasks: number;
+        completedTasks: number;
+      }) => ({
         id: client.id || "unknown-id",
         // Ensure contactPerson always has a fallback value
         contactPerson: client.contactPerson || "Unnamed Client",
@@ -317,7 +328,8 @@ export default function ClientsPage() {
       setTotalClients(response.data.pagination?.total || processedClients.length);
     } catch (error: unknown) {
       console.error("Error loading clients:", error);
-      const errorMessage = (error as {response?: {data?: {error?: string}}})?.response?.data?.error || "Failed to load clients";
+      const typedError = error as { response?: { data?: { error?: string } } };
+      const errorMessage = typedError?.response?.data?.error || "Failed to load clients";
       toast.error(errorMessage);
       setClients([]);
     } finally {
