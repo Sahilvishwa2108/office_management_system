@@ -103,8 +103,9 @@ export default function ProfilePage() {
 
       setUpdateSuccess(true);
       toast.success("Profile updated successfully");
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to update profile");
+    } catch (error: unknown) {
+      const errorMessage = (error as {response?: {data?: {error?: string}}})?.response?.data?.error || "Failed to update profile";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -331,6 +332,7 @@ export default function ProfilePage() {
               <p className="text-xs text-muted-foreground">
                 Your profile information is visible to administrators and may be shared with team members as needed for collaboration.
               </p>
+              <p>Changes will be applied the next time you&apos;re online</p>
             </div>
           </CardFooter>
         </Card>

@@ -13,7 +13,6 @@ import {
   CardTitle,
   CardContent,
   CardDescription,
-  CardFooter
 } from "@/components/ui/card";
 import {
   Form,
@@ -21,8 +20,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-  FormDescription,
+  FormMessage
 } from "@/components/ui/form";
 import {
   Select,
@@ -43,9 +41,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { TaskPageLayout } from "@/components/layouts/task-page-layout";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2, ChevronDown, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { SearchableMultiSelect } from "@/components/tasks/searchable-multi-select";
 
 // Update the task form schema

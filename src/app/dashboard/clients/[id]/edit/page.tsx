@@ -67,6 +67,15 @@ interface Client {
   accessExpiry: string | null;
 }
 
+// Fix any types
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string
+    }
+  }
+}
+
 export default function EditClientPage({
   params,
 }: {
@@ -175,9 +184,9 @@ export default function EditClientPage({
         router.push(`/dashboard/clients/${clientId}`);
         router.refresh();
       }, 500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error updating client:", err);
-      const errorMessage = err.response?.data?.error || "Failed to update client";
+      const errorMessage = (err as ApiError)?.response?.data?.error || "Failed to update client";
       toast.error(errorMessage);
     } finally {
       setSaving(false);

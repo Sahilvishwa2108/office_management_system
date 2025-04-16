@@ -39,7 +39,7 @@ const resetPasswordSchema = z.object({
 });
 
 export default function ResetPasswordPage() {
-  const { data: session } = useSession();
+  const { data: _session } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -109,8 +109,9 @@ export default function ResetPasswordPage() {
       toast.success("Password updated successfully");
       setPasswordUpdated(true);
       form.reset();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to update password");
+    } catch (error: unknown) {
+      const errorMessage = (error as {response?: {data?: {error?: string}}})?.response?.data?.error || "Failed to reset password";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -142,7 +143,7 @@ export default function ResetPasswordPage() {
             Password Settings
           </CardTitle>
           <CardDescription>
-            Choose a strong password that you don't use elsewhere
+            Choose a strong password that you don&apos;t use elsewhere
           </CardDescription>
         </CardHeader>
         
@@ -152,7 +153,7 @@ export default function ResetPasswordPage() {
               <Check className="h-4 w-4" />
               <AlertTitle>Success!</AlertTitle>
               <AlertDescription>
-                Your password has been updated successfully. You'll use your new password the next time you sign in.
+                Your password has been updated successfully. You&apos;ll use your new password the next time you sign in.
               </AlertDescription>
               <Button 
                 className="mt-4 bg-green-600 hover:bg-green-700" 
@@ -337,7 +338,7 @@ export default function ResetPasswordPage() {
           <div className="flex items-start w-full">
             <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 mr-2" />
             <p className="text-xs text-muted-foreground">
-              For security reasons, you'll be asked to enter your new password the next time you log in. Keep your password secure and don't share it with anyone.
+              For security reasons, you&apos;ll be asked to enter your new password the next time you log in. Keep your password secure and don&apos;t share it with anyone.
             </p>
           </div>
         </CardFooter>

@@ -13,7 +13,6 @@ import {
   Users,
   ClipboardList,
   MessageSquare,
-  FileText,
   Settings,
   Briefcase,
   LogOut,

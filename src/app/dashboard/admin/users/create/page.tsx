@@ -63,7 +63,7 @@ export default function CreateUserPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post("/api/users", data);
+      await axios.post("/api/users", data);
 
       toast.success(`User ${data.name} created successfully!`);
 
@@ -79,8 +79,8 @@ export default function CreateUserPage() {
         }
         router.refresh();
       }, 1500);
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || "Failed to create user";
+    } catch (error: unknown) {
+      const errorMessage = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to create user";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);

@@ -54,6 +54,20 @@ export default function CreateClientPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const router = useRouter();
   const { data: session, status } = useSession();
+  
+  // Move form initialization before any conditionals
+  const form = useForm<ClientFormValues>({
+    resolver: zodResolver(clientFormSchema),
+    defaultValues: {
+      contactPerson: "",
+      companyName: "",
+      email: "",
+      phone: "",
+      address: "",
+      notes: "",
+      gstin: "",
+    },
+  });
 
   // Check for permissions when component mounts
   useEffect(() => {
@@ -79,20 +93,6 @@ export default function CreateClientPage() {
   if (!canModifyClient(session)) {
     return null; // Will redirect in the useEffect
   }
-
-  // Pre-set default values
-  const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientFormSchema),
-    defaultValues: {
-      contactPerson: "",
-      companyName: "",
-      email: "",
-      phone: "",
-      address: "",
-      notes: "",
-      gstin: "",
-    },
-  });
 
   // Handle form submission
   const onSubmit = async (data: ClientFormValues) => {
@@ -122,8 +122,8 @@ export default function CreateClientPage() {
         router.push("/dashboard/admin/clients");
         router.refresh();
       }, 2000);
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || "Failed to create client";
+    } catch (error: unknown) {
+      const errorMessage = (error as {response?: {data?: {error?: string}}})?.response?.data?.error || "Failed to create client";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);

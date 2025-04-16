@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import {
-  BarChart,
   Users,
   Users2,
   CheckCircle,
@@ -18,12 +17,10 @@ import {
   Plus,
 } from "lucide-react";
 import { StaffCard } from "@/components/dashboard/staff-card";
-import { TaskCard } from "@/components/dashboard/task-card";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { TaskProgress } from "@/components/dashboard/task-progress";
-import { TaskMetrics } from "@/components/dashboard/task-metrics";
 import { TaskSummary } from "@/components/dashboard/task-summary";
 import { useRouter } from "next/navigation";
 import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/loading/dashboard-skeleton";

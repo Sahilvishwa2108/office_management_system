@@ -23,20 +23,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { UserPlus, MoreVertical, Loader2, Search, Eye, Edit, Lock, Ban, CheckCircle2, MoreHorizontal, KeyIcon, CheckCircle, FilterX } from "lucide-react";
+import { UserPlus, Search, Eye, Edit, Ban, CheckCircle, MoreHorizontal, KeyIcon, FilterX } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -249,9 +241,9 @@ export default function UsersPage() {
       toast.success(
         `User ${!currentStatus ? "activated" : "blocked"} successfully`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(
-        error.response?.data?.error || "Failed to update user status"
+        (error as any).response?.data?.error || "Failed to update user status"
       );
     }
   };
@@ -261,7 +253,7 @@ export default function UsersPage() {
     if (session) {
       loadUsers();
     }
-  }, [selectedRoles, session]);
+  }, [selectedRoles, session, loadUsers]);
 
   // Filter users based on search term
   const filteredUsers = users.filter(user =>

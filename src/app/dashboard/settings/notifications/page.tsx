@@ -19,8 +19,9 @@ interface NotificationPreferences {
   emailNotifications: boolean;
 }
 
+const { data: _session } = useSession();
+
 export default function NotificationsPage() {
-  const { data: session } = useSession();
   const [preferences, setPreferences] = useState<NotificationPreferences>({
     taskUpdates: true,
     commentMentions: true,
@@ -106,6 +107,15 @@ export default function NotificationsPage() {
     }
   };
 
+  const handleToggleSetting = async (settingKey: string, currentValue: boolean) => {
+    try {
+      // ...
+    } catch (error: unknown) {
+      console.error("Error updating notification setting:", error);
+      toast.error("Failed to update notification setting");
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
@@ -123,7 +133,7 @@ export default function NotificationsPage() {
         <CardHeader>
           <CardTitle>Notification Preferences</CardTitle>
           <CardDescription>
-            Choose which notifications you'd like to receive
+            Choose which notifications you&apos;d like to receive
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

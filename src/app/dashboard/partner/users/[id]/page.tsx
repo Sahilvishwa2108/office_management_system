@@ -76,7 +76,7 @@ export default function PartnerUserDetailsPage({
 
     fetchUserDetails();
   }, [userId]);
-
+  
   // Show loading state
   if (loading) {
     return (
@@ -92,8 +92,8 @@ export default function PartnerUserDetailsPage({
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold mb-2">User Not Found</h2>
         <p className="text-muted-foreground mb-6">
-          The requested user does not exist or you don't have permission to view
-          it.
+          The requested user does not exist or you don&apos;t have permission to
+          view it.
         </p>
         <Button asChild>
           <Link href="/dashboard/partner/users">Back to Users</Link>

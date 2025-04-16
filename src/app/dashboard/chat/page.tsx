@@ -3,7 +3,6 @@ import NextImage from "next/image";
 import {
   Send,
   Paperclip,
-  Image as ImageIcon,
   FileText,
   AtSign,
   X,
@@ -35,7 +34,6 @@ import {
 import { useEffect, useState, useRef, useCallback, memo } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useSession } from "next-auth/react";
-import { FixedSizeList as List } from 'react-window';
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -55,7 +53,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Dialog, DialogTitle, DialogContent, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogTitle, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import axios from "axios";
@@ -408,7 +406,6 @@ export default function ChatPage() {
   const [userSearch, setUserSearch] = useState("");
   const [isScrolling, setIsScrolling] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [lastReadMessageIndex, setLastReadMessageIndex] = useState(-1);
   const [isTyping, setIsTyping] = useState(false);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -688,7 +685,6 @@ export default function ChatPage() {
           });
 
           setMessages(sortedMessages);
-          setLastReadMessageIndex(sortedMessages.length - 1);
           setMessagesLoaded(true);
           shouldScrollToBottom.current = true;
         }
@@ -903,7 +899,7 @@ export default function ChatPage() {
       sendOfflineStatus();
       eventSource.close();
     };
-  }, [isScrolling, session?.user?.id]);
+  }, [isScrolling, session?.user?.id, session?.user?.name]);
 
   // Handle mentions
   useEffect(() => {

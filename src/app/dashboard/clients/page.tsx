@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/card";
 import {
   Tabs,
-  TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
@@ -224,11 +223,6 @@ export default function ClientsPage() {
     }
   }, [viewMode]);
 
-  // Check if user can delete clients
-  const canDeleteClients = useMemo(() => {
-    return session?.user?.role === "ADMIN" || session?.user?.role === "PARTNER";
-  }, [session]);
-
   // Check if user can modify clients
   const hasWriteAccess = useMemo(() => {
     return canModifyClient(session);
@@ -276,7 +270,7 @@ export default function ClientsPage() {
   }, []);
 
   // Function to load clients with search and filtering
-  const loadClients = async () => {
+  const loadClients = useCallback(async () => {
     setLoading(true);
     setDataError(null);
 
@@ -321,20 +315,20 @@ export default function ClientsPage() {
       setClients(processedClients);
       setTotalPages(response.data.pagination?.pages || 1);
       setTotalClients(response.data.pagination?.total || processedClients.length);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error loading clients:", error);
-      setDataError("Failed to load clients");
-      toast.error("Failed to load clients");
+      const errorMessage = (error as {response?: {data?: {error?: string}}})?.response?.data?.error || "Failed to load clients";
+      toast.error(errorMessage);
       setClients([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, searchTerm, activeTab]);
 
   // Initial load and when dependencies change
   useEffect(() => {
     loadClients();
-  }, [page, searchTerm, activeTab]);
+  }, [loadClients]);
 
   // Handler for client deletion
   const confirmDelete = (clientId: string) => {

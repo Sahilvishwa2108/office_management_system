@@ -131,6 +131,7 @@ export async function GET(request: NextRequest) {
     
     // Apply role filter - if multiple roles are specified
     if (roles.length > 0) {
+      // Ensure we only use valid role values that match UserRole enum
       where.role = { in: roles };
     }
     

@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
+// Add underscore to indicate intentional non-use
+export async function GET(_req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     

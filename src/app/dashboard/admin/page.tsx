@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { 
-  BarChart, 
   Users as UsersIcon, 
   UserCheck, 
   Briefcase, 
@@ -22,8 +21,6 @@ import {
 import { OverviewStats } from "@/components/dashboard/overview-stats";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { DashboardCard } from "@/components/ui/dashboard-card";
-import { TaskMetrics } from "@/components/dashboard/task-metrics";
-import { TaskSummary } from "@/components/dashboard/task-summary"; 
 import { TaskProgress } from "@/components/dashboard/task-progress";
 import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";

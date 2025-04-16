@@ -5,7 +5,7 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 import { createNotification } from "@/lib/notifications"; // Adjust the path as needed
 
 // Get user profile
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Verify user is authenticated
     const session = await getServerSession(authOptions);
@@ -98,7 +98,7 @@ export async function PUT(request: Request) {
     }
 
     // Update user data
-    const userData: any = { name };
+    const userData: { name: string; email?: string; phone?: string } = { name };
     if (email) {
       userData.email = email;
     }

@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -40,15 +40,6 @@ export default function AdminResetPasswordPage(props: {
   const { data: session } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const params = props.params instanceof Promise ? React.use(props.params) : props.params;
-  const userId = params.id;
-
-  // Verify admin role
-  if (session?.user?.role !== 'ADMIN') {
-    router.push('/dashboard');
-    return null;
-  }
-
   const form = useForm<z.infer<typeof adminResetPasswordSchema>>({
     resolver: zodResolver(adminResetPasswordSchema),
     defaultValues: {
@@ -57,18 +48,28 @@ export default function AdminResetPasswordPage(props: {
     },
   });
 
+  // Then check permissions
+  if (session?.user?.role !== 'ADMIN') {
+    router.push('/dashboard');
+    return null;
+  }
+
+  const params = props.params instanceof Promise ? React.use(props.params) : props.params;
+  const userId = params.id;
+
+  // Fix any type
   const onSubmit = async (data: z.infer<typeof adminResetPasswordSchema>) => {
     setIsSubmitting(true);
     try {
       await axios.post("/api/auth/reset-password", {
         newPassword: data.newPassword,
-        userId: userId, // Pass the user ID for admin reset
+        userId: userId,
       });
       
       toast.success("User password reset successfully");
       router.back();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to reset password");
+    } catch (error: unknown) {
+      toast.error((error as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to reset password");
       setIsSubmitting(false);
     }
   };

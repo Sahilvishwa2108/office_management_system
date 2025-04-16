@@ -8,7 +8,6 @@ import {
   Card,
   CardHeader,
   CardContent,
-  CardFooter,
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
@@ -54,6 +53,14 @@ interface UserDetails {
   isActive?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+interface ErrorResponse {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
 }
 
 export default function UserDetailsPage({
@@ -103,8 +110,8 @@ export default function UserDetailsPage({
       await axios.delete(`/api/users/${userId}`);
       toast.success("User deleted successfully");
       router.push("/dashboard/admin/users");
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to delete user");
+    } catch (error: unknown) {
+      toast.error((error as ErrorResponse)?.response?.data?.error || "Failed to delete user");
     } finally {
       setActionLoading(false);
     }

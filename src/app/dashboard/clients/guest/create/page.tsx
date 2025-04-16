@@ -22,7 +22,6 @@ import {
   Card,
   CardHeader,
   CardContent,
-  CardFooter,
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
@@ -87,7 +86,7 @@ export default function CreateGuestClientPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post("/api/clients", {
+      await axios.post("/api/clients", {
         ...data,
         isGuest: true, // Explicitly mark as guest client
         accessExpiry: data.accessExpiry.toISOString()
@@ -103,8 +102,8 @@ export default function CreateGuestClientPage() {
         router.push("/dashboard/clients");
         router.refresh();
       }, 1000);
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || "Failed to create guest client";
+    } catch (error: unknown) {
+      const errorMessage = (error as {response?: {data?: {error?: string}}})?.response?.data?.error || "Failed to create guest client";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);

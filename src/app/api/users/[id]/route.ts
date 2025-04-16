@@ -4,7 +4,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { logActivity } from "@/lib/activity-logger";
 import { z } from "zod";
-import { sendActivityNotificationEmail } from "@/lib/email";
 import bcrypt from "bcryptjs";
 import { createNotification } from "@/lib/notifications";
 

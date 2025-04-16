@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link"; // Add this import for Link
 import axios from "axios";
 import { toast } from "sonner";
@@ -24,29 +24,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label"; // Add this import for Label
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // Add this import for Avatar components
 import {
-  CalendarIcon,
-  UserIcon,
-  BuildingIcon,
   ArrowLeftIcon,
   PencilIcon as Edit, // Rename to Edit for clarity
-  TrashIcon,
   Loader2,
   UserPlus,
-  Trash2 as Trash2Icon,
   ListTodo, // Add this import for ListTodo
   CheckCircle,
   Receipt,
 } from "lucide-react";
 import { TaskComments } from "@/components/tasks/task-comments";
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent } from "@/components/ui/alert-dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetailSkeleton } from "@/components/loading/task-skeleton";
 import { BillingApprovalButton } from "@/components/tasks/billing-approval-button"; // Add this import for BillingApprovalButton
-import { TaskStatusBadge } from "@/components/tasks/task-status-badge"; // Add this import for TaskStatusBadge
 import { TaskAssignees } from "@/components/tasks/task-assignees";
 
 // Add the missing getInitials function
@@ -58,6 +49,16 @@ const getInitials = (name: string): string => {
     .toUpperCase()
     .substring(0, 2);
 };
+
+// Fix any types
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+}
+
 
 interface User {
   id: string;
@@ -153,12 +154,6 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   // Add a state variable to track billing status changes
   const [currentBillingStatus, setCurrentBillingStatus] = useState(task?.billingStatus);
 
-  // Add handler for billing approval
-  const handleBillingApproved = () => {
-    setCurrentBillingStatus("billed");
-    toast.success("Task billing has been approved");
-  };
-
   // Memoized data fetching functions
   const fetchTask = useCallback(async () => {
     try {
@@ -212,17 +207,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     }
   }, [fetchTask, fetchComments, fetchCurrentUser, taskId]);
 
-  // Memoize helper functions
-  const isEditableByCurrentUser = useMemo(() => {
-    if (!task || !currentUser) return false;
-    return currentUser.role === "ADMIN" || task.assignedBy.id === currentUser.id;
-  }, [task, currentUser]);
-
-  const canCurrentUserReassign = useMemo(() => {
-    if (!currentUser) return false;
-    return currentUser.role === "ADMIN" || currentUser.role === "PARTNER";
-  }, [currentUser]);
-
+  
   const updateTaskStatus = async () => {
     if (!newStatus || newStatus === task?.status) return;
 

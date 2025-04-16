@@ -83,11 +83,11 @@ const ClientListItem = ({
   confirmDelete: (id: string) => void,
   canDelete: boolean
 }) => {
-  const router = useRouter();
+  const { push } = useRouter();
   
   const handleRowClick = useCallback(() => {
-    router.push(`/dashboard/clients/${client.id}`);
-  }, [router, client.id]);
+    push(`/dashboard/clients/${client.id}`);
+  }, [push, client.id]);
   
   const handleActionClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -293,7 +293,7 @@ const ClientTableRow = ({
 // Main Component
 export default function ClientsPage() {
   const { data: session } = useSession();
-  const router = useRouter();
+  const { push } = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -416,9 +416,10 @@ export default function ClientsPage() {
       setClients(processedClients);
       setTotalPages(response.data.pagination?.pages || 1);
       setTotalClients(response.data.pagination?.total || processedClients.length);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading clients:", error);
-      setDataError("Failed to load clients. Please try again.");
+      const errorMessage = error.response?.data?.error || "Failed to load clients";
+      setDataError(errorMessage);
       toast.error("Failed to load clients");
     } finally {
       setLoading(false);

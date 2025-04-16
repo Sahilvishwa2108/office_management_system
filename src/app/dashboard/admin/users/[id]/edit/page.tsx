@@ -27,7 +27,6 @@ import {
   Card,
   CardHeader,
   CardContent,
-  CardFooter,
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
@@ -100,8 +99,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       await axios.put(`/api/users/${userId}`, data);
       toast.success("User updated successfully");
       router.push(`/dashboard/admin/users/${userId}`);
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to update user");
+    } catch (error: Error | unknown) {
+      toast.error((error as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to update user");
     } finally {
       setIsSubmitting(false);
     }
@@ -249,6 +248,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           </Form>
         </CardContent>
       </Card>
+      <p>You can&apos;t change the user&apos;s role</p>
     </div>
   );
 }

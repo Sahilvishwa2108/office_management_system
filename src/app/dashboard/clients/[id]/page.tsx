@@ -96,9 +96,9 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
         const response = await axios.get(`/api/clients/${clientId}`);
         setClient(response.data);
         setError(null);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching client details:", err);
-        setError(err.response?.data?.error || "Failed to load client details");
+        setError((err as {response?: {data?: {error?: string}}})?.response?.data?.error || "Failed to load client details");
         toast.error("Failed to load client details");
       } finally {
         setLoading(false);
@@ -438,7 +438,7 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
                   <FileText className="h-12 w-12 mx-auto text-muted-foreground opacity-20 mb-2" />
                   <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
                   <p className="text-muted-foreground mb-4">
-                    This client doesn't have any tasks assigned yet
+                    Couldn&apos;t find any active tasks for this client.
                   </p>
                   {hasWriteAccess && (
                     <Button asChild>

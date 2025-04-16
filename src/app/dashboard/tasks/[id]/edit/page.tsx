@@ -21,8 +21,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-  FormDescription
+  FormMessage
 } from "@/components/ui/form";
 import {
   Select,
@@ -43,9 +42,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { TaskPageLayout } from "@/components/layouts/task-page-layout";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, ChevronDown, Loader2, X } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { SearchableMultiSelect } from "@/components/tasks/searchable-multi-select";
 
 // Update the task form schema to include assignedToIds

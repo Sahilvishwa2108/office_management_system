@@ -1,23 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { 
   CheckCircle, 
-  Clock, 
   Activity, 
-  Calendar, 
-  AlertTriangle, 
-  FileText,
   BarChart,
   BadgePlus,
-  Filter,
-  ListFilter,
-  Users2
+  Users2,
+  AlertTriangle
 } from "lucide-react";
 import { TaskCard } from "@/components/dashboard/task-card";
 import { DashboardCard } from "@/components/ui/dashboard-card";
@@ -25,18 +19,8 @@ import { StatsCard } from "@/components/dashboard/stats-card";
 import { UpcomingDeadlines } from "@/components/dashboard/upcoming-deadlines";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { TaskProgress } from "@/components/dashboard/task-progress";
-import { TaskMetrics } from "@/components/dashboard/task-metrics";
-import { 
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
-import { DashboardStatsSkeleton, DashboardContentSkeleton, TaskCardSkeleton } from "@/components/loading/dashboard-skeleton";
+import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/loading/dashboard-skeleton";
 
 interface JuniorDashboardData {
   stats: {
@@ -72,7 +56,6 @@ interface JuniorDashboardData {
   }>;
 }
 export default function JuniorDashboard() {
-  const router = useRouter();
   const [dashboardData, setDashboardData] = useState<JuniorDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
