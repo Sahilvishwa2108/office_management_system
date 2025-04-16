@@ -82,7 +82,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           email: userData.email,
           role: userData.role,
         });
-      } catch (error) {
+      } catch {
         toast.error("Failed to load user data");
       } finally {
         setIsLoading(false);

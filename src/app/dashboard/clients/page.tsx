@@ -190,7 +190,6 @@ const ClientListItem = ({
 
 export default function ClientsPage() {
   const { data: session } = useSession();
-  const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");

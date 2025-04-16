@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -115,9 +115,10 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
       const data = await response.json();
       setGeneralHistory(data.historyEntries || []);
       return data.historyEntries || [];
-    } catch (err: any) {
-      console.error("Failed to fetch general history:", err);
-      throw err;
+    } catch (err: unknown) {
+      const typedError = err as Error;
+      console.error("Failed to fetch general history:", typedError);
+      throw typedError;
     }
   };
 
@@ -133,14 +134,15 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
       const data = await response.json();
       setTaskHistory(data.taskHistory || []);
       return data.taskHistory || [];
-    } catch (err: any) {
-      console.error("Failed to fetch task history:", err);
-      throw err;
+    } catch (err: unknown) {
+      const typedError = err as Error;
+      console.error("Failed to fetch task history:", typedError);
+      throw typedError;
     }
   };
 
   // Fetch all history
-  const fetchAllHistory = async () => {
+  const fetchAllHistory = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -150,13 +152,14 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
         fetchGeneralHistory(),
         isPermanent ? fetchTaskHistory() : Promise.resolve([])
       ]);
-    } catch (err: any) {
-      console.error("Failed to fetch history:", err);
-      setError(err.message || "Failed to load history");
+    } catch (err: unknown) {
+      const typedError = err as Error;
+      console.error("Failed to fetch history:", typedError);
+      setError(typedError.message || "Failed to load history");
     } finally {
       setLoading(false);
     }
-  };
+  }, [clientId]);
 
   // Add history entry
   const addHistoryEntry = async (values: HistoryFormValues) => {
@@ -184,9 +187,10 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
       form.reset();
       
       toast.success("History entry added successfully");
-    } catch (err: any) {
-      console.error("Failed to add history entry:", err);
-      toast.error(err.message || "Failed to add history entry");
+    } catch (err: unknown) {
+      const typedError = err as Error;
+      console.error("Failed to add history entry:", typedError);
+      toast.error(typedError.message || "Failed to add history entry");
     } finally {
       setAdding(false);
     }
@@ -211,9 +215,10 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
       setGeneralHistory(prev => prev.filter(entry => entry.id !== entryId));
       
       toast.success("History entry deleted successfully");
-    } catch (err: any) {
-      console.error("Failed to delete history entry:", err);
-      toast.error(err.message || "Failed to delete history entry");
+    } catch (err: unknown) {
+      const typedError = err as Error;
+      console.error("Failed to delete history entry:", typedError);
+      toast.error(typedError.message || "Failed to delete history entry");
     }
   };
 

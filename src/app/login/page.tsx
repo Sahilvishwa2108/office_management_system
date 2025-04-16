@@ -86,7 +86,7 @@ export default function LoginPage() {
       }
 
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error("Failed to log in");
       setIsSubmitting(false);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -76,8 +76,8 @@ export default function PartnerUsersPage() {
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
-  // Load junior employees only
-  const loadUsers = async () => {
+  // Wrap loadUsers in useCallback
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
       // Add role parameters for filtering on the server side
@@ -102,7 +102,7 @@ export default function PartnerUsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedRoles, statusFilter]);
 
   // Initial load
   useEffect(() => {
@@ -117,7 +117,7 @@ export default function PartnerUsersPage() {
     if (!session) {
       router.push("/login");
     }
-  }, []); // Remove unnecessary 'session' dependency
+  }, [router, session]); // Add missing dependencies
 
   // Filter users based on search term
   const filteredUsers = users.filter(

@@ -425,7 +425,6 @@ export default function ChatPage() {
   } | null>(null);
   const [imageViewerZoom, setImageViewerZoom] = useState(1);
   const [imageRotation, setImageRotation] = useState(0);
-  const [downloading, setDownloading] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
@@ -1942,11 +1941,7 @@ export default function ChatPage() {
                 size="sm"
                 onClick={() => currentImage && handleDownload(currentImage.url, currentImage.filename, currentImage.senderName)}
               >
-                {downloading === currentImage?.filename ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Download className="h-4 w-4 mr-2" />
-                )}
+                <Download className="h-4 w-4 mr-2" />
                 Save
               </Button>
               <Button

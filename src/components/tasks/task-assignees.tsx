@@ -71,7 +71,7 @@ export function TaskAssignees({
   // If showing details, use a different layout
   if (showDetails) {
     const allAssignees = assignees || 
-      (legacyAssignedTo ? [{ userId: legacyAssignedTo.id, user: legacyAssignedTo as any }] : []);
+      (legacyAssignedTo ? [{ userId: legacyAssignedTo.id, user: legacyAssignedTo as unknown as TaskAssignee['user'] }] : []);
     
     return (
       <div className={cn("space-y-2", className)}>

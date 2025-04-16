@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, Shield } from "lucide-react";
-import { useSession } from "next-auth/react";
 
 export default function SettingsPage() {
   return (

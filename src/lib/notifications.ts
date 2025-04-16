@@ -15,7 +15,7 @@ interface NotificationOptions {
   taskId?: string; // Added taskId property
   sendEmail?: boolean;
   emailSubject?: string;
-  emailHtml?: string;
+  emailHtml?: string; // Added emailHtml property
   sendWhatsApp?: boolean;
 }
 
@@ -27,7 +27,6 @@ export async function createNotification({
   taskId,
   sendEmail = false,
   emailSubject,
-  emailHtml,
   sendWhatsApp = false,
 }: NotificationOptions) {
   try {
@@ -43,9 +42,6 @@ export async function createNotification({
         sentTo: true,
       },
     });
-
-    // Ensure variables are properly passed to this function
-    const isSelfUpdate = sentById === sentToId;
 
     // Send email if requested
     if (sendEmail && notification.sentTo.email) {

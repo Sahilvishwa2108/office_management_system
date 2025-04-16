@@ -66,7 +66,7 @@ export default function ProfilePage() {
 
         form.reset(userData);
         setProfile(userData);
-      } catch (error) {
+      } catch {
         toast.error("Failed to load profile data");
       } finally {
         setIsLoading(false);

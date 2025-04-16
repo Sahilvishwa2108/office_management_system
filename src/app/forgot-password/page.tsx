@@ -46,9 +46,6 @@ export default function ForgotPasswordPage() {
       
       setEmailSent(true);
       toast.success("If your email exists in our system, you'll receive password reset instructions");
-    } catch (error) {
-      setEmailSent(true);
-      toast.success("If your email exists in our system, you'll receive password reset instructions");
     } finally {
       setIsSubmitting(false);
     }

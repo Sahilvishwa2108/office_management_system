@@ -48,7 +48,7 @@ export default function PartnerUserDetailsPage({
   const [loading, setLoading] = useState(true);
 
   // Properly unwrap params using React.use()
-  const unwrappedParams = React.use(params as any) as UserParams;
+  const unwrappedParams = React.use(params as Promise<UserParams>);
   const userId = unwrappedParams.id;
 
   // Format the user role for display

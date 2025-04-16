@@ -26,7 +26,7 @@ interface BillingApprovalButtonProps {
 
 export function BillingApprovalButton({
   taskId,
-  taskTitle,
+  // Remove or comment out taskTitle,
   className,
   onApproved,
 }: BillingApprovalButtonProps) {

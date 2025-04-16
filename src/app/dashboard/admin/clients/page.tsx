@@ -293,7 +293,6 @@ const ClientTableRow = ({
 // Main Component
 export default function ClientsPage() {
   const { data: session } = useSession();
-  const { replace } = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -399,8 +398,8 @@ export default function ClientsPage() {
       }
 
       // Process clients to ensure data integrity
-      const processedClients = response.data.clients.map((client: any) => ({
-        id: client.id || "unknown-id",
+      const processedClients = response.data.clients.map((client: Record<string, unknown>) => ({
+        id: client.id as string || "unknown-id",
         contactPerson: client.contactPerson || "Unnamed Client",
         companyName: client.companyName || null,
         email: client.email || null,
