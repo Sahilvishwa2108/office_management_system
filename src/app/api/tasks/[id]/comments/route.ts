@@ -57,7 +57,7 @@ export async function POST(
     }
 
     // Check if user has permission to comment on this task
-    let canComment = 
+    const canComment = 
       currentUser.role === "ADMIN" ||
       task.assignedById === currentUser.id ||
       task.assignedToId === currentUser.id;
@@ -253,17 +253,3 @@ export async function GET(
     );
   }
 }
-
-// API endpoint returning task data
-const tasks = await prisma.task.findMany({
-  // other filters
-  include: {
-    assignedBy: {
-      select: {
-        id: true,
-        name: true,
-      },
-    },
-    // other fields to include
-  },
-});

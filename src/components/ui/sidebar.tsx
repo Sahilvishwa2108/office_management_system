@@ -107,7 +107,7 @@ export function Sidebar({
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
-  const isActiveNavItem = (itemHref: String) => {
+  const isActiveNavItem = (itemHref: string) => {
     // Exact match for the current path
     if (pathname === itemHref) {
       return true;

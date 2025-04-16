@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     
 
     // Build the where clause based on the user's role
-    let where: any = {};
+    const where: any = {};
 
     // Apply status filter if provided
     if (status && status !== "all") {

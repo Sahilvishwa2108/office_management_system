@@ -39,7 +39,11 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build the where clause
-    const where: any = {};
+    type ClientWhereClause = {
+      isGuest?: boolean;
+      OR?: Array<{[key: string]: any}>;
+    };
+    const where: ClientWhereClause = {};
     
     // Filter by guest status if provided
     if (isGuest === "true") {

@@ -5,8 +5,15 @@ import { prisma } from "@/lib/prisma";
 import { unstable_cache } from "next/cache"; // Using unstable_cache for data caching
 
 // Cache the activity fetch for 30 seconds
+type ActivityWhereClause = {
+  OR?: Array<{[key: string]: any}>;
+  NOT?: Array<{[key: string]: any}>;
+  type?: string | {in: string[]};
+  action?: {in: string[]};
+};
+
 const getCachedActivities = unstable_cache(
-  async (params: { limit: number, page: number, type: string | null, where: any }) => {
+  async (params: { limit: number, page: number, type: string | null, where: ActivityWhereClause }) => {
     const { limit, page, where } = params;
     const skip = (page - 1) * limit;
     
@@ -62,7 +69,7 @@ export async function GET(request: NextRequest) {
     const excludedTypes = ["task", "login", "logout", "message"];
     
     // Build the where condition with proper filtering
-    let where: any = {
+    let where: ActivityWhereClause = {
       OR: [
         { type: "user", action: { in: publicActivities.user } },
         { type: "client", action: { in: publicActivities.client } },

@@ -4,7 +4,6 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { sendEmail } from "@/lib/email";
-import { sendTaskReassignedNotification } from "@/lib/notifications";
 
 // Update the reassignment schema
 const reassignSchema = z.object({
@@ -58,12 +57,18 @@ export async function PATCH(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // Enhanced permission check remains the same
-    if (currentUser.role === "PARTNER" && task.assignedToId !== currentUser.id) {
-      return NextResponse.json(
-        { error: "You can only reassign tasks that were assigned to you" },
-        { status: 403 }
-      );
+    // Enhanced permission check to account for multiple assignees
+    if (currentUser.role === "PARTNER") {
+      // Check if partner is either the main assignee or in the assignees list
+      const isAssigned = task.assignedToId === currentUser.id || 
+                         task.assignees.some(a => a.userId === currentUser.id);
+      
+      if (!isAssigned) {
+        return NextResponse.json(
+          { error: "You can only reassign tasks that were assigned to you" },
+          { status: 403 }
+        );
+      }
     }
 
     // Parse and validate request body
@@ -84,7 +89,6 @@ export async function PATCH(
 
     // Track previous assignees for notifications
     const previousAssigneeIds = task.assignees.map(a => a.userId);
-    const primaryPreviousAssigneeId = task.assignedToId;
 
     // Execute reassignment in a transaction
     const result = await prisma.$transaction(async (tx) => {

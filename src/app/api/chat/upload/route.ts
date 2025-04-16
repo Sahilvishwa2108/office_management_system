@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { v4 as uuidv4 } from "uuid";
 import { v2 as cloudinary } from "cloudinary";
+import { Readable } from 'stream';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -50,7 +51,13 @@ export async function POST(req: NextRequest) {
             : "raw"; // Use "raw" for non-image files like PDFs
 
           // Upload to Cloudinary using buffer upload
-          const uploadResult = await new Promise<any>((resolve, reject) => {
+          type CloudinaryUploadResult = {
+            secure_url: string;
+            public_id: string;
+            resource_type: string;
+          };
+
+          const uploadResult = await new Promise<CloudinaryUploadResult>((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
               {
                 folder: "office_management/chat", // Updated folder path
@@ -61,14 +68,15 @@ export async function POST(req: NextRequest) {
                 if (error) {
                   console.error("Cloudinary upload error:", error);
                   reject(error);
+                } else if (result) {
+                  resolve(result as CloudinaryUploadResult);
                 } else {
-                  resolve(result);
+                  reject(new Error("Upload failed: No result returned"));
                 }
               }
             );
 
             // Write buffer to stream
-            const Readable = require("stream").Readable;
             const readableInstanceStream = new Readable({
               read() {
                 this.push(buffer);

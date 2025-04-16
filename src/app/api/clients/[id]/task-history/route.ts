@@ -13,7 +13,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const clientId = params.id;
+    const { id: clientId } = params; // Use destructuring instead of direct access
 
     // Check if client exists
     const client = await prisma.client.findUnique({

@@ -64,7 +64,11 @@ export async function PATCH(
       console.log(`🚨 Task ${taskId} being marked as completed - should update billingStatus`);
 
       // Ensure we set billingStatus whether it has a client or not
-      let updateData: any = { status };
+      type TaskUpdateData = {
+        status: string;
+        billingStatus?: string;
+      };
+      const updateData: TaskUpdateData = { status };
       
       // Always set billing status to pending_billing when completing a task
       updateData.billingStatus = "pending_billing";

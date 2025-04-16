@@ -79,6 +79,7 @@ export async function POST(
           scheduledDeletionDate: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours later
         }
       });
+      console.log(`Task ${updatedTask.id} updated with billing status: ${updatedTask.billingStatus}`);
 
       // 3. Log the activity
       await logActivity(

@@ -86,7 +86,7 @@ export default function PartnerUsersPage() {
       });
 
       // Filter for junior staff only on the client side as well
-      let filtered = response.data.filter(
+      const filtered = response.data.filter(
         (user: User) =>
           user.role === "BUSINESS_EXECUTIVE" ||
           user.role === "BUSINESS_CONSULTANT"
