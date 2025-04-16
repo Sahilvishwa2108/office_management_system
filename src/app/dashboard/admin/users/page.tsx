@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -185,7 +185,9 @@ const UserListItem = ({
   );
 };
 
-export default function UsersPage() {
+// Create a wrapper component for useSearchParams
+function UsersPageContent() {
+  // Original component code here, including useSearchParams
   const router = useRouter();
   const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
@@ -193,6 +195,7 @@ export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
+  const searchParams = useSearchParams();
 
   // Load users - excluding clients and current user
   const loadUsers = useCallback(async () => {
@@ -558,5 +561,34 @@ export default function UsersPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Main component with Suspense
+export default function UsersPage() {
+  return (
+    <Suspense fallback={
+      // Simple loading UI while Suspense is waiting
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Skeleton className="h-40 w-full" />
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-7 w-28" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <UsersPageContent />
+    </Suspense>
   );
 }

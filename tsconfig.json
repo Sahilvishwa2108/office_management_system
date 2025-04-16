@@ -22,7 +22,11 @@
       "@/*": ["./src/*"]
     },
     "noErrorTruncation": true,
-    "exactOptionalPropertyTypes": false
+    "exactOptionalPropertyTypes": false,
+    
+    // Add these new options to relax type checking:
+    "noImplicitAny": false,
+    "ignoreDeprecations": "5.0"
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]

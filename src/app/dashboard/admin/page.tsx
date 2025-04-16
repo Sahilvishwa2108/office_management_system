@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,7 @@ interface DashboardData {
   tasks: Task[];
 }
 
-export default function AdminDashboard() {
+function AdminDashboardContent() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -571,5 +571,31 @@ export default function AdminDashboard() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function AdminDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-9 w-64 mb-2" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="p-6">
+              <Skeleton className="h-8 w-24 mb-2" />
+              <Skeleton className="h-4 w-full" />
+            </Card>
+          ))}
+        </div>
+        
+        <Skeleton className="h-64 w-full rounded-md" />
+      </div>
+    }>
+      <AdminDashboardContent />
+    </Suspense>
   );
 }

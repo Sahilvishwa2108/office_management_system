@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo, useTransition, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -188,7 +188,9 @@ const ClientListItem = ({
   );
 };
 
-export default function ClientsPage() {
+// Create a wrapper component for the search params
+function ClientsPageContent() {
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -742,5 +744,32 @@ export default function ClientsPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function ClientsPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+        </div>
+        <div className="border rounded-lg p-6">
+          <div className="h-6 w-32 bg-muted animate-pulse rounded mb-4" />
+          <div className="h-4 w-64 bg-muted animate-pulse rounded mb-8" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-28 bg-muted animate-pulse rounded" />
+            ))}
+          </div>
+        </div>
+      </div>
+    }>
+      <ClientsPageContent />
+    </Suspense>
   );
 }

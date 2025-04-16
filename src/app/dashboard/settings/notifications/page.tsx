@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
@@ -28,7 +28,7 @@ interface Notification {
   sentByName?: string;
 }
 
-export default function NotificationsPage() {
+function NotificationsContent() {
   useSession();
   const [preferences, setPreferences] = useState<NotificationPreferences>({
     taskUpdates: true,
@@ -296,5 +296,35 @@ export default function NotificationsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function NotificationsPage() {
+  return (
+    <Suspense fallback={
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-5">
+        <Card className="lg:col-span-2">
+          <Skeleton className="h-6 w-48 m-6" />
+          <div className="p-6 space-y-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="flex items-center justify-between">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-6 w-11" />
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card className="lg:col-span-3">
+          <Skeleton className="h-6 w-48 m-6" />
+          <div className="p-6 space-y-4">
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-24 w-full" />
+            ))}
+          </div>
+        </Card>
+      </div>
+    }>
+      <NotificationsContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
@@ -73,7 +73,7 @@ interface Client {
   companyName?: string;
 }
 
-export default function CreateTaskPage() {
+function CreateTaskContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const clientId = searchParams.get("clientId");
@@ -408,5 +408,40 @@ export default function CreateTaskPage() {
         </CardContent>
       </Card>
     </TaskPageLayout>
+  );
+}
+
+export default function CreateTaskPage() {
+  return (
+    <Suspense fallback={
+      <TaskPageLayout title="Create New Task" backHref="/dashboard/tasks" maxWidth="max-w-3xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>Loading Task Form...</CardTitle>
+            <CardDescription>Please wait</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <Skeleton className="h-10 w-full" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-28 w-full" />
+              <div className="flex justify-end gap-3 pt-4">
+                <Skeleton className="h-10 w-20" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </TaskPageLayout>
+    }>
+      <CreateTaskContent />
+    </Suspense>
   );
 }

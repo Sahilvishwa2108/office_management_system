@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSession, useSearchParams } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ import {
 import Link from "next/link";
 import { UserCount } from "@/components/dashboard/user-count";
 import { RoleFilter } from "@/components/ui/role-filter";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface User {
   id: string;
@@ -59,7 +60,8 @@ const partnerRoleConfigs = [
   { role: "BUSINESS_EXECUTIVE", label: "Business Executives", color: "bg-green-500" },
   { role: "BUSINESS_CONSULTANT", label: "Business Consultants", color: "bg-teal-500" },
 ];
-export default function PartnerUsersPage() {
+
+function PartnerUsersContent() {
   const { data: session } = useSession();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
@@ -67,6 +69,7 @@ export default function PartnerUsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState("all");
+  const searchParams = useSearchParams();
 
   // Format the role for display
   const formatRole = (role: string) => {
@@ -291,5 +294,36 @@ export default function PartnerUsersPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function PartnerUsersPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Skeleton className="h-40 w-full" />
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-10 w-full" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {Array(5).fill(0).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <PartnerUsersContent />
+    </Suspense>
   );
 }

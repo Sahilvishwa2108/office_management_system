@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useEffect, useState, useRef, useCallback, memo } from "react";
+import { useEffect, useState, useRef, useCallback, memo, Suspense } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useSession } from "next-auth/react";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
@@ -58,6 +58,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import axios from "axios";
 import { debounce } from "lodash";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Message {
   id: string;
@@ -398,7 +399,7 @@ const MessageItem = memo(({
 
 MessageItem.displayName = "MessageItem";
 
-export default function ChatPage() {
+function ChatPageContent() {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -1998,5 +1999,48 @@ export default function ChatPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col h-[calc(100vh-4rem)]">
+        <div className="border-b p-4">
+          <Skeleton className="h-6 w-32" />
+        </div>
+        <div className="flex flex-1 overflow-hidden">
+          <div className="hidden md:block w-72 border-r p-4 flex-shrink-0">
+            <Skeleton className="h-8 w-full mb-4" />
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map(i => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          </div>
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 p-4 overflow-y-auto">
+              <div className="space-y-4">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+                    <Card className={`max-w-[70%] ${i % 2 === 0 ? 'bg-primary/10' : ''}`}>
+                      <CardHeader className="p-3">
+                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-12 w-full" />
+                      </CardHeader>
+                    </Card>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="border-t p-4">
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <ChatPageContent />
+    </Suspense>
   );
 }

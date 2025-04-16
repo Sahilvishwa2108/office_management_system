@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, useEffect, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -343,9 +343,10 @@ const TaskTableRow = ({
   );
 };
 
-export default function TasksPage() {
+function TasksPageContent() {
   const router = useRouter();
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -778,5 +779,31 @@ export default function TasksPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+export default function TasksPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-9 w-32" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-full" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <TasksPageContent />
+    </Suspense>
   );
 }

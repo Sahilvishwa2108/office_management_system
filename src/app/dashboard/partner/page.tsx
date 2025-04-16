@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ import { useRouter } from "next/navigation";
 import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/loading/dashboard-skeleton";
 import { UserCardSkeleton } from "@/components/loading/user-skeleton";
 import { TaskListSkeleton } from "@/components/loading/task-skeleton";
-
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PartnerDashboardData {
   stats: {
@@ -75,7 +75,7 @@ interface PartnerDashboardData {
   }>;
 }
 
-export default function PartnerDashboard() {
+function PartnerDashboardContent() {
   const [dashboardData, setDashboardData] =
     useState<PartnerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -504,5 +504,31 @@ export default function PartnerDashboard() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function PartnerDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-9 w-64 mb-2" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="p-6">
+              <Skeleton className="h-8 w-24 mb-2" />
+              <Skeleton className="h-4 w-full" />
+            </Card>
+          ))}
+        </div>
+        
+        <Skeleton className="h-64 w-full rounded-md" />
+      </div>
+    }>
+      <PartnerDashboardContent />
+    </Suspense>
   );
 }

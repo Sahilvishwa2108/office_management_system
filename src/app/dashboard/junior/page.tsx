@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { TaskProgress } from "@/components/dashboard/task-progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/loading/dashboard-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface JuniorDashboardData {
   stats: {
@@ -55,7 +56,9 @@ interface JuniorDashboardData {
     isOverdue: boolean;
   }>;
 }
-export default function JuniorDashboard() {
+
+// Create a wrapper component for all the dashboard content
+function JuniorDashboardContent() {
   const [dashboardData, setDashboardData] = useState<JuniorDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -295,5 +298,32 @@ export default function JuniorDashboard() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function JuniorDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-9 w-64 mb-2" />
+          <Skeleton className="h-5 w-48" />
+        </div>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="p-6">
+              <Skeleton className="h-8 w-24 mb-2" />
+              <Skeleton className="h-4 w-full" />
+            </Card>
+          ))}
+        </div>
+        
+        <Skeleton className="h-64 w-full rounded-md" />
+      </div>
+    }>
+      <JuniorDashboardContent />
+    </Suspense>
   );
 }
