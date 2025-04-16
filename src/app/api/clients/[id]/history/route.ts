@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,7 +13,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: clientId } = params; // Use destructuring instead of direct access
+    const { id: clientId } = context.params; // Fixed: access params from context
 
     // Check if client exists
     const client = await prisma.client.findUnique({
@@ -58,7 +58,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -74,7 +74,7 @@ export async function POST(
       );
     }
 
-    const clientId = params.id;
+    const clientId = context.params.id;
     const body = await request.json();
 
     // Validate required fields
@@ -117,7 +117,7 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -128,7 +128,7 @@ export async function DELETE(
       );
     }
 
-    const clientId = params.id;
+    const clientId = context.params.id;
     const { searchParams } = new URL(request.url);
     const entryId = searchParams.get("entryId");
 

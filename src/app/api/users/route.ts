@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordSetupEmail } from "@/lib/email";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { v4 as uuidv4 } from "uuid";
 import { logActivity } from "@/lib/activity-logger";
 
