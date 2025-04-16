@@ -153,6 +153,17 @@ export function TaskStatusChanger({
           ))}
         </SelectContent>
       </Select>
+      {clientId && (
+        <p className="text-xs text-muted-foreground">Client: {clientId}</p>
+      )}
+      {isGuestClient && (
+        <Badge variant="outline" className="text-xs">Guest Client</Badge>
+      )}
+      {isAdmin && (
+        <div className="admin-controls">
+          {/* Admin-specific controls */}
+        </div>
+      )}
     </div>
   );
 }

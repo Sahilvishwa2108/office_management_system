@@ -99,8 +99,9 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       await axios.put(`/api/users/${userId}`, data);
       toast.success("User updated successfully");
       router.push(`/dashboard/admin/users/${userId}`);
-    } catch (error: Error | unknown) {
-      toast.error((error as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to update user");
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("An error occurred");
     } finally {
       setIsSubmitting(false);
     }

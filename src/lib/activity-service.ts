@@ -5,7 +5,7 @@ interface ActivityData {
   type: "user" | "task" | "client" | "document" | "message" | "system";
   action: string;
   target: string;
-  details?: any;
+  details?: Record<string, unknown>;
   userId: string; // User who performed the action
   relatedUserIds?: string[]; // Users who should be notified
 }

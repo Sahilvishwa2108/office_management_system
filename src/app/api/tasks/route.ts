@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     
 
     // Build the where clause based on the user's role
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     // Apply status filter if provided
     if (status && status !== "all") {
@@ -79,6 +79,9 @@ export async function GET(request: NextRequest) {
         billingStatus: "pending_billing"
       }
     });
+    
+    // Use directCheckCount or remove it:
+    console.log(`Found ${directCheckCount} tasks with pending billing status`);
     
     // Get pagination and sorting parameters
     const page = parseInt(searchParams.get("page") || "1");

@@ -19,9 +19,8 @@ interface NotificationPreferences {
   emailNotifications: boolean;
 }
 
-const { data: _session } = useSession();
-
 export default function NotificationsPage() {
+  const { data: session } = useSession();
   const [preferences, setPreferences] = useState<NotificationPreferences>({
     taskUpdates: true,
     commentMentions: true,

@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
 
     // Build where clause
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     
     // Apply role filter - if multiple roles are specified
     if (roles.length > 0) {

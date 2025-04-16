@@ -38,6 +38,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { Dialog, DialogTitle, DialogContent } from "@/components/ui/dialog";
 import { Eye, Download, ZoomIn, ZoomOut, RotateCw, X } from "lucide-react";
+import Image from "next/image";
 
 interface User {
   id: string;
@@ -247,7 +248,7 @@ export function TaskComments({
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[500px] p-6" type="always">
-          <div className="space-y-6 pr-4">
+          <div style={{ maxHeight }} className="overflow-auto">
             {commentsLoading || refreshing ? (
               <div className="space-y-6 pr-4">
                 {Array(3)
@@ -307,9 +308,11 @@ export function TaskComments({
                           >
                             {attachment.resource_type === "image" ? (
                               <div className="relative w-48 h-48 group">
-                                <img
+                                <Image
                                   src={getAttachmentUrl(attachment)}
                                   alt={getFileNameFromAttachment(attachment)}
+                                  width={400}
+                                  height={300}
                                   className="object-cover w-full h-full rounded-md"
                                 />
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -511,9 +514,11 @@ export function TaskComments({
               }}
             >
               {currentImage && (
-                <img
+                <Image
                   src={currentImage.url}
                   alt={currentImage.filename}
+                  width={400}
+                  height={300}
                   className="max-w-full max-h-full object-contain pointer-events-none"
                 />
               )}

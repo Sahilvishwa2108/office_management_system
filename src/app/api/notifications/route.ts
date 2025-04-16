@@ -173,7 +173,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 // Delete all notifications
-export async function DELETE(request: NextRequest) {
+export async function DELETE() {
   try {
     // Get authenticated user
     const session = await getServerSession(authOptions);

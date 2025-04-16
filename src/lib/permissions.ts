@@ -5,7 +5,7 @@ export const canCreateTask = (session: Session | null) => {
   return session?.user.role === "ADMIN" || session?.user.role === "PARTNER";
 };
 
-export const canEditTask = (session: Session | null, task: any) => {
+export const canEditTask = (session: Session | null, task: { assignedById?: string; [key: string]: unknown }) => {
   // Admin can edit any task
   if (session?.user.role === "ADMIN") return true;
   // Partner can only edit tasks they created
@@ -13,7 +13,7 @@ export const canEditTask = (session: Session | null, task: any) => {
   return false;
 };
 
-export const canDeleteTask = (session: Session | null, task: any) => {
+export const canDeleteTask = (session: Session | null, task: { assignedById?: string; [key: string]: unknown }) => {
   // Admin can delete any task
   if (session?.user?.role === "ADMIN") return true;
   // Partner can only delete tasks they created

@@ -164,9 +164,10 @@ export function NotificationBell() {
     }
   };
 
-  const handleNotificationClick = (taskId?: string) => {
-    if (taskId) {
-      router.push(`/dashboard/tasks/${taskId}`);
+  const handleNotificationClick = (notification: Notification) => {
+    markAsRead(notification.id);
+    if (notification.taskId) {
+      router.push(`/dashboard/tasks/${notification.taskId}`);
     }
   };
 
@@ -228,7 +229,7 @@ export function NotificationBell() {
                   className={`p-3 cursor-pointer hover:bg-muted transition-colors ${
                     !notification.isRead ? "bg-muted/50" : ""
                   }`}
-                  onClick={() => handleNotificationClick(notification.taskId)}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex gap-2">
                     <div className="mt-0.5 text-lg">

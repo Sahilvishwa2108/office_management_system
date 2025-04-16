@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
@@ -195,7 +195,7 @@ export default function UsersPage() {
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
 
   // Load users - excluding clients and current user
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
       // Use the new roles parameter
@@ -219,7 +219,7 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedRoles]); // Include only dependencies that actually change
 
   // Handle toggle status
   const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
@@ -353,6 +353,10 @@ export default function UsersPage() {
     { value: "BUSINESS_CONSULTANT", label: "Business Consultant" },
   ];
 
+  const navigateToCreate = () => {
+    router.push('/dashboard/admin/users/create');
+  };
+
   return (
     <div className="space-y-6">
       {/* Title Row with Button */}
@@ -361,11 +365,9 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
           <p className="text-muted-foreground">Manage users and their access levels</p>
         </div>
-        <Button asChild>
-          <Link href="/dashboard/admin/users/create">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add New User
-          </Link>
+        <Button onClick={navigateToCreate}>
+          <UserPlus className="mr-2 h-4 w-4" />
+          Add New User
         </Button>
       </div>
 

@@ -416,11 +416,10 @@ export default function ClientsPage() {
       setClients(processedClients);
       setTotalPages(response.data.pagination?.pages || 1);
       setTotalClients(response.data.pagination?.total || processedClients.length);
-    } catch (error: any) {
-      console.error("Error loading clients:", error);
-      const errorMessage = error.response?.data?.error || "Failed to load clients";
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
       setDataError(errorMessage);
-      toast.error("Failed to load clients");
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -447,9 +446,9 @@ export default function ClientsPage() {
       toast.success("Client deleted successfully");
       setDeleteDialogOpen(false);
       loadClients();
-    } catch (error) {
-      console.error("Error deleting client:", error);
-      toast.error("Failed to delete client");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      toast.error(errorMessage);
     } finally {
       setDeleteLoading(false);
       setClientToDelete(null);

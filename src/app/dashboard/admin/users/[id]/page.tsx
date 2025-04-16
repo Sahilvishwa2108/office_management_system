@@ -92,8 +92,9 @@ export default function UserDetailsPage({
       try {
         const response = await axios.get(`/api/users/${userId}`);
         setUser(response.data);
-      } catch (error) {
-        toast.error("Failed to load user details");
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+        toast.error(errorMessage);
         console.error(error);
       } finally {
         setLoading(false);
@@ -111,7 +112,8 @@ export default function UserDetailsPage({
       toast.success("User deleted successfully");
       router.push("/dashboard/admin/users");
     } catch (error: unknown) {
-      toast.error((error as ErrorResponse)?.response?.data?.error || "Failed to delete user");
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      toast.error(errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -136,11 +138,9 @@ export default function UserDetailsPage({
       // Use the action we're performing to determine the toast message
       // rather than the new status value
       toast.success(`User ${isBlocking ? "blocked" : "activated"} successfully`);
-    } catch (error: any) {
-      toast.error(
-        error.response?.data?.error ||
-          `Failed to ${isBlocking ? "block" : "activate"} user`
-      );
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      toast.error(errorMessage);
     } finally {
       setActionLoading(false);
     }

@@ -207,6 +207,8 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     }
   }, [fetchTask, fetchComments, fetchCurrentUser, taskId]);
 
+  // Use useMemo where appropriate
+  const statusColor = useMemo(() => getStatusColor(task?.status || "pending"), [task?.status]);
   
   const updateTaskStatus = async () => {
     if (!newStatus || newStatus === task?.status) return;
@@ -284,7 +286,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <CardTitle className="text-2xl">{task.title}</CardTitle>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
-                    <Badge className={getStatusColor(task.status)}>
+                    <Badge className={statusColor}>
                       {task.status}
                     </Badge>
                     <Badge variant="outline" className={getPriorityColor(task.priority)}>

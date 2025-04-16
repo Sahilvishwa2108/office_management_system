@@ -106,6 +106,12 @@ export default function PartnerUsersPage() {
     loadUsers();
   }, [selectedRoles, statusFilter]);
 
+  useEffect(() => {
+    if (session) {
+      loadUsers();
+    }
+  }, [session, loadUsers]); // Add loadUsers here
+
   // Filter users based on search term
   const filteredUsers = users.filter(
     (user) =>

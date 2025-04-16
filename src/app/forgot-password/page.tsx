@@ -47,8 +47,6 @@ export default function ForgotPasswordPage() {
       setEmailSent(true);
       toast.success("If your email exists in our system, you'll receive password reset instructions");
     } catch (error) {
-      // Don't show specific errors to prevent email fishing
-      // Just show a generic success message even if the email doesn't exist
       setEmailSent(true);
       toast.success("If your email exists in our system, you'll receive password reset instructions");
     } finally {
@@ -63,7 +61,7 @@ export default function ForgotPasswordPage() {
           <CardHeader className="text-center">
             <h1 className="text-2xl font-bold">Check Your Email</h1>
             <p className="text-muted-foreground">
-              We've sent password reset instructions to your email if it exists in our system.
+              We&apos;ve sent password reset instructions to your email if it exists in our system.
             </p>
           </CardHeader>
           <CardContent className="text-center">

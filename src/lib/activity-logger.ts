@@ -11,7 +11,7 @@ export type ActivityAction =
   | "status_changed";
 
 export interface ActivityDetails {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

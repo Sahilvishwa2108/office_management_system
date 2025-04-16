@@ -5,7 +5,7 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 import { createNotification } from "@/lib/notifications"; // Adjust the path as needed
 
 // Get user profile
-export async function GET(_req: NextRequest) {
+export async function GET() {
   try {
     // Verify user is authenticated
     const session = await getServerSession(authOptions);

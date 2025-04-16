@@ -55,10 +55,8 @@ export async function GET(req: NextRequest) {
     // Add search functionality
     if (search) {
       where.OR = [
-        { contactPerson: { contains: search, mode: "insensitive" } },
-        { companyName: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-        { phone: { contains: search, mode: "insensitive" } },
+        { contactPerson: { contains: search, mode: 'insensitive' } as Record<string, unknown> },
+        { companyName: { contains: search, mode: 'insensitive' } as Record<string, unknown> }
       ];
     }
 

@@ -6,8 +6,8 @@ import { unstable_cache } from "next/cache"; // Using unstable_cache for data ca
 
 // Cache the activity fetch for 30 seconds
 type ActivityWhereClause = {
-  OR?: Array<{[key: string]: any}>;
-  NOT?: Array<{[key: string]: any}>;
+  OR?: Array<{[key: string]: unknown}>;
+  NOT?: Array<{[key: string]: unknown}>;
   type?: string | {in: string[]};
   action?: {in: string[]};
 };
