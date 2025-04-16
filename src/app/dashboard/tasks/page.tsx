@@ -428,11 +428,7 @@ export default function TasksPage() {
   // Filter tasks based on search and status
   const filteredTasks = useMemo(() => {
     if (!tasks || !Array.isArray(tasks)) return [];
-
-    return tasks.filter((task) => {
-      // Already filtered by API for status and search, but this adds extra layer for client-side changes
-      return true;
-    });
+    return tasks;
   }, [tasks]);
 
   // Handle view mode toggle

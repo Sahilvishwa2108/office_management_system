@@ -19,6 +19,15 @@ interface NotificationPreferences {
   emailNotifications: boolean;
 }
 
+interface Notification {
+  id: string;
+  title: string;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+  sentByName?: string;
+}
+
 export default function NotificationsPage() {
   useSession();
   const [preferences, setPreferences] = useState<NotificationPreferences>({
@@ -29,7 +38,7 @@ export default function NotificationsPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [recentNotifications, setRecentNotifications] = useState<any[]>([]);
+  const [recentNotifications, setRecentNotifications] = useState<Notification[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
 
   // Load notification preferences
@@ -50,7 +59,7 @@ export default function NotificationsPage() {
           });
           setIsLoading(false);
         }, 1000);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Failed to load notification preferences:", error);
         toast.error("Failed to load notification preferences");
         setIsLoading(false);
@@ -67,7 +76,7 @@ export default function NotificationsPage() {
         setNotificationsLoading(true);
         const response = await axios.get("/api/notifications?limit=10");
         setRecentNotifications(response.data.data);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Failed to load notifications:", error);
         toast.error("Failed to load notifications");
       } finally {
@@ -87,7 +96,7 @@ export default function NotificationsPage() {
       // Simulated API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast.success("Notification preferences saved");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to save notification preferences:", error);
       toast.error("Failed to save notification preferences");
     } finally {
@@ -100,7 +109,7 @@ export default function NotificationsPage() {
       await axios.delete("/api/notifications");
       setRecentNotifications([]);
       toast.success("All notifications cleared");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to clear notifications:", error);
       toast.error("Failed to clear notifications");
     }

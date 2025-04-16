@@ -94,7 +94,7 @@ export function BillingApprovalButton({
               This will:
               <ul className="list-disc pl-5 mt-2">
                 <li>Mark the task as billed</li>
-                <li>Add an entry to the client's billing history</li>
+                <li>Add an entry to the client&apos;s billing history</li>
                 <li>Schedule the task for deletion in 24 hours</li>
               </ul>
             </AlertDialogDescription>

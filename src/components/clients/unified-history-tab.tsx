@@ -159,7 +159,7 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
     } finally {
       setLoading(false);
     }
-  }, [clientId]);
+  }, [clientId, fetchGeneralHistory, fetchTaskHistory, isPermanent]);
 
   // Add history entry
   const addHistoryEntry = async (values: HistoryFormValues) => {
@@ -321,7 +321,7 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Client History</h3>
           <div className="flex items-center gap-2">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "all" | "notes" | "tasks")}>
               <TabsList>
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="notes">Notes</TabsTrigger>
