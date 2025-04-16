@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// @ts-ignore - Bypass type checking for route handlers
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -56,7 +55,6 @@ export async function GET(
   }
 }
 
-// @ts-ignore - Bypass type checking for route handlers
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -90,7 +88,7 @@ export async function POST(
     const historyEntry = await prisma.clientHistory.create({
       data: {
         content: body.description,
-        type: "general", // Mark as general history (not task-related)
+        type: "general",
         clientId,
         createdById: session.user.id,
       },
@@ -116,7 +114,6 @@ export async function POST(
   }
 }
 
-// @ts-ignore - Bypass type checking for route handlers
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
