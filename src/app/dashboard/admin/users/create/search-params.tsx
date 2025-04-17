@@ -1,8 +1,10 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react"; // Add Suspense import
 
-export default function SearchWrapper() {
+// Step 1: Create a component that ONLY handles search params
+function SearchParamsHandler() {
   const searchParams = useSearchParams();
   
   // Actually use the search params to prevent tree-shaking
@@ -14,4 +16,13 @@ export default function SearchWrapper() {
   
   // This component doesn't render anything visible
   return null;
+}
+
+// Step 2: Create a wrapper component that wraps the handler in Suspense
+export default function SearchWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <SearchParamsHandler />
+    </Suspense>
+  );
 }

@@ -574,42 +574,55 @@ function AdminDashboardContent() {
   );
 }
 
-// New wrapper component that explicitly uses useSearchParams
-function AdminDashboardWithParams() {
-  // Explicitly use useSearchParams
+// NEW: Separate component for search params handling
+function SearchParamsHandler() {
   const searchParams = useSearchParams();
   
-  // Actually use the searchParams to ensure it's not tree-shaken
+  // Use the params to prevent tree-shaking
   const tab = searchParams.get('tab');
   const view = searchParams.get('view');
   
-  // Return the main content component
-  return <AdminDashboardContent />;
+  console.log("Search params:", tab, view);
+  
+  return null; // This component doesn't render anything
 }
 
-// Default export with Suspense boundary wrapping the component that uses useSearchParams
+// Component that wraps the search handler in its own Suspense
+function SearchParamsComponent() {
+  return (
+    <Suspense fallback={null}>
+      <SearchParamsHandler />
+    </Suspense>
+  );
+}
+
+// Updated default export to use both components
 export default function AdminDashboard() {
   return (
     <Suspense fallback={
       <div className="flex flex-col gap-5">
+        {/* Your existing fallback content */}
         <div className="flex items-center justify-between">
           <Skeleton className="h-9 w-64 mb-2" />
           <Skeleton className="h-10 w-32" />
         </div>
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map(i => (
-            <Card key={i} className="p-6">
-              <Skeleton className="h-8 w-24 mb-2" />
-              <Skeleton className="h-4 w-full" />
-            </Card>
-          ))}
-        </div>
+                  {[1, 2, 3, 4].map(i => (
+                    <Card key={i} className="p-6">
+                      <Skeleton className="h-8 w-24 mb-2" />
+                      <Skeleton className="h-4 w-full" />
+                    </Card>
+                  ))}
+                </div>
         
         <Skeleton className="h-64 w-full rounded-md" />
       </div>
     }>
-      <AdminDashboardWithParams />
+      <>
+        <SearchParamsComponent />
+        <AdminDashboardContent />
+      </>
     </Suspense>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation"; // Remove useSearchParams
+import dynamic from "next/dynamic"; // Add dynamic import
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -36,6 +37,11 @@ import { canModifyClient } from "@/lib/permissions";
 import { useSession } from "next-auth/react";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Dynamically import the search params component
+const SearchParamsComponent = dynamic(() => import("./search-params"), { 
+  ssr: false 
+});
+
 // Schema for permanent client
 const clientFormSchema = z.object({
   contactPerson: z.string().min(2, "Contact person name is required"),
@@ -49,19 +55,7 @@ const clientFormSchema = z.object({
 
 type ClientFormValues = z.infer<typeof clientFormSchema>;
 
-// STEP 1: Create a Search component that ONLY uses useSearchParams (following the exact example pattern)
-function Search() {
-  const searchParams = useSearchParams();
-  const source = searchParams.get('source');
-  const referrer = searchParams.get('referrer');
-  
-  // Log params to ensure they're used (prevents tree-shaking)
-  console.log('Source:', source, 'Referrer:', referrer);
-  
-  return null; // This component doesn't render anything
-}
-
-// STEP 2: Create the component with all your business logic, which doesn't use useSearchParams
+// Keep your ClientFormContent component the same
 function ClientFormContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -366,17 +360,17 @@ function ClientFormContent() {
   );
 }
 
-// STEP 3: Create a component that combines Search and ClientFormContent
+// Update ClientForm to use the SearchParamsComponent
 function ClientForm() {
   return (
     <>
-      <Search />
+      <SearchParamsComponent />
       <ClientFormContent />
     </>
   );
 }
 
-// STEP 4: Default export wraps ClientForm in Suspense (exactly following the example)
+// Your Page component stays the same
 export default function Page() {
   return (
     <Suspense fallback={

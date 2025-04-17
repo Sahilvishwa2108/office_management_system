@@ -329,67 +329,70 @@ function CreateGuestClientContent() {
 // Main component that wraps everything in Suspense
 export default function CreateGuestClientPage() {
   return (
-    <Suspense fallback={
-      <div>
-        <div className="mb-6 flex items-center gap-2">
-          <Skeleton className="h-8 w-8 rounded-full" />
-          <Skeleton className="h-8 w-56" />
-        </div>
-        
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <Skeleton className="h-6 w-48 mb-2" />
-            <Skeleton className="h-4 w-full" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <>
+      {/* SearchParamsComponent must be outside of any additional Suspense boundary */}
+      <SearchParamsComponent />
+      
+      {/* Then wrap your main content in Suspense if needed */}
+      <Suspense fallback={
+        <div>
+          <div className="mb-6 flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-8 w-56" />
+          </div>
+          
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+              <Skeleton className="h-6 w-48 mb-2" />
+              <Skeleton className="h-4 w-full" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-24 w-full" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-40 w-full" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
                   <Skeleton className="h-10 w-full" />
                 </div>
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-36" />
                   <Skeleton className="h-10 w-full" />
                 </div>
+                <div className="flex justify-end gap-3">
+                  <Skeleton className="h-10 w-24" />
+                  <Skeleton className="h-10 w-36" />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-24 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-40 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-36" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="flex justify-end gap-3">
-                <Skeleton className="h-10 w-24" />
-                <Skeleton className="h-10 w-36" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    }>
-      <>
-        <SearchParamsComponent />
+            </CardContent>
+          </Card>
+        </div>
+      }>
         <CreateGuestClientContent />
-      </>
-    </Suspense>
+      </Suspense>
+    </>
   );
 }
