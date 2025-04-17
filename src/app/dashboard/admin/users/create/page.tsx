@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -28,6 +28,7 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Define the form schema with validation rules
 const userFormSchema = z.object({
@@ -41,7 +42,9 @@ const userFormSchema = z.object({
   ]),
 });
 
-export default function CreateUserPage() {
+// Create a content component that will use client hooks
+// But does NOT use useSearchParams directly
+function CreateUserContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
@@ -184,5 +187,63 @@ export default function CreateUserPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+// New component that *explicitly* uses useSearchParams
+function CreateUserWithSearchParams() {
+  // This is the component that explicitly uses useSearchParams
+  const searchParams = useSearchParams();
+  
+  // Make sure to actually use searchParams so it's not tree-shaken
+  const returnUrl = searchParams.get('returnUrl');
+  const source = searchParams.get('source');
+  
+  // You don't need to do anything with these values, just reading them
+  // ensures the hook is actually used
+  
+  return <CreateUserContent />;
+}
+
+// Main component with Suspense boundary
+export default function CreateUserPage() {
+  return (
+    <Suspense fallback={
+      <div>
+        <div className="mb-6 flex items-center gap-2">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-8 w-56" />
+        </div>
+
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-full mt-2" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Skeleton className="h-4 w-full" />
+          </CardFooter>
+        </Card>
+      </div>
+    }>
+      <CreateUserWithSearchParams />
+    </Suspense>
   );
 }

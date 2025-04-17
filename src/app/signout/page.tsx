@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 // Component that uses useSearchParams
 function SignOutContent() {

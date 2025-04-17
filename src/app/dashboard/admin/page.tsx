@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation"; // Add useSearchParams import
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,6 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import { TaskProgress } from "@/components/dashboard/task-progress";
 import { Progress } from "@/components/ui/progress";
-import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/loading/dashboard-skeleton";
 import { PendingBillingTasks } from "@/components/admin/pending-billing-tasks";
@@ -574,6 +574,20 @@ function AdminDashboardContent() {
   );
 }
 
+// New wrapper component that explicitly uses useSearchParams
+function AdminDashboardWithParams() {
+  // Explicitly use useSearchParams
+  const searchParams = useSearchParams();
+  
+  // Actually use the searchParams to ensure it's not tree-shaken
+  const tab = searchParams.get('tab');
+  const view = searchParams.get('view');
+  
+  // Return the main content component
+  return <AdminDashboardContent />;
+}
+
+// Default export with Suspense boundary wrapping the component that uses useSearchParams
 export default function AdminDashboard() {
   return (
     <Suspense fallback={
@@ -595,7 +609,7 @@ export default function AdminDashboard() {
         <Skeleton className="h-64 w-full rounded-md" />
       </div>
     }>
-      <AdminDashboardContent />
+      <AdminDashboardWithParams />
     </Suspense>
   );
 }

@@ -36,6 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserCount } from "@/components/dashboard/user-count";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RoleFilter } from "@/components/ui/role-filter";
+import React from "react"; // Make sure React is imported
 
 interface User {
   id: string;
@@ -185,9 +186,8 @@ const UserListItem = ({
   );
 };
 
-// Create a wrapper component for useSearchParams
-function UsersPageContent() {
-  // Original component code here, including useSearchParams
+// Create a separate content component that doesn't use useSearchParams
+function UsersContent() {
   const router = useRouter();
   const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
@@ -195,7 +195,6 @@ function UsersPageContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
-  const searchParams = useSearchParams();
 
   // Load users - excluding clients and current user
   const loadUsers = useCallback(async () => {
@@ -222,7 +221,7 @@ function UsersPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [selectedRoles, session?.user?.id]); // Add missing dependency
+  }, [selectedRoles, session?.user?.id]);
 
   // Handle toggle status
   const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
@@ -265,7 +264,18 @@ function UsersPageContent() {
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Replace the loading spinner with table skeleton
+  // Define the roles available for filtering
+  const availableRoles = [
+    { value: "ADMIN", label: "Admin" },
+    { value: "PARTNER", label: "Partner" },
+    { value: "BUSINESS_EXECUTIVE", label: "Business Executive" },
+    { value: "BUSINESS_CONSULTANT", label: "Business Consultant" },
+  ];
+
+  const navigateToCreate = () => {
+    router.push('/dashboard/admin/users/create');
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -277,7 +287,7 @@ function UsersPageContent() {
           <Skeleton className="h-10 w-32" />
         </div>
         
-        <Skeleton className="h-40 w-full" /> {/* Role distribution chart skeleton */}
+        <Skeleton className="h-40 w-full" />
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -329,18 +339,6 @@ function UsersPageContent() {
     );
   }
 
-  // Define the roles available for filtering
-  const availableRoles = [
-    { value: "ADMIN", label: "Admin" },
-    { value: "PARTNER", label: "Partner" },
-    { value: "BUSINESS_EXECUTIVE", label: "Business Executive" },
-    { value: "BUSINESS_CONSULTANT", label: "Business Consultant" },
-  ];
-
-  const navigateToCreate = () => {
-    router.push('/dashboard/admin/users/create');
-  };
-
   return (
     <div className="space-y-6">
       {/* Title Row with Button */}
@@ -355,8 +353,8 @@ function UsersPageContent() {
         </Button>
       </div>
 
-      {/* New: Role distribution chart */}
-      {!loading && users.length > 0 && (
+      {/* Role distribution chart */}
+      {users.length > 0 && (
         <UserCount 
           users={users}
           excludeRoles={CLIENT_ROLES}
@@ -412,44 +410,7 @@ function UsersPageContent() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Array(5).fill(0).map((_, i) => (
-                    <TableRow key={`skeleton-${i}`}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Skeleton className="h-8 w-8 rounded-full" />
-                          <div>
-                            <Skeleton className="h-4 w-32 mb-1" />
-                            <Skeleton className="h-3 w-24" />
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell><Skeleton className="h-4 w-36" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                      <TableCell className="text-right">
-                        <Skeleton className="h-8 w-20 ml-auto" />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : viewMode === "table" ? (
+          {viewMode === "table" ? (
             <div className="border rounded-md">
               <Table>
                 <TableHeader>
@@ -463,7 +424,6 @@ function UsersPageContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {/* Existing table rows */}
                   {filteredUsers.length > 0 ? (
                     filteredUsers.map((user) => (
                       <TableRow key={user.id}>
@@ -481,7 +441,6 @@ function UsersPageContent() {
                           {format(new Date(user.createdAt), 'PPP')}
                         </TableCell>
                         <TableCell>
-                          {/* Existing dropdown menu */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -564,11 +523,23 @@ function UsersPageContent() {
   );
 }
 
-// Main component with Suspense
+// Component that uses useSearchParams
+function UsersPageContent() {
+  // This component explicitly uses useSearchParams
+  const searchParams = useSearchParams();
+  
+  // We can do something with searchParams if needed
+  // For example, checking if a specific parameter exists
+  const hasFilter = searchParams.has('filter');
+  
+  // Then render the content component
+  return <UsersContent />;
+}
+
+// Main component with Suspense boundary
 export default function UsersPage() {
   return (
     <Suspense fallback={
-      // Simple loading UI while Suspense is waiting
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>

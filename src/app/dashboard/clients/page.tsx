@@ -188,9 +188,9 @@ const ClientListItem = ({
   );
 };
 
-// Create a wrapper component for the search params
-function ClientsPageContent() {
-  const searchParams = useSearchParams();
+// Create a component that contains all logic but DOES NOT use useSearchParams
+function ClientsContent() {
+  const router = useRouter();
   const { data: session } = useSession();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,7 +198,6 @@ function ClientsPageContent() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
-  // Changed default view to "card" from "table"
   const [viewMode, setViewMode] = useState<"table" | "card">(() => {
     // Try to get saved preference from localStorage, default to "card" if not found
     if (typeof window !== 'undefined') {
@@ -747,7 +746,21 @@ function ClientsPageContent() {
   );
 }
 
-// Main page component with Suspense boundary
+// Create a VERY thin wrapper that ONLY uses useSearchParams
+function ClientsWithSearchParams() {
+  // This component only uses useSearchParams
+  const searchParams = useSearchParams();
+  
+  // Use the search params to ensure the hook is not tree-shaken
+  const filter = searchParams.get('filter');
+  const view = searchParams.get('view');
+  const sort = searchParams.get('sort');
+  
+  // Simply return the content component
+  return <ClientsContent />;
+}
+
+// Main component with explicit Suspense boundary
 export default function ClientsPage() {
   return (
     <Suspense fallback={
@@ -769,7 +782,7 @@ export default function ClientsPage() {
         </div>
       </div>
     }>
-      <ClientsPageContent />
+      <ClientsWithSearchParams />
     </Suspense>
   );
 }

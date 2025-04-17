@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -24,6 +24,7 @@ import {
   CardContent,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Calendar as CalendarIcon } from "lucide-react";
@@ -35,6 +36,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Schema for guest client
 const guestClientFormSchema = z.object({
@@ -52,7 +54,8 @@ const guestClientFormSchema = z.object({
 
 type GuestClientFormValues = z.infer<typeof guestClientFormSchema>;
 
-export default function CreateGuestClientPage() {
+// Base component that contains all functionality but doesn't use useSearchParams
+function CreateGuestClientContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
@@ -314,5 +317,83 @@ export default function CreateGuestClientPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Wrapper component that explicitly uses useSearchParams
+function CreateGuestClientWithParams() {
+  // Explicitly use useSearchParams
+  const searchParams = useSearchParams();
+  
+  // Actually use the searchParams to ensure it's not tree-shaken
+  const source = searchParams.get('source');
+  const ref = searchParams.get('ref');
+  
+  // Return the main content component
+  return <CreateGuestClientContent />;
+}
+
+// Main component that wraps everything in Suspense
+export default function CreateGuestClientPage() {
+  return (
+    <Suspense fallback={
+      <div>
+        <div className="mb-6 flex items-center gap-2">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-8 w-56" />
+        </div>
+        
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <Skeleton className="h-6 w-48 mb-2" />
+            <Skeleton className="h-4 w-full" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-24 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-40 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="flex justify-end gap-3">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-36" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <CreateGuestClientWithParams />
+    </Suspense>
   );
 }
