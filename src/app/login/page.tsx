@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter } from "next/navigation"; // Remove useSearchParams from here
 import { signIn } from "next-auth/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import axios from "axios";
+import dynamic from "next/dynamic"; // Add this import
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -22,19 +23,30 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import Link from "next/link";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Dynamically import the search params wrapper with SSR disabled
+const SearchParamsWrapper = dynamic(() => import("./search-params"), { 
+  ssr: false 
+});
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
+// Create a component that doesn't directly use useSearchParams
 function LoginContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const blocked = searchParams.get("blocked");
+  const [blocked, setBlocked] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Get blocked parameter from URL without using useSearchParams
+  useState(() => {
+    // Safe way to access URL on client without hooks
+    const url = new URL(window.location.href);
+    setBlocked(url.searchParams.get("blocked"));
+  });
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -169,6 +181,7 @@ function LoginContent() {
   );
 }
 
+// Main component with proper structure
 export default function LoginPage() {
   return (
     <Suspense fallback={
@@ -194,7 +207,10 @@ export default function LoginPage() {
         </Card>
       </div>
     }>
-      <LoginContent />
+      <>
+        <SearchParamsWrapper />
+        <LoginContent />
+      </>
     </Suspense>
   );
 }

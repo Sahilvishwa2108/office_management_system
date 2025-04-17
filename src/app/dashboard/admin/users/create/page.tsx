@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation"; // Remove useSearchParams from here
 import { useSession } from "next-auth/react";
+import dynamic from "next/dynamic";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -29,6 +30,9 @@ import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Dynamically import the search wrapper with SSR disabled
+const SearchWrapper = dynamic(() => import("./search-params"), { ssr: false });
 
 // Define the form schema with validation rules
 const userFormSchema = z.object({
@@ -190,21 +194,6 @@ function CreateUserContent() {
   );
 }
 
-// New component that *explicitly* uses useSearchParams
-function CreateUserWithSearchParams() {
-  // This is the component that explicitly uses useSearchParams
-  const searchParams = useSearchParams();
-  
-  // Make sure to actually use searchParams so it's not tree-shaken
-  const returnUrl = searchParams.get('returnUrl');
-  const source = searchParams.get('source');
-  
-  // You don't need to do anything with these values, just reading them
-  // ensures the hook is actually used
-  
-  return <CreateUserContent />;
-}
-
 // Main component with Suspense boundary
 export default function CreateUserPage() {
   return (
@@ -243,7 +232,10 @@ export default function CreateUserPage() {
         </Card>
       </div>
     }>
-      <CreateUserWithSearchParams />
+      <>
+        <SearchWrapper />
+        <CreateUserContent />
+      </>
     </Suspense>
   );
 }

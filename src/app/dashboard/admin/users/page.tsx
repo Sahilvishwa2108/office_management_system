@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation"; // Remove useSearchParams from here
+import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -523,18 +524,10 @@ function UsersContent() {
   );
 }
 
-// Component that uses useSearchParams
-function UsersPageContent() {
-  // This component explicitly uses useSearchParams
-  const searchParams = useSearchParams();
-  
-  // We can do something with searchParams if needed
-  // For example, checking if a specific parameter exists
-  const hasFilter = searchParams.has('filter');
-  
-  // Then render the content component
-  return <UsersContent />;
-}
+// Dynamically import the search params component with SSR disabled
+const SearchParamsHandler = dynamic(() => import("./search-params"), { 
+  ssr: false 
+});
 
 // Main component with Suspense boundary
 export default function UsersPage() {
@@ -559,7 +552,10 @@ export default function UsersPage() {
         </Card>
       </div>
     }>
-      <UsersPageContent />
+      <>
+        <SearchParamsHandler />
+        <UsersContent />
+      </>
     </Suspense>
   );
 }

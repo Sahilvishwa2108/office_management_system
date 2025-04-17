@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useTransition, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation"; // Remove useSearchParams from here
+import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { canModifyClient } from "@/lib/permissions";
+
+// Dynamically import the search params component with SSR disabled
+const SearchParamsComponent = dynamic(() => import("./search-params"), { 
+  ssr: false 
+});
 
 interface Client {
   id: string;
@@ -746,20 +752,6 @@ function ClientsContent() {
   );
 }
 
-// Create a VERY thin wrapper that ONLY uses useSearchParams
-function ClientsWithSearchParams() {
-  // This component only uses useSearchParams
-  const searchParams = useSearchParams();
-  
-  // Use the search params to ensure the hook is not tree-shaken
-  const filter = searchParams.get('filter');
-  const view = searchParams.get('view');
-  const sort = searchParams.get('sort');
-  
-  // Simply return the content component
-  return <ClientsContent />;
-}
-
 // Main component with explicit Suspense boundary
 export default function ClientsPage() {
   return (
@@ -782,7 +774,10 @@ export default function ClientsPage() {
         </div>
       </div>
     }>
-      <ClientsWithSearchParams />
+      <>
+        <SearchParamsComponent />
+        <ClientsContent />
+      </>
     </Suspense>
   );
 }

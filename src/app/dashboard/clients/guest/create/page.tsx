@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation"; // Remove useSearchParams
+import dynamic from "next/dynamic";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -37,6 +38,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Dynamically import the search params component with SSR disabled
+const SearchParamsComponent = dynamic(() => import("./search-params"), { 
+  ssr: false 
+});
 
 // Schema for guest client
 const guestClientFormSchema = z.object({
@@ -320,19 +326,6 @@ function CreateGuestClientContent() {
   );
 }
 
-// Wrapper component that explicitly uses useSearchParams
-function CreateGuestClientWithParams() {
-  // Explicitly use useSearchParams
-  const searchParams = useSearchParams();
-  
-  // Actually use the searchParams to ensure it's not tree-shaken
-  const source = searchParams.get('source');
-  const ref = searchParams.get('ref');
-  
-  // Return the main content component
-  return <CreateGuestClientContent />;
-}
-
 // Main component that wraps everything in Suspense
 export default function CreateGuestClientPage() {
   return (
@@ -393,7 +386,10 @@ export default function CreateGuestClientPage() {
         </Card>
       </div>
     }>
-      <CreateGuestClientWithParams />
+      <>
+        <SearchParamsComponent />
+        <CreateGuestClientContent />
+      </>
     </Suspense>
   );
 }
