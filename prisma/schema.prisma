@@ -30,6 +30,7 @@ model User {
   passwordResetToken      String?        
   passwordResetTokenExpiry DateTime?     
   role                    UserRole       @default(BUSINESS_EXECUTIVE)
+  avatar                  String?
   isActive                Boolean        @default(true)
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
@@ -67,6 +68,7 @@ model Client {
   tasks          Task[]       // Tasks associated with this client
   attachments    Attachment[] // Attachments related to this client
   history        ClientHistory[] // Client history entries
+  credentials    Credential[] //Credentials associated with this client
   
   @@index([managerId])
   @@index([contactPerson]) // Index for searching by contact person name
@@ -75,33 +77,32 @@ model Client {
 }
 
 model Task {
-  id                    String    @id @default(uuid())
-  title                 String
-  description           String?
-  status                String    @default("pending") 
-  priority              String    @default("medium")  
-  dueDate               DateTime?
-  billingStatus         String?   @default("pending_billing") // "pending_billing", "billed", "paid"
-  billingDate           DateTime?
-  scheduledDeletionDate DateTime?  // Add this field
+  id             String    @id @default(uuid())
+  title          String
+  description    String?
+  status         String    @default("pending") 
+  priority       String    @default("medium")  
+  dueDate        DateTime?
+  billingStatus  String?   @default("pending_billing") // "pending_billing", "billed", "paid"
+  billingDate    DateTime?
   
   // Keep the original assignment fields (for backward compatibility)
-  assignedById          String
-  assignedBy            User      @relation("AssignedByUser", fields: [assignedById], references: [id])
-  assignedToId          String?   // This will remain but become optional
-  assignedTo            User?     @relation("AssignedToUser", fields: [assignedToId], references: [id])
+  assignedById   String
+  assignedBy     User      @relation("AssignedByUser", fields: [assignedById], references: [id])
+  assignedToId   String?   // This will remain but become optional
+  assignedTo     User?     @relation("AssignedToUser", fields: [assignedToId], references: [id])
   
   // Add new many-to-many relation
-  assignees             TaskAssignee[]
+  assignees      TaskAssignee[]
   
   // Keep other existing relations
-  client                Client?   @relation(fields: [clientId], references: [id])
-  clientId              String?
-  comments              TaskComment[]
+  client         Client?   @relation(fields: [clientId], references: [id])
+  clientId       String?
+  comments       TaskComment[]
   // Any other existing fields/relations
   
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([assignedById])
   @@index([assignedToId])
@@ -207,6 +208,7 @@ model ClientHistory {
   createdAt         DateTime  @default(now())
   createdById       String
   createdBy         User      @relation("CreatedBy", fields: [createdById], references: [id])
+  pinned           Boolean   @default(false) // Whether this history entry is pinned for quick access
   
   // Task related fields
   taskId            String?
@@ -220,4 +222,16 @@ model ClientHistory {
   @@index([clientId])
   @@index([createdById])
   @@index([taskId])
+}
+
+model Credential {
+  id        String   @id @default(uuid())
+  key       String
+  value     String
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId])
 }

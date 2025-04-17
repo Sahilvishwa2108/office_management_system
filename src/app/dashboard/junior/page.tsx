@@ -288,7 +288,6 @@ function JuniorDashboardContent() {
                 <ActivityFeed 
                 fetchUrl="/api/activities"
                 loading={loading}
-                viewAllUrl="/dashboard/activities"
                 showUserInfo={true}
                 showRoleInfo={true}
               />

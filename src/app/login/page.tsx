@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
