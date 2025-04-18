@@ -40,6 +40,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UnifiedHistoryTab } from "@/components/clients/unified-history-tab";
 import { canModifyClient } from "@/lib/permissions";
+import { CredentialsTab } from "@/components/clients/credentials-tab";
 
 interface Client {
   id: string;
@@ -219,7 +220,7 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="credentials">Credentials</TabsTrigger>
         </TabsList>
 
         {/* Details Tab */}
@@ -463,28 +464,10 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
         </TabsContent>
 
         {/* Placeholder for Documents Tab - will be implemented in detail separately */}
-        <TabsContent value="documents" className="space-y-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Client Documents</CardTitle>
-                <CardDescription>
-                  Files and documents associated with this client
-                </CardDescription>
-              </div>
-              <Button size="sm">Upload Document</Button>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <FileText className="h-12 w-12 mx-auto text-muted-foreground opacity-20 mb-2" />
-                <h3 className="text-lg font-medium mb-2">No documents yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  No documents have been uploaded for this client
-                </p>
-                <Button>Upload First Document</Button>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="credentials" className="space-y-4">
+          <CredentialsTab 
+          clientId={client.id}
+          isAdmin={hasWriteAccess} />
         </TabsContent>
       </Tabs>
     </div>

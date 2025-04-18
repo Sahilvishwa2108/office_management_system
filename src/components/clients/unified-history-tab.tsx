@@ -1,19 +1,37 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Trash2, Clock, RefreshCcw, CalendarIcon, XCircle, Receipt } from "lucide-react";
+import {
+  Trash2,
+  Clock,
+  RefreshCcw,
+  CalendarIcon,
+  XCircle,
+  Receipt,
+  Pin,
+} from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 
@@ -23,6 +41,7 @@ interface GeneralHistoryEntry {
   content: string;
   type: "general";
   createdAt: string;
+  pinned: boolean;
   createdBy: {
     id: string;
     name: string;
@@ -68,9 +87,15 @@ const historyFormSchema = z.object({
 
 type HistoryFormValues = z.infer<typeof historyFormSchema>;
 
-export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHistoryTabProps) {
+export function UnifiedHistoryTab({
+  clientId,
+  isPermanent,
+  isAdmin,
+}: UnifiedHistoryTabProps) {
   const [activeTab, setActiveTab] = useState<"all" | "notes" | "tasks">("all");
-  const [generalHistory, setGeneralHistory] = useState<GeneralHistoryEntry[]>([]);
+  const [generalHistory, setGeneralHistory] = useState<GeneralHistoryEntry[]>(
+    []
+  );
   const [taskHistory, setTaskHistory] = useState<TaskHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -84,22 +109,60 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
     },
   });
 
+  const togglePinHistoryEntry = async (entryId: string, pinned: boolean) => {
+    try {
+      const response = await fetch(`/api/clients/${clientId}/history`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ entryId, pinned }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error updating pinned status: ${response.statusText}`);
+      }
+
+      const { updatedEntry } = await response.json();
+
+      // Update the state
+      setGeneralHistory((prev) =>
+        prev.map((entry) =>
+          entry.id === updatedEntry.id
+            ? { ...entry, pinned: updatedEntry.pinned }
+            : entry
+        )
+      );
+
+      toast.success(`Entry ${pinned ? "pinned" : "unpinned"} successfully`);
+    } catch (err: any) {
+      console.error("Failed to update pinned status:", err);
+      toast.error(err.message || "Failed to update pinned status");
+    }
+  };
+
   // Get all history entries, sorted by date
   const getAllHistory = (): HistoryEntry[] => {
     const allHistory = [...generalHistory, ...taskHistory];
-    return allHistory.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return allHistory.sort((a, b) => {
+      // Check if both entries are GeneralHistoryEntry to compare `pinned`
+      if ("pinned" in a && "pinned" in b) {
+        if (a.pinned !== b.pinned) {
+          return a.pinned ? -1 : 1; // Pinned entries come first
+        }
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
   };
 
   // Get filtered history based on active tab
   const getFilteredHistory = (): HistoryEntry[] => {
     const allHistory = getAllHistory();
-    
+
     if (activeTab === "all") return allHistory;
     if (activeTab === "notes") return generalHistory;
     if (activeTab === "tasks") return taskHistory;
-    
+
     return allHistory;
   };
 
@@ -107,18 +170,19 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
   const fetchGeneralHistory = async () => {
     try {
       const response = await fetch(`/api/clients/${clientId}/history`);
-      
+
       if (!response.ok) {
-        throw new Error(`Error fetching general history: ${response.statusText}`);
+        throw new Error(
+          `Error fetching general history: ${response.statusText}`
+        );
       }
-      
+
       const data = await response.json();
       setGeneralHistory(data.historyEntries || []);
       return data.historyEntries || [];
-    } catch (err: unknown) {
-      const typedError = err as Error;
-      console.error("Failed to fetch general history:", typedError);
-      throw typedError;
+    } catch (err: any) {
+      console.error("Failed to fetch general history:", err);
+      throw err;
     }
   };
 
@@ -126,46 +190,44 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
   const fetchTaskHistory = async () => {
     try {
       const response = await fetch(`/api/clients/${clientId}/task-history`);
-      
+
       if (!response.ok) {
         throw new Error(`Error fetching task history: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       setTaskHistory(data.taskHistory || []);
       return data.taskHistory || [];
-    } catch (err: unknown) {
-      const typedError = err as Error;
-      console.error("Failed to fetch task history:", typedError);
-      throw typedError;
+    } catch (err: any) {
+      console.error("Failed to fetch task history:", err);
+      throw err;
     }
   };
 
   // Fetch all history
-  const fetchAllHistory = useCallback(async () => {
+  const fetchAllHistory = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Fetch both types of history in parallel
       await Promise.all([
         fetchGeneralHistory(),
-        isPermanent ? fetchTaskHistory() : Promise.resolve([])
+        isPermanent ? fetchTaskHistory() : Promise.resolve([]),
       ]);
-    } catch (err: unknown) {
-      const typedError = err as Error;
-      console.error("Failed to fetch history:", typedError);
-      setError(typedError.message || "Failed to load history");
+    } catch (err: any) {
+      console.error("Failed to fetch history:", err);
+      setError(err.message || "Failed to load history");
     } finally {
       setLoading(false);
     }
-  }, [clientId, fetchGeneralHistory, fetchTaskHistory, isPermanent]);
+  };
 
   // Add history entry
   const addHistoryEntry = async (values: HistoryFormValues) => {
     try {
       setAdding(true);
-      
+
       const response = await fetch(`/api/clients/${clientId}/history`, {
         method: "POST",
         headers: {
@@ -173,24 +235,23 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
         },
         body: JSON.stringify({ description: values.description }),
       });
-      
+
       if (!response.ok) {
         throw new Error(`Error adding history entry: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
+
       // Add new entry to state
-      setGeneralHistory(prev => [data.historyEntry, ...prev]);
-      
+      setGeneralHistory((prev) => [data.historyEntry, ...prev]);
+
       // Reset form
       form.reset();
-      
+
       toast.success("History entry added successfully");
-    } catch (err: unknown) {
-      const typedError = err as Error;
-      console.error("Failed to add history entry:", typedError);
-      toast.error(typedError.message || "Failed to add history entry");
+    } catch (err: any) {
+      console.error("Failed to add history entry:", err);
+      toast.error(err.message || "Failed to add history entry");
     } finally {
       setAdding(false);
     }
@@ -201,24 +262,26 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
     if (!confirm("Are you sure you want to delete this history entry?")) {
       return;
     }
-    
+
     try {
-      const response = await fetch(`/api/clients/${clientId}/history?entryId=${entryId}`, {
-        method: "DELETE",
-      });
-      
+      const response = await fetch(
+        `/api/clients/${clientId}/history?entryId=${entryId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
       if (!response.ok) {
         throw new Error(`Error deleting history entry: ${response.statusText}`);
       }
-      
+
       // Remove entry from state
-      setGeneralHistory(prev => prev.filter(entry => entry.id !== entryId));
-      
+      setGeneralHistory((prev) => prev.filter((entry) => entry.id !== entryId));
+
       toast.success("History entry deleted successfully");
-    } catch (err: unknown) {
-      const typedError = err as Error;
-      console.error("Failed to delete history entry:", typedError);
-      toast.error(typedError.message || "Failed to delete history entry");
+    } catch (err: any) {
+      console.error("Failed to delete history entry:", err);
+      toast.error(err.message || "Failed to delete history entry");
     }
   };
 
@@ -226,7 +289,7 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
   const getInitials = (name: string): string => {
     return name
       .split(" ")
-      .map(n => n[0])
+      .map((n) => n[0])
       .join("")
       .toUpperCase();
   };
@@ -250,7 +313,9 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
 
   // Load history on component mount
   useEffect(() => {
-    fetchAllHistory();
+    if (clientId) {
+      fetchAllHistory();
+    }
   }, [clientId]);
 
   if (!isPermanent) {
@@ -259,8 +324,8 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
         <XCircle className="h-12 w-12 text-muted-foreground mb-4" />
         <h3 className="text-lg font-medium mb-2">History Not Available</h3>
         <p className="text-muted-foreground max-w-md mx-auto">
-          History tracking is only available for permanent clients.
-          This is a guest client and will expire on its set date.
+          History tracking is only available for permanent clients. This is a
+          guest client and will expire on its set date.
         </p>
       </div>
     );
@@ -273,7 +338,10 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
         <Card>
           <CardContent className="pt-6">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(addHistoryEntry)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(addHistoryEntry)}
+                className="space-y-4"
+              >
                 <FormField
                   control={form.control}
                   name="description"
@@ -292,11 +360,8 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
                   )}
                 />
                 <div className="flex justify-end gap-2">
-                  <Button
-                    type="submit"
-                    disabled={adding}
-                  >
-                    {adding ? 'Adding...' : 'Add Entry'}
+                  <Button type="submit" disabled={adding}>
+                    {adding ? "Adding..." : "Add Entry"}
                   </Button>
                 </div>
               </form>
@@ -321,14 +386,22 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Client History</h3>
           <div className="flex items-center gap-2">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "all" | "notes" | "tasks")}>
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as any)}
+            >
               <TabsList>
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="notes">Notes</TabsTrigger>
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
               </TabsList>
             </Tabs>
-            <Button variant="outline" size="sm" onClick={fetchAllHistory} disabled={loading}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchAllHistory}
+              disabled={loading}
+            >
               <RefreshCcw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
@@ -354,12 +427,11 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
           <div className="bg-muted p-6 text-center rounded-md">
             <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
             <p className="text-muted-foreground">
-              {activeTab === "all" 
-                ? "No history entries yet" 
-                : activeTab === "notes" 
-                  ? "No notes yet" 
-                  : "No task history yet"
-              }
+              {activeTab === "all"
+                ? "No history entries yet"
+                : activeTab === "notes"
+                ? "No notes yet"
+                : "No task history yet"}
             </p>
           </div>
         ) : (
@@ -373,30 +445,59 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
                       <div className="flex justify-between items-start">
                         <div className="flex items-start gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${entry.createdBy.name}`} />
-                            <AvatarFallback>{getInitials(entry.createdBy.name)}</AvatarFallback>
+                            <AvatarImage
+                              src={`https://api.dicebear.com/7.x/initials/svg?seed=${entry.createdBy.name}`}
+                            />
+                            <AvatarFallback>
+                              {getInitials(entry.createdBy.name)}
+                            </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">{entry.createdBy.name}</div>
+                            <div className="font-medium">
+                              {entry.createdBy.name}
+                            </div>
                             <div className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true })}
+                              {formatDistanceToNow(new Date(entry.createdAt), {
+                                addSuffix: true,
+                              })}
                             </div>
                           </div>
                         </div>
-                        
-                        {/* Only show delete button for admin users */}
-                        {isAdmin && (
-                          <Button 
-                            variant="ghost" 
+
+                        <div className="flex items-center gap-2 ml-auto">
+                          {/* Pin Button */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="hover:bg-muted/10 p-1 rounded-full"
+                            onClick={() =>
+                              togglePinHistoryEntry(entry.id, !entry.pinned)
+                            }
+                          >
+                            <span title={entry.pinned ? "Unpin" : "Pin"}>
+                              <Pin
+                                className={`h-5 w-5 ${
+                                  entry.pinned
+                                    ? "text-primary fill-current"
+                                    : "text-muted-foreground"
+                                }`}
+                                fill={entry.pinned ? "currentColor" : "none"} // Fill only when pinned
+                              />
+                            </span>
+                          </Button>
+
+                          {/* Delete Button */}
+                          <Button
+                            variant="ghost"
                             size="sm"
                             className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                             onClick={() => deleteHistoryEntry(entry.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        )}
+                        </div>
                       </div>
-                      
+
                       <div className="mt-4 whitespace-pre-wrap text-sm">
                         {entry.content}
                       </div>
@@ -408,29 +509,44 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
                         <h3 className="font-medium">{entry.taskTitle}</h3>
                         {getStatusBadge(entry.taskStatus)}
                       </div>
-                      
+
                       {entry.taskDescription && (
                         <p className="text-sm text-muted-foreground mb-3">
                           {entry.taskDescription}
                         </p>
                       )}
-                      
+
                       <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <CalendarIcon className="h-3.5 w-3.5" />
-                          <span>Completed: {format(new Date(entry.taskCompletedDate), "MMM d, yyyy")}</span>
+                          <span>
+                            Completed:{" "}
+                            {format(
+                              new Date(entry.taskCompletedDate),
+                              "MMM d, yyyy"
+                            )}
+                          </span>
                         </div>
-                        
+
                         {entry.taskBilledDate && (
                           <div className="flex items-center gap-1">
                             <Receipt className="h-3.5 w-3.5" />
-                            <span>Billed: {format(new Date(entry.taskBilledDate), "MMM d, yyyy")}</span>
+                            <span>
+                              Billed:{" "}
+                              {format(
+                                new Date(entry.taskBilledDate),
+                                "MMM d, yyyy"
+                              )}
+                            </span>
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="mt-3 text-xs text-muted-foreground">
-                        Added by {entry.createdBy.name} • {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true })}
+                        Added by {entry.createdBy.name} •{" "}
+                        {formatDistanceToNow(new Date(entry.createdAt), {
+                          addSuffix: true,
+                        })}
                       </div>
                     </>
                   )}

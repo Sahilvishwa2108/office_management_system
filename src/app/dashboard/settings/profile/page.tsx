@@ -17,10 +17,28 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, User, Mail, Phone, Check, Shield, AlertCircle } from "lucide-react";
+import {
+  Loader2,
+  ArrowLeft,
+  User,
+  Mail,
+  Phone,
+  Check,
+  Shield,
+  AlertCircle,
+  Trash,
+  Upload,
+} from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -41,6 +59,7 @@ export default function ProfilePage() {
     name: "",
     email: "",
     phone: "",
+    avatar: "", // Added avatar property
   });
 
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -57,29 +76,33 @@ export default function ProfilePage() {
     const loadUserProfile = async () => {
       try {
         const response = await axios.get("/api/users/profile");
-
+  
         const userData = {
           name: response.data.name || "",
           email: response.data.email || "",
           phone: response.data.phone || "",
+          avatar: response.data.avatar || "", // Ensure avatar is included
         };
-
+  
+        console.log("Fetched user profile:", userData); // Debugging log
+  
         form.reset(userData);
         setProfile(userData);
-      } catch {
+      } catch (error) {
+        console.error("Error fetching profile data:", error);
         toast.error("Failed to load profile data");
       } finally {
         setIsLoading(false);
       }
     };
-
+  
     loadUserProfile();
   }, [form]);
 
   const onSubmit = async (data: z.infer<typeof profileSchema>) => {
     setIsSubmitting(true);
     setUpdateSuccess(false);
-    
+
     try {
       const updateData = {
         name: data.name,
@@ -103,14 +126,98 @@ export default function ProfilePage() {
 
       setUpdateSuccess(true);
       toast.success("Profile updated successfully");
-    } catch (error: unknown) {
-      const errorMessage = (error as {response?: {data?: {error?: string}}})?.response?.data?.error || "Failed to update profile";
-      toast.error(errorMessage);
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to update profile");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      toast.error("No file selected. Please choose a file to upload.");
+      return;
+    }
+  
+    const timestamp = Math.floor(Date.now() / 1000); // Current timestamp
+    const folder = "office_management/avatar";
+  
+    try {
+      // Request a signature from the backend
+      const signatureResponse = await axios.post("/api/users/profile/avatar", {
+        folder,
+        timestamp,
+      });
+  
+      const { signature } = signatureResponse.data;
+  
+      // Prepare the form data for Cloudinary
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("api_key", process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY || ""); // Use your Cloudinary API key
+      formData.append("timestamp", timestamp.toString());
+      formData.append("folder", folder);
+      formData.append("signature", signature);
+  
+      // Upload the file to Cloudinary
+      const response = await axios.post(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        formData
+      );
+  
+      const avatarUrl = response.data.secure_url;
+  
+      // Update the avatar in the backend
+      await axios.put("/api/users/profile/avatar", { avatar: avatarUrl });
+  
+      // Update the profile state with the new avatar URL
+      setProfile((prevProfile) => ({
+        ...prevProfile,
+        avatar: avatarUrl,
+      }));
+  
+      toast.success("Profile picture uploaded successfully");
+    } catch (error) {
+      console.error("Error during upload:", error);
+      toast.error("Failed to upload profile picture. Please try again.");
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    try {
+      // Send DELETE request to the backend
+      const response = await fetch(`/api/users/profile/avatar?avatar=${encodeURIComponent(profile.avatar)}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Update the profile state to remove the avatar
+        setProfile((prevProfile) => ({
+          ...prevProfile,
+          avatar: "", // Clear the avatar in the state
+        }));
+        toast.success("Profile picture removed successfully");
+      } else {
+        // Even if Cloudinary deletion fails, update the UI
+        if (data.error === "Failed to delete avatar from Cloudinary") {
+          setProfile((prevProfile) => ({
+            ...prevProfile,
+            avatar: "", // Clear the avatar in the state
+          }));
+          toast.warning("Profile picture removed from database, but Cloudinary deletion failed.");
+        } else {
+          toast.error(data.error || "Failed to remove profile picture");
+        }
+      }
+    } catch (error) {
+      console.error("Error removing avatar:", error);
+      toast.error("Failed to remove profile picture. Please try again.");
+    }
+  };
+  
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -185,28 +292,65 @@ export default function ProfilePage() {
         <Card className="col-span-1 border shadow-sm">
           <CardContent className="pt-6 flex flex-col items-center">
             <Avatar className="h-24 w-24 mb-4 border-2 border-primary/10">
-              <AvatarImage
-                src={`https://api.dicebear.com/7.x/initials/svg?seed=${profile.name}`}
-              />
+              {profile.avatar ? (
+                <AvatarImage src={profile.avatar} />
+              ) : (
+                <AvatarImage
+                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${profile.name}`}
+                />
+              )}
               <AvatarFallback className="bg-primary/10 text-primary">
                 {profile.name ? getInitials(profile.name) : "U"}
               </AvatarFallback>
             </Avatar>
             <h2 className="text-xl font-semibold">{profile.name}</h2>
-            <p className="text-sm text-muted-foreground mb-4">{profile.email}</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              {profile.email}
+            </p>
             <div className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 bg-primary/10 text-primary rounded-full mb-4">
               <Shield className="h-3 w-3" />
               {formatRoleName(session?.user?.role || "")}
             </div>
-            
+
+            {profile.avatar ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={handleRemoveAvatar}
+              >
+                <Trash className="h-4 w-4 mr-2" /> Remove Profile Picture
+              </Button>
+            ) : (
+              <div className="w-full">
+                <input
+                  type="file"
+                  id="avatar-upload"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleUpload} // Trigger the upload function when a file is selected
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() =>
+                    document.getElementById("avatar-upload")?.click()
+                  } // Programmatically open the file input
+                >
+                  <Upload className="h-4 w-4 mr-2" /> Upload Profile Picture
+                </Button>
+              </div>
+            )}
+
             <Separator className="my-4 w-full" />
-            
+
             <div className="w-full space-y-4 mt-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Account Status:</span>
                 <span className="font-medium text-green-600">Active</span>
               </div>
-              
+
               <Button asChild variant="outline" size="sm" className="w-full">
                 <Link href="/dashboard/settings/reset-password">
                   Change Password
@@ -219,7 +363,9 @@ export default function ProfilePage() {
         <Card className="col-span-2 border shadow-sm">
           <CardHeader>
             <CardTitle>Personal Information</CardTitle>
-            <CardDescription>Update your personal details and contact information</CardDescription>
+            <CardDescription>
+              Update your personal details and contact information
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {updateSuccess && (
@@ -231,9 +377,12 @@ export default function ProfilePage() {
                 </AlertDescription>
               </Alert>
             )}
-            
+
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 <FormField
                   control={form.control}
                   name="name"
@@ -242,10 +391,7 @@ export default function ProfilePage() {
                       <FormLabel>Full Name</FormLabel>
                       <div className="relative">
                         <FormControl>
-                          <Input 
-                            {...field} 
-                            className="pl-9"
-                          />
+                          <Input {...field} className="pl-9" />
                         </FormControl>
                         <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       </div>
@@ -275,7 +421,8 @@ export default function ProfilePage() {
                       </div>
                       {session?.user?.role !== "ADMIN" && (
                         <FormDescription>
-                          Only administrators can change email addresses. Contact your administrator for assistance.
+                          Only administrators can change email addresses.
+                          Contact your administrator for assistance.
                         </FormDescription>
                       )}
                       <FormMessage />
@@ -291,8 +438,8 @@ export default function ProfilePage() {
                       <FormLabel>Phone Number</FormLabel>
                       <div className="relative">
                         <FormControl>
-                          <Input 
-                            {...field} 
+                          <Input
+                            {...field}
                             className="pl-9"
                             placeholder="+91xxxxxxxxxx"
                           />
@@ -300,7 +447,9 @@ export default function ProfilePage() {
                         <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       </div>
                       <FormDescription>
-                      Don&apos;t forget to add your mobile number with <strong>+91</strong> to receive notifications on WhatsApp.
+                        Don't forget to add your mobile number with{" "}
+                        <strong>+91</strong> to receive notifications on
+                        WhatsApp.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -308,13 +457,11 @@ export default function ProfilePage() {
                 />
 
                 <div className="flex justify-end pt-4">
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                  >
+                  <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                        Saving...
                       </>
                     ) : (
                       <>
@@ -330,7 +477,8 @@ export default function ProfilePage() {
             <div className="flex items-start w-full">
               <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 mr-2" />
               <p className="text-xs text-muted-foreground">
-                Your profile information is visible to administrators and may be shared with team members as needed for collaboration. Changes will be applied the next time you&apos;re online
+                Your profile information is visible to administrators and may be
+                shared with team members as needed for collaboration.
               </p>
             </div>
           </CardFooter>

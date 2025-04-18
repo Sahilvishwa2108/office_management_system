@@ -168,3 +168,40 @@ export async function DELETE(
     );
   }
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const clientId = params.id;
+    const body = await request.json();
+    const { entryId, pinned } = body;
+
+    if (!entryId || typeof pinned !== "boolean") {
+      return NextResponse.json(
+        { error: "Entry ID and pinned status are required" },
+        { status: 400 }
+      );
+    }
+
+    // Update the pinned status
+    const updatedEntry = await prisma.clientHistory.update({
+      where: { id: entryId },
+      data: { pinned },
+    });
+
+    return NextResponse.json({ updatedEntry });
+  } catch (error) {
+    console.error("Error updating pinned status:", error);
+    return NextResponse.json(
+      { error: "Failed to update pinned status" },
+      { status: 500 }
+    );
+  }
+}

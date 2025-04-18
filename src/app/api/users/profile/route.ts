@@ -47,6 +47,7 @@ export async function GET() {
       email: user.email,
       phone: user.phone,
       role: user.role,
+      avatar: user.avatar,
       isActive: user.isActive,
       managedClients: user.managedClients,
       assignedTasks: user.assignedTasks,
