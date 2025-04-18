@@ -143,7 +143,11 @@ export async function POST(req: NextRequest) {
       )
       .digest("hex");
 
-    return NextResponse.json({ signature });
+    return NextResponse.json({
+      signature,
+      apiKey: process.env.CLOUDINARY_API_KEY, // Pass the API key to the client
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME, // Pass the cloud name to the client
+    });
   } catch (error) {
     console.error("Error generating signature:", error);
     return NextResponse.json({ error: "Failed to generate signature" }, { status: 500 });
