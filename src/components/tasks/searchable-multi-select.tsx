@@ -1,12 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "cmdk";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { ChevronsUpDown, Filter, X } from "lucide-react";
 
@@ -37,7 +48,6 @@ export function SearchableMultiSelect({
   className,
 }: SearchableMultiSelectProps) {
   const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [showRoleFilter, setShowRoleFilter] = useState(false);
   
@@ -71,7 +81,7 @@ export function SearchableMultiSelect({
   // Find options matching the selected values
   const selectedOptions = options.filter(option => selected.includes(option.value));
   
-  // Filter options based on search query and role filters
+  // Filter options based on role filters
   const filteredOptions = options.filter(option => {
     // Apply role filter if any roles are selected
     if (selectedRoles.length > 0 && option.role) {
@@ -79,38 +89,8 @@ export function SearchableMultiSelect({
         return false;
       }
     }
-    
-    // If no search query, return all options that passed the role filter
-    const searchLower = searchQuery.toLowerCase().trim();
-    if (!searchLower) return true;
-    
-    // Use a more direct string comparison approach
-    if (option.label && option.label.toLowerCase().includes(searchLower)) {
-      return true;
-    }
-    
-    if (option.email && option.email.toLowerCase().includes(searchLower)) {
-      return true;
-    }
-    
-    if (option.role) {
-      const formattedRole = formatRole(option.role).toLowerCase();
-      if (formattedRole.includes(searchLower)) {
-        return true;
-      }
-    }
-    
-    return false;
+    return true;
   });
-  
-  // Debug logging
-  useEffect(() => {
-    if (searchQuery) {
-      console.log("Current search query:", searchQuery);
-      console.log("Filtered options count:", filteredOptions.length);
-      console.log("First few filtered options:", filteredOptions.slice(0, 3));
-    }
-  }, [searchQuery, filteredOptions]);
   
   // Toggle selection
   const toggleOption = (value: string) => {
@@ -165,7 +145,6 @@ export function SearchableMultiSelect({
                   <AvatarFallback className="text-[10px]">{getInitials(option.label)}</AvatarFallback>
                 </Avatar>
                 <span>{option.label}</span>
-                {/* Use span instead of button to avoid nesting issue */}
                 <span
                   onClick={(e) => removeItem(option.value, e)}
                   className="h-4 w-4 p-0 ml-1 cursor-pointer rounded-full hover:bg-gray-200 inline-flex items-center justify-center"
@@ -185,18 +164,9 @@ export function SearchableMultiSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-        <Command shouldFilter={false}> {/* Important: disable built-in filtering */}
+        <Command>
           <div className="flex items-center border-b px-3">
-            <CommandInput
-              placeholder="Search people..."
-              value={searchQuery}
-              onValueChange={(value) => {
-                console.log("Search query changed to:", value);
-                setSearchQuery(value);
-              }}
-              className="h-9 flex-1"
-              autoFocus
-            />
+            <CommandInput placeholder="Search people..." className="h-9 flex-1" autoFocus />
             <Button
               variant="ghost"
               size="icon"
@@ -247,29 +217,30 @@ export function SearchableMultiSelect({
             </div>
           )}
           
-          <CommandList>
+          <CommandList className="max-h-[300px] overflow-y-auto">
             <CommandEmpty>No matching people found.</CommandEmpty>
             <CommandGroup>
               {filteredOptions.map(option => (
                 <CommandItem
                   key={option.value}
-                  value={option.label} // Important: use label for searching
                   onSelect={() => toggleOption(option.value)}
-                  className="flex items-center gap-2"
                 >
-                  <Checkbox
-                    checked={selected.includes(option.value)}
-                    className="mr-2"
-                  />
-                  <Avatar className="h-6 w-6 mr-2">
-                    <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${option.label}`} />
-                    <AvatarFallback>{getInitials(option.label)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col">
-                    <span>{option.label}</span>
-                    {option.role && (
-                      <span className="text-xs text-muted-foreground">{formatRole(option.role)}</span>
-                    )}
+                  <div className="flex items-center gap-2 mr-2">
+                    <Checkbox
+                      checked={selected.includes(option.value)}
+                      className="mr-2"
+                      onCheckedChange={() => toggleOption(option.value)}
+                    />
+                    <Avatar className="h-6 w-6 mr-2">
+                      <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${option.label}`} />
+                      <AvatarFallback>{getInitials(option.label)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span>{option.label}</span>
+                      {option.role && (
+                        <span className="text-xs text-muted-foreground">{formatRole(option.role)}</span>
+                      )}
+                    </div>
                   </div>
                 </CommandItem>
               ))}

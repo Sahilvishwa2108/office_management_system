@@ -42,8 +42,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { TaskPageLayout } from "@/components/layouts/task-page-layout";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, AlertCircle } from "lucide-react";
 import { SearchableMultiSelect } from "@/components/tasks/searchable-multi-select";
+import { SearchableSelect } from "@/components/tasks/searchable-select";
 
 // Update the task form schema to include assignedToIds
 const taskFormSchema = z.object({
@@ -83,6 +84,7 @@ export default function EditTaskPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Initialize form with empty values (will be populated once data is fetched)
   const form = useForm<TaskFormValues>({
@@ -124,6 +126,7 @@ export default function EditTaskPage() {
     const fetchData = async () => {
       try {
         setIsFetching(true);
+        setFetchError(null);
 
         // Fetch task data
         const taskResponse = await axios.get(`/api/tasks/${taskId}`);
@@ -162,8 +165,9 @@ export default function EditTaskPage() {
         });
       } catch (error) {
         console.error("Error fetching data:", error);
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        setFetchError(`Failed to load task data: ${errorMessage}`);
         toast.error("Failed to load task data");
-        router.push("/dashboard/tasks");
       } finally {
         setIsFetching(false);
       }
@@ -198,7 +202,8 @@ export default function EditTaskPage() {
       router.push(`/dashboard/tasks/${taskId}`);
     } catch (error) {
       console.error("Error updating task:", error);
-      toast.error("Failed to update task");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Failed to update task: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -206,10 +211,33 @@ export default function EditTaskPage() {
 
   if (isFetching) {
     return (
-      <TaskPageLayout title="Edit Task" backHref={`/dashboard/tasks/${taskId}`}>
+      <TaskPageLayout title="Edit Task" backHref={`/dashboard/tasks/${taskId}`} maxWidth="max-w-3xl">
         <div className="flex justify-center items-center h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading task details...</p>
+          </div>
         </div>
+      </TaskPageLayout>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <TaskPageLayout title="Error" backHref={`/dashboard/tasks/${taskId}`} maxWidth="max-w-3xl">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center pt-6 pb-6 space-y-4">
+            <AlertCircle className="h-12 w-12 text-destructive" />
+            <h3 className="text-lg font-medium">Failed to load task</h3>
+            <p className="text-muted-foreground text-center">{fetchError}</p>
+            <Button 
+              onClick={() => router.push(`/dashboard/tasks/${taskId}`)}
+              className="mt-2"
+            >
+              Back to Task Details
+            </Button>
+          </CardContent>
+        </Card>
       </TaskPageLayout>
     );
   }
@@ -254,9 +282,18 @@ export default function EditTaskPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="low" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                            <span>Low</span>
+                          </SelectItem>
+                          <SelectItem value="medium" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
+                            <span>Medium</span>
+                          </SelectItem>
+                          <SelectItem value="high" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                            <span>High</span>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -277,11 +314,26 @@ export default function EditTaskPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="in-progress">In Progress</SelectItem>
-                          <SelectItem value="review">Review</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="pending" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-gray-500"></span>
+                            <span>Pending</span>
+                          </SelectItem>
+                          <SelectItem value="in-progress" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                            <span>In Progress</span>
+                          </SelectItem>
+                          <SelectItem value="review" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-purple-500"></span>
+                            <span>Review</span>
+                          </SelectItem>
+                          <SelectItem value="completed" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                            <span>Completed</span>
+                          </SelectItem>
+                          <SelectItem value="cancelled" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                            <span>Cancelled</span>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -315,30 +367,29 @@ export default function EditTaskPage() {
                   )}
                 />
 
-                <FormField
+                                <FormField
                   control={form.control}
                   name="clientId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Client (Optional)</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value || "null"}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select client" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="null">No Client</SelectItem>
-                          {clients.map(client => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.companyName || client.contactPerson}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SearchableSelect
+                          options={[
+                            { value: "null", label: "No Client" },
+                            ...clients.map(client => ({
+                              value: client.id,
+                              label: client.companyName 
+                                ? `${client.companyName} (${client.contactPerson})` 
+                                : client.contactPerson
+                            }))
+                          ]}
+                          selected={field.value || "null"}
+                          onChange={field.onChange}
+                          placeholder="Search for a client"
+                          className="transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

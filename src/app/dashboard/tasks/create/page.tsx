@@ -35,6 +35,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { SearchableMultiSelect } from "@/components/tasks/searchable-multi-select";
+import { SearchableSelect } from "@/components/tasks/searchable-select";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Update the task form schema
@@ -239,75 +241,107 @@ export default function CreateTaskPage() {
       </TaskPageLayout>
     );
   }
-
   return (
     <TaskPageLayout title="Create New Task" backHref="/dashboard/tasks" maxWidth="max-w-3xl">
-      <Card>
-        <CardHeader>
-          <CardTitle>Task Details</CardTitle>
+      <Card className="shadow-md border-t-4 border-t-primary">
+        <CardHeader className="bg-muted/30">
+          <CardTitle className="flex items-center gap-2 text-primary">
+            <Plus className="h-5 w-5" />
+            Create New Task
+          </CardTitle>
           <CardDescription>
-            Create a new task and assign it to team members
+            Fill in the details to create a new task and assign it to team members
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Task Title with animation on focus */}
               <FormField
                 control={form.control}
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Task Title*</FormLabel>
+                    <FormLabel className="text-primary-foreground/90 font-medium">Task Title*</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter task title" {...field} />
+                      <Input 
+                        placeholder="Enter task title" 
+                        {...field} 
+                        className="transition-all focus:border-primary focus:ring-2 focus:ring-primary/20" 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
+  
+              {/* Priority and Status with custom styled selects */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="priority"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Priority</FormLabel>
+                      <FormLabel className="text-primary-foreground/90 font-medium">Priority</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="transition-all focus:border-primary focus:ring-2 focus:ring-primary/20">
                             <SelectValue placeholder="Select priority" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="low" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                            <span>Low</span>
+                          </SelectItem>
+                          <SelectItem value="medium" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
+                            <span>Medium</span>
+                          </SelectItem>
+                          <SelectItem value="high" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                            <span>High</span>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
+  
                 <FormField
                   control={form.control}
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <FormLabel className="text-primary-foreground/90 font-medium">Status</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="transition-all focus:border-primary focus:ring-2 focus:ring-primary/20">
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="in-progress">In Progress</SelectItem>
-                          <SelectItem value="review">Review</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="pending" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-gray-500"></span>
+                            <span>Pending</span>
+                          </SelectItem>
+                          <SelectItem value="in-progress" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                            <span>In Progress</span>
+                          </SelectItem>
+                          <SelectItem value="review" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-purple-500"></span>
+                            <span>Review</span>
+                          </SelectItem>
+                          <SelectItem value="completed" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                            <span>Completed</span>
+                          </SelectItem>
+                          <SelectItem value="cancelled" className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                            <span>Cancelled</span>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -315,51 +349,46 @@ export default function CreateTaskPage() {
                   )}
                 />
               </div>
-
+  
+              {/* Client selection and Due Date with improved UI */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="clientId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Client (Optional)</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value || "null"}
-                        value={field.value || "null"}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select client" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="null">No Client</SelectItem>
-                          {clients.map(client => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.companyName || client.contactPerson}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormLabel className="text-primary-foreground/90 font-medium">Client (Optional)</FormLabel>
+                      <FormControl>
+                        {/* Replace with SearchableSelect */}
+                        <SearchableSelect
+                          options={clients.map(client => ({
+                            value: client.id,
+                            label: client.companyName || client.contactPerson
+                          }))}
+                          selected={field.value ?? null}
+                          onChange={field.onChange}
+                          placeholder="Select client"
+                          className="transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
+  
                 <FormField
                   control={form.control}
                   name="dueDate"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Due Date (Optional)</FormLabel>
+                      <FormLabel className="text-primary-foreground/90 font-medium">Due Date (Optional)</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
-                              variant={"outline"}
+                              variant="outline"
                               className={cn(
-                                "pl-3 text-left font-normal",
+                                "pl-3 text-left font-normal w-full transition-all focus:border-primary focus:ring-2 focus:ring-primary/20",
                                 !field.value && "text-muted-foreground"
                               )}
                             >
@@ -372,18 +401,20 @@ export default function CreateTaskPage() {
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
+                        <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
                             selected={field.value || undefined}
                             onSelect={field.onChange}
                             initialFocus
+                            disabled={(date) => date < new Date(Date.now() - 86400000)}
+                            className="rounded-md border"
                           />
-                          <div className="p-3 border-t border-border">
+                          <div className="p-3 border-t border-border flex justify-end">
                             <Button
                               variant="ghost"
-                              className="w-full"
                               onClick={() => field.onChange(null)}
+                              className="h-8"
                             >
                               Clear
                             </Button>
@@ -395,13 +426,14 @@ export default function CreateTaskPage() {
                   )}
                 />
               </div>
-
+  
+              {/* Team member assignment with improved UI */}
               <FormField
                 control={form.control}
                 name="assignedToIds"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Assign To</FormLabel>
+                    <FormLabel className="text-primary-foreground/90 font-medium">Assign To</FormLabel>
                     <FormControl>
                       <SearchableMultiSelect
                         options={users.map(user => ({
@@ -413,23 +445,25 @@ export default function CreateTaskPage() {
                         selected={field.value}
                         onChange={field.onChange}
                         placeholder="Select team members"
+                        className="transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
+  
+              {/* Description with improved UI */}
               <FormField
                 control={form.control}
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormLabel className="text-primary-foreground/90 font-medium">Description (Optional)</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Enter task description"
-                        className="min-h-[120px] resize-none"
+                        className="min-h-[120px] resize-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                         {...field}
                       />
                     </FormControl>
@@ -437,16 +471,22 @@ export default function CreateTaskPage() {
                   </FormItem>
                 )}
               />
-
+  
+              {/* Buttons with hover effects */}
               <div className="flex justify-end gap-3 pt-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
+                  className="transition-colors hover:bg-destructive/10"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isLoading}>
+                <Button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="transition-transform hover:translate-y-[-2px]"
+                >
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

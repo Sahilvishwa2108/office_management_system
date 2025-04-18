@@ -59,13 +59,14 @@ export async function PATCH(
 
     // Enhanced permission check to account for multiple assignees
     if (currentUser.role === "PARTNER") {
-      // Check if partner is either the main assignee or in the assignees list
+      // Check if partner is either the main assignee, in the assignees list, or created the task
       const isAssigned = task.assignedToId === currentUser.id || 
-                         task.assignees.some(a => a.userId === currentUser.id);
+                         task.assignees.some(a => a.userId === currentUser.id) ||
+                         task.assignedById === currentUser.id;  // Add this check
       
       if (!isAssigned) {
         return NextResponse.json(
-          { error: "You can only reassign tasks that were assigned to you" },
+          { error: "You can only reassign tasks that were assigned to you or that you created" },
           { status: 403 }
         );
       }
