@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -44,6 +43,22 @@ export default function LoginPage() {
         console.error("Error parsing URL parameters:", error);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    console.log("Login page loaded");
+    
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session');
+        const data = await response.json();
+        console.log("Session data:", data);
+      } catch (error) {
+        console.error("Session check error:", error);
+      }
+    };
+    
+    checkSession();
   }, []);
 
   const form = useForm<z.infer<typeof loginSchema>>({

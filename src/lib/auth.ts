@@ -5,10 +5,25 @@ import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-logger";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+// Get your actual domain from the URL
+const getVercelDomain = () => {
+  if (!process.env.NEXTAUTH_URL) return undefined;
+  try {
+    const url = new URL(process.env.NEXTAUTH_URL);
+    // Only return the domain for production
+    return isProduction ? url.hostname : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
     signIn: "/login",
@@ -79,7 +94,8 @@ export const authOptions: NextAuthOptions = {
 
         return token;
       } catch (error) {
-        console.error("Error checking user status during token refresh:", error);
+        console.error("Database error in JWT callback:", error);
+        // Return token anyway to prevent login blocking
         return token;
       }
     },
@@ -135,6 +151,19 @@ export const authOptions: NextAuthOptions = {
           console.error("Failed to log logout activity:", error);
         }
       }
+    },
+  },
+  cookies: {
+    sessionToken: {
+      name: `${isProduction ? '__Secure-' : ''}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: isProduction,
+        // This is the critical fix - use your actual domain, not .vercel.app
+        domain: getVercelDomain()
+      },
     },
   },
   debug: process.env.NODE_ENV === "development",
