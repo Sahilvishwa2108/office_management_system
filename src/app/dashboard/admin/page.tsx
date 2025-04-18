@@ -301,18 +301,6 @@ export default function AdminDashboard() {
                         <Plus className="h-4 w-4 ml-2" />
                       </Button>
                     </Link>
-                    <Link href="/dashboard/admin/documents">
-                      <Button variant="outline" className="w-full justify-between">
-                        Document Repository
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    </Link>
-                    <Link href="/dashboard/settings">
-                      <Button variant="outline" className="w-full justify-between">
-                        System Settings
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    </Link>
                   </CardContent>
                 </Card>
               </div>
@@ -371,15 +359,9 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
                 
-                <Card className="col-span-3 lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle>Pending Billing Tasks</CardTitle>
-                    <CardDescription>Tasks ready for billing</CardDescription>
-                  </CardHeader>
-                  <CardContent>
+                <div className="col-span-3 lg:col-span-2">
                     <PendingBillingTasks />
-                  </CardContent>
-                </Card>
+                </div>
               </div>
             </>
           )}
@@ -498,21 +480,18 @@ export default function AdminDashboard() {
 
         {/* ACTIVITIES TAB */}
         <TabsContent value="activities" className="space-y-4">
-          <DashboardCard title="Recent Activity" className="w-full" loading={activeTab === "activities" && loading}>
-            {activeTab === "activities" && (
+          <div className="grid">
+            <DashboardCard title="Recent Activity" className="col-span-4" loading={loading}>
               <ActivityFeed 
-                fetchUrl="/api/activities"
-                loading={false} 
-                showUserInfo={true}
-                showRoleInfo={true}
-                expanded={true}
-                maxHeight="calc(20 * 72px)"
-                limit={20}
+              fetchUrl="/api/activities"
+              loading={loading} 
+              showUserInfo={true}
+              showRoleInfo={true}
               />
-            )}
-          </DashboardCard>
+            </DashboardCard>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
   );
-}
+}      
