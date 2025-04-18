@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation"; // Add useSearchParams import
+import { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -66,11 +66,27 @@ interface DashboardData {
   tasks: Task[];
 }
 
-function AdminDashboardContent() {
+// Main dashboard component
+export default function AdminDashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState("overview");
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        const tab = url.searchParams.get('tab');
+        if (tab && (tab === 'overview' || tab === 'analytics')) {
+          setActiveTab(tab);
+        }
+      } catch (error) {
+        console.error("Error parsing URL parameters:", error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -106,6 +122,17 @@ function AdminDashboardContent() {
     // Clean up interval on component unmount
     return () => clearInterval(intervalId);
   }, []);
+
+  // Update URL when tab changes without using router
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', value);
+      window.history.pushState({}, '', url.toString());
+    }
+  };
 
   // Calculate stats for display
   const stats = dashboardData?.stats || {
@@ -247,7 +274,11 @@ function AdminDashboardContent() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs 
+        value={activeTab} 
+        onValueChange={handleTabChange}
+        className="space-y-4"
+      >
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -571,58 +602,5 @@ function AdminDashboardContent() {
         </TabsContent>
       </Tabs>
     </div>
-  );
-}
-
-// NEW: Separate component for search params handling
-function SearchParamsHandler() {
-  const searchParams = useSearchParams();
-  
-  // Use the params to prevent tree-shaking
-  const tab = searchParams.get('tab');
-  const view = searchParams.get('view');
-  
-  console.log("Search params:", tab, view);
-  
-  return null; // This component doesn't render anything
-}
-
-// Component that wraps the search handler in its own Suspense
-function SearchParamsComponent() {
-  return (
-    <Suspense fallback={null}>
-      <SearchParamsHandler />
-    </Suspense>
-  );
-}
-
-// Updated default export to use both components
-export default function AdminDashboard() {
-  return (
-    <Suspense fallback={
-      <div className="flex flex-col gap-5">
-        {/* Your existing fallback content */}
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-9 w-64 mb-2" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-        
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  {[1, 2, 3, 4].map(i => (
-                    <Card key={i} className="p-6">
-                      <Skeleton className="h-8 w-24 mb-2" />
-                      <Skeleton className="h-4 w-full" />
-                    </Card>
-                  ))}
-                </div>
-        
-        <Skeleton className="h-64 w-full rounded-md" />
-      </div>
-    }>
-      <>
-        <SearchParamsComponent />
-        <AdminDashboardContent />
-      </>
-    </Suspense>
   );
 }

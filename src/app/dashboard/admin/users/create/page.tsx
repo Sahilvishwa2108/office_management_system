@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import { useRouter } from "next/navigation"; // Remove useSearchParams from here
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import dynamic from "next/dynamic";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -31,9 +30,6 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Dynamically import the search wrapper with SSR disabled
-const SearchWrapper = dynamic(() => import("./search-params"), { ssr: false });
-
 // Define the form schema with validation rules
 const userFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -46,12 +42,35 @@ const userFormSchema = z.object({
   ]),
 });
 
-// Create a content component that will use client hooks
-// But does NOT use useSearchParams directly
-function CreateUserContent() {
+// Main component - no more Suspense or dynamic imports
+export default function CreateUserPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [sourceParam, setSourceParam] = useState<string | null>(null);
+  const [returnUrlParam, setReturnUrlParam] = useState<string | null>(null);
+  
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        const source = url.searchParams.get('source');
+        const returnUrl = url.searchParams.get('returnUrl');
+        
+        setSourceParam(source);
+        setReturnUrlParam(returnUrl);
+        
+        // Log to ensure it's used (same as the original code did)
+        console.log("URL parameters:", { source, returnUrl });
+      } catch (error) {
+        console.error("Error parsing URL parameters:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }, []);
 
   // Pre-set default values
   const form = useForm<z.infer<typeof userFormSchema>>({
@@ -70,20 +89,25 @@ function CreateUserContent() {
     setIsSubmitting(true);
 
     try {
-      await axios.post("/api/users", data);
+      // Include the URL parameters in the API request
+      await axios.post("/api/users", {
+        ...data,
+        source: sourceParam,
+        returnUrl: returnUrlParam
+      });
 
       toast.success(`User ${data.name} created successfully!`);
 
       // Reset form
       form.reset();
 
+      // If there's a returnUrl parameter, use it for redirection
+      const redirectTo = returnUrlParam || 
+                        (isAdmin ? "/dashboard/admin/users" : "/dashboard/partner/users");
+
       // Redirect after short delay
       setTimeout(() => {
-        if (isAdmin) {
-          router.push("/dashboard/admin/users");
-        } else {
-          router.push("/dashboard/partner/users");
-        }
+        router.push(redirectTo);
         router.refresh();
       }, 1500);
     } catch (error: unknown) {
@@ -93,6 +117,45 @@ function CreateUserContent() {
       setIsSubmitting(false);
     }
   };
+
+  // Show loading state while checking session
+  if (status === "loading" || isLoading) {
+    return (
+      <div>
+        <div className="mb-6 flex items-center gap-2">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-8 w-56" />
+        </div>
+
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-full mt-2" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Skeleton className="h-4 w-full" />
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -191,51 +254,5 @@ function CreateUserContent() {
         </CardFooter>
       </Card>
     </div>
-  );
-}
-
-// Main component with Suspense boundary
-export default function CreateUserPage() {
-  return (
-    <Suspense fallback={
-      <div>
-        <div className="mb-6 flex items-center gap-2">
-          <Skeleton className="h-8 w-8 rounded-full" />
-          <Skeleton className="h-8 w-56" />
-        </div>
-
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <Skeleton className="h-6 w-40" />
-            <Skeleton className="h-4 w-full mt-2" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <Skeleton className="h-10 w-full" />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Skeleton className="h-4 w-full" />
-          </CardFooter>
-        </Card>
-      </div>
-    }>
-      <>
-        <SearchWrapper />
-        <CreateUserContent />
-      </>
-    </Suspense>
   );
 }

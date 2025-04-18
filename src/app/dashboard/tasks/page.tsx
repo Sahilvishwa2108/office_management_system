@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -343,11 +343,12 @@ const TaskTableRow = ({
   );
 };
 
-function TasksPageContent() {
+// Main component - no more separate content component or Suspense
+export default function TasksPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const searchParams = useSearchParams();
-
+  
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -362,26 +363,83 @@ function TasksPageContent() {
   // Use debounced search for better performance
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  // Use localStorage to remember view preference
+  // Read URL parameters on mount
   useEffect(() => {
-    try {
-      const savedView = localStorage.getItem('taskViewMode');
-      if (savedView === 'table' || savedView === 'card') {
-        setViewMode(savedView);
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        
+        // Get status from URL
+        const statusParam = url.searchParams.get('status');
+        if (statusParam && ["pending", "in-progress", "review", "completed", "cancelled", "all"].includes(statusParam)) {
+          setStatusFilter(statusParam);
+        }
+        
+        // Get search term from URL
+        const searchParam = url.searchParams.get('search');
+        if (searchParam) {
+          setSearchTerm(searchParam);
+        }
+        
+        // Get view mode from URL or localStorage
+        const viewParam = url.searchParams.get('view');
+        if (viewParam === 'table' || viewParam === 'card') {
+          setViewMode(viewParam);
+        } else {
+          try {
+            const savedView = localStorage.getItem('taskViewMode');
+            if (savedView === 'table' || savedView === 'card') {
+              setViewMode(savedView);
+            }
+          } catch (error) {
+            console.error("Error accessing localStorage:", error);
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing URL parameters:", error);
+      } finally {
+        setIsInitialLoad(false);
       }
-    } catch (error) {
-      console.error("Error accessing localStorage:", error);
     }
   }, []);
 
-  // Save view mode preference when it changes
+  // Update URL when filters change
   useEffect(() => {
-    try {
-      localStorage.setItem('taskViewMode', viewMode);
-    } catch (error) {
-      console.error("Error saving to localStorage:", error);
+    if (typeof window !== 'undefined' && !isInitialLoad) {
+      try {
+        const url = new URL(window.location.href);
+        
+        // Update status in URL
+        if (statusFilter !== 'all') {
+          url.searchParams.set('status', statusFilter);
+        } else {
+          url.searchParams.delete('status');
+        }
+        
+        // Update search in URL
+        if (debouncedSearchTerm) {
+          url.searchParams.set('search', debouncedSearchTerm);
+        } else {
+          url.searchParams.delete('search');
+        }
+        
+        // Update view mode in URL
+        url.searchParams.set('view', viewMode);
+        
+        // Update URL without page reload
+        window.history.replaceState({}, '', url.toString());
+        
+        // Also save view mode to localStorage
+        try {
+          localStorage.setItem('taskViewMode', viewMode);
+        } catch (error) {
+          console.error("Error saving to localStorage:", error);
+        }
+      } catch (error) {
+        console.error("Error updating URL:", error);
+      }
     }
-  }, [viewMode]);
+  }, [statusFilter, debouncedSearchTerm, viewMode, isInitialLoad]);
 
   const fetchTasks = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -413,8 +471,10 @@ function TasksPageContent() {
   }, [statusFilter, debouncedSearchTerm]);
 
   useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+    if (!isInitialLoad) {
+      fetchTasks();
+    }
+  }, [fetchTasks, isInitialLoad]);
 
   // Permission check - memoized
   const canManageTasks = useMemo(() => {
@@ -467,7 +527,7 @@ function TasksPageContent() {
   };
 
   // Loading state
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -779,31 +839,5 @@ function TasksPageContent() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-export default function TasksPage() {
-  return (
-    <Suspense fallback={
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-64 mt-2" />
-          </div>
-          <Skeleton className="h-9 w-32" />
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-full" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
-      </div>
-    }>
-      <TasksPageContent />
-    </Suspense>
   );
 }

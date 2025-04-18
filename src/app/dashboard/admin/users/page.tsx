@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useRouter } from "next/navigation"; // Remove useSearchParams from here
-import dynamic from "next/dynamic";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -37,7 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserCount } from "@/components/dashboard/user-count";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RoleFilter } from "@/components/ui/role-filter";
-import React from "react"; // Make sure React is imported
+import React from "react";
 
 interface User {
   id: string;
@@ -187,8 +186,8 @@ const UserListItem = ({
   );
 };
 
-// Create a separate content component that doesn't use useSearchParams
-function UsersContent() {
+// Main component
+export default function UsersPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
@@ -196,6 +195,28 @@ function UsersContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
+
+  // Check for URL parameters only on client side in useEffect
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        const role = url.searchParams.get('role');
+        const view = url.searchParams.get('view');
+        
+        // Apply URL parameters if present
+        if (role) {
+          setSelectedRoles([role]);
+        }
+        
+        if (view === 'table' || view === 'card') {
+          setViewMode(view);
+        }
+      } catch (error) {
+        console.error("Error parsing URL parameters:", error);
+      }
+    }
+  }, []);
 
   // Load users - excluding clients and current user
   const loadUsers = useCallback(async () => {
@@ -521,41 +542,5 @@ function UsersContent() {
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-// Dynamically import the search params component with SSR disabled
-const SearchParamsHandler = dynamic(() => import("./search-params"), { 
-  ssr: false 
-});
-
-// Main component with Suspense boundary
-export default function UsersPage() {
-  return (
-    <Suspense fallback={
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-64 mt-2" />
-          </div>
-          <Skeleton className="h-10 w-32" />
-        </div>
-        <Skeleton className="h-40 w-full" />
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-7 w-28" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
-      </div>
-    }>
-      <>
-        <SearchParamsHandler />
-        <UsersContent />
-      </>
-    </Suspense>
   );
 }

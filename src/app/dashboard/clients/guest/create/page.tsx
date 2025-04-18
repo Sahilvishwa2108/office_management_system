@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import { useRouter } from "next/navigation"; // Remove useSearchParams
-import dynamic from "next/dynamic";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -39,11 +38,6 @@ import {
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Dynamically import the search params component with SSR disabled
-const SearchParamsComponent = dynamic(() => import("./search-params"), { 
-  ssr: false 
-});
-
 // Schema for guest client
 const guestClientFormSchema = z.object({
   contactPerson: z.string().min(2, "Contact person name is required"),
@@ -60,10 +54,35 @@ const guestClientFormSchema = z.object({
 
 type GuestClientFormValues = z.infer<typeof guestClientFormSchema>;
 
-// Base component that contains all functionality but doesn't use useSearchParams
-function CreateGuestClientContent() {
+// Single, simplified component - no more nested components or Suspense
+export default function CreateGuestClientPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [referralParam, setReferralParam] = useState<string | null>(null);
+  const [sourceParam, setSourceParam] = useState<string | null>(null);
+  
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        const referral = url.searchParams.get('referral');
+        const source = url.searchParams.get('source');
+        
+        setReferralParam(referral);
+        setSourceParam(source);
+        
+        // Log parameters (for compatibility with original code)
+        console.log("Using search params:", { referral, source });
+      } catch (error) {
+        console.error("Error parsing URL parameters:", error);
+      } finally {
+        // Set loading to false when done
+        setIsLoading(false);
+      }
+    }
+  }, []);
 
   // Set default expiry date to 3 months from now
   const defaultExpiryDate = new Date();
@@ -95,10 +114,13 @@ function CreateGuestClientContent() {
     setIsSubmitting(true);
 
     try {
+      // Include URL parameters in the API request
       await axios.post("/api/clients", {
         ...data,
         isGuest: true, // Explicitly mark as guest client
-        accessExpiry: data.accessExpiry.toISOString()
+        accessExpiry: data.accessExpiry.toISOString(),
+        referral: referralParam,
+        source: sourceParam
       });
 
       toast.success(`Guest client ${data.contactPerson} created successfully!`);
@@ -119,6 +141,67 @@ function CreateGuestClientContent() {
     }
   };
 
+  // Show loading skeleton when parameters are being read
+  if (isLoading) {
+    return (
+      <div>
+        <div className="mb-6 flex items-center gap-2">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-8 w-56" />
+        </div>
+        
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <Skeleton className="h-6 w-48 mb-2" />
+            <Skeleton className="h-4 w-full" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-24 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-40 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="flex justify-end gap-3">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-36" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="mb-6 flex items-center gap-2">
@@ -135,6 +218,7 @@ function CreateGuestClientContent() {
           <CardTitle>Guest Client Information</CardTitle>
           <CardDescription>
             Create a new temporary guest client with limited-time access
+            {sourceParam && <span className="block mt-1 text-xs">Source: {sourceParam}</span>}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -321,78 +405,12 @@ function CreateGuestClientContent() {
             </form>
           </Form>
         </CardContent>
+        <CardFooter className="bg-muted/30 border-t">
+          <p className="text-sm text-muted-foreground w-full text-center">
+            Guest clients have access only for the specified time period.
+          </p>
+        </CardFooter>
       </Card>
     </div>
-  );
-}
-
-// Main component that wraps everything in Suspense
-export default function CreateGuestClientPage() {
-  return (
-    <>
-      {/* SearchParamsComponent must be outside of any additional Suspense boundary */}
-      <SearchParamsComponent />
-      
-      {/* Then wrap your main content in Suspense if needed */}
-      <Suspense fallback={
-        <div>
-          <div className="mb-6 flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-full" />
-            <Skeleton className="h-8 w-56" />
-          </div>
-          
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-              <Skeleton className="h-6 w-48 mb-2" />
-              <Skeleton className="h-4 w-full" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-10 w-full" />
-                  </div>
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-28" />
-                    <Skeleton className="h-10 w-full" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-24 w-full" />
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-40 w-full" />
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-36" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="flex justify-end gap-3">
-                  <Skeleton className="h-10 w-24" />
-                  <Skeleton className="h-10 w-36" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      }>
-        <CreateGuestClientContent />
-      </Suspense>
-    </>
   );
 }

@@ -7,7 +7,6 @@ import { SessionProvider } from "next-auth/react";
 import { NotificationProvider } from "@/components/notifications/notification-system";
 import { Toaster } from "sonner";
 import { LoadingBar } from "@/components/ui/loading-bar";
-import SearchParamsComponent from "@/components/search-params-handler";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,7 +22,6 @@ export default function RootLayout({
           <SessionProvider>
             <NotificationProvider>
                 <LoadingBar />
-                <SearchParamsComponent />
                 {children}
                 <Toaster position="top-right" richColors closeButton />
             </NotificationProvider>

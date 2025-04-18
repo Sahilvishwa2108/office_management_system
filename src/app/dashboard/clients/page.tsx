@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useTransition, Suspense } from "react";
-import { useRouter } from "next/navigation"; // Remove useSearchParams from here
-import dynamic from "next/dynamic";
+import { useState, useEffect, useCallback, useMemo, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -63,14 +62,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { canModifyClient } from "@/lib/permissions";
 
-// Dynamically import the search params component with SSR disabled
-const SearchParamsComponent = dynamic(() => import("./search-params"), { 
-  ssr: false 
-});
-
 interface Client {
   id: string;
-  contactPerson: string; // This is not optional
+  contactPerson: string;
   companyName?: string;
   email?: string;
   phone?: string;
@@ -194,8 +188,7 @@ const ClientListItem = ({
   );
 };
 
-// Create a component that contains all logic but DOES NOT use useSearchParams
-function ClientsContent() {
+export default function ClientsPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const [clients, setClients] = useState<Client[]>([]);
@@ -204,14 +197,7 @@ function ClientsContent() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
-  const [viewMode, setViewMode] = useState<"table" | "card">(() => {
-    // Try to get saved preference from localStorage, default to "card" if not found
-    if (typeof window !== 'undefined') {
-      const savedView = localStorage.getItem('clientViewMode');
-      return savedView === 'table' ? 'table' : 'card';
-    }
-    return 'card';
-  });
+  const [viewMode, setViewMode] = useState<"table" | "card">("card");
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -221,12 +207,79 @@ function ClientsContent() {
   const [dataError, setDataError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
+  // Read URL parameters and apply filters on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        // Get view preference from localStorage first
+        const savedView = localStorage.getItem('clientViewMode');
+        if (savedView === 'table' || savedView === 'card') {
+          setViewMode(savedView);
+        }
+
+        // Then check URL parameters (they override localStorage)
+        const url = new URL(window.location.href);
+        
+        // Get client type filter
+        const filterParam = url.searchParams.get('filter');
+        if (filterParam === 'permanent' || filterParam === 'guest' || filterParam === 'all') {
+          setActiveTab(filterParam);
+        }
+        
+        // Get view mode
+        const viewParam = url.searchParams.get('view');
+        if (viewParam === 'table' || viewParam === 'card') {
+          setViewMode(viewParam);
+        }
+        
+        // Get search term
+        const searchParam = url.searchParams.get('search');
+        if (searchParam) {
+          setSearchTerm(searchParam);
+        }
+        
+        // Get page number
+        const pageParam = url.searchParams.get('page');
+        if (pageParam && !isNaN(parseInt(pageParam))) {
+          setPage(parseInt(pageParam));
+        }
+      } catch (error) {
+        console.error("Error parsing URL parameters:", error);
+      }
+    }
+  }, []);
+
   // Save view mode preference when it changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('clientViewMode', viewMode);
+      
+      // Update URL with current view mode
+      const url = new URL(window.location.href);
+      url.searchParams.set('view', viewMode);
+      
+      // Update URL without full page navigation
+      window.history.replaceState({}, '', url.toString());
     }
   }, [viewMode]);
+
+  // Update URL when tab changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('filter', activeTab);
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [activeTab]);
+
+  // Update URL when page changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('page', page.toString());
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [page]);
 
   // Check if user can modify clients
   const hasWriteAccess = useMemo(() => {
@@ -271,6 +324,17 @@ function ClientsContent() {
     // Use startTransition to avoid blocking UI during filtering
     startTransition(() => {
       setSearchTerm(value);
+      
+      // Update URL with search term
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        if (value) {
+          url.searchParams.set('search', value);
+        } else {
+          url.searchParams.delete('search');
+        }
+        window.history.replaceState({}, '', url.toString());
+      }
     });
   }, []);
 
@@ -749,35 +813,5 @@ function ClientsContent() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-// Main component with explicit Suspense boundary
-export default function ClientsPage() {
-  return (
-    <Suspense fallback={
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-64 mt-2" />
-          </div>
-        </div>
-        <div className="border rounded-lg p-6">
-          <div className="h-6 w-32 bg-muted animate-pulse rounded mb-4" />
-          <div className="h-4 w-64 bg-muted animate-pulse rounded mb-8" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-28 bg-muted animate-pulse rounded" />
-            ))}
-          </div>
-        </div>
-      </div>
-    }>
-      <>
-        <SearchParamsComponent />
-        <ClientsContent />
-      </>
-    </Suspense>
   );
 }

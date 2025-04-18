@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSession, useSearchParams } from "next-auth/react";
+import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,7 @@ interface User {
   name: string;
   email: string;
   role: string;
-  isActive?: boolean; // Changed from isActive?: boolean
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -61,7 +61,8 @@ const partnerRoleConfigs = [
   { role: "BUSINESS_CONSULTANT", label: "Business Consultants", color: "bg-teal-500" },
 ];
 
-function PartnerUsersContent() {
+// Simplified - no Suspense or separate components
+export default function PartnerUsersPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
@@ -69,7 +70,7 @@ function PartnerUsersContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState("all");
-  const searchParams = useSearchParams();
+  const [pageLoading, setPageLoading] = useState(true);
 
   // Format the role for display
   const formatRole = (role: string) => {
@@ -78,6 +79,68 @@ function PartnerUsersContent() {
       .toLowerCase()
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
+
+  // Get URL parameters on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        
+        // Get roles from URL
+        const rolesParam = url.searchParams.get('roles');
+        if (rolesParam) {
+          setSelectedRoles(rolesParam.split(','));
+        }
+        
+        // Get status from URL
+        const statusParam = url.searchParams.get('status');
+        if (statusParam && ['all', 'active', 'inactive'].includes(statusParam)) {
+          setStatusFilter(statusParam);
+        }
+        
+        // Get search term from URL
+        const searchParam = url.searchParams.get('search');
+        if (searchParam) {
+          setSearchTerm(searchParam);
+        }
+      } catch (error) {
+        console.error("Error parsing URL parameters:", error);
+      } finally {
+        setPageLoading(false);
+      }
+    }
+  }, []);
+
+  // Update URL when filters change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !pageLoading) {
+      const url = new URL(window.location.href);
+      
+      // Update roles in URL
+      if (selectedRoles.length > 0) {
+        url.searchParams.set('roles', selectedRoles.join(','));
+      } else {
+        url.searchParams.delete('roles');
+      }
+      
+      // Update status in URL
+      if (statusFilter !== 'all') {
+        url.searchParams.set('status', statusFilter);
+      } else {
+        url.searchParams.delete('status');
+      }
+      
+      // Update search in URL
+      if (searchTerm) {
+        url.searchParams.set('search', searchTerm);
+      } else {
+        url.searchParams.delete('search');
+      }
+      
+      // Update URL without page reload
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [selectedRoles, statusFilter, searchTerm, pageLoading]);
 
   // Wrap loadUsers in useCallback
   const loadUsers = useCallback(async () => {
@@ -109,18 +172,16 @@ function PartnerUsersContent() {
 
   // Initial load
   useEffect(() => {
-    loadUsers();
-  }, [selectedRoles, statusFilter]);
-
-  useEffect(() => {
-    loadUsers();
-  }, [loadUsers]); // Add missing dependency
+    if (!pageLoading) {
+      loadUsers();
+    }
+  }, [loadUsers, pageLoading]);
 
   useEffect(() => {
     if (!session) {
       router.push("/login");
     }
-  }, [router, session]); // Add missing dependencies
+  }, [router, session]);
 
   // Filter users based on search term
   const filteredUsers = users.filter(
@@ -128,6 +189,11 @@ function PartnerUsersContent() {
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Handle search input with URL update
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
 
   // Clear filters
   const clearFilters = () => {
@@ -141,6 +207,34 @@ function PartnerUsersContent() {
     { value: "BUSINESS_EXECUTIVE", label: "Business Executive" },
     { value: "BUSINESS_CONSULTANT", label: "Business Consultant" },
   ];
+
+  // Show loading skeleton during initial page load
+  if (pageLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Skeleton className="h-40 w-full" />
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-10 w-full" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {Array(5).fill(0).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -179,7 +273,7 @@ function PartnerUsersContent() {
                 placeholder="Search by name or email..."
                 className="pl-8"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
               />
             </div>
 
@@ -294,36 +388,5 @@ function PartnerUsersContent() {
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-export default function PartnerUsersPage() {
-  return (
-    <Suspense fallback={
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-64 mt-2" />
-          </div>
-          <Skeleton className="h-10 w-32" />
-        </div>
-        <Skeleton className="h-40 w-full" />
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-10 w-full" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {Array(5).fill(0).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    }>
-      <PartnerUsersContent />
-    </Suspense>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -290,9 +290,8 @@ const ClientTableRow = ({
   );
 };
 
-// Create a separate component that contains all the implementation
-// BUT does NOT use useSearchParams
-function ClientsContent() {
+// Main component with loading skeleton
+export default function ClientsPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const [clients, setClients] = useState<Client[]>([]);
@@ -827,49 +826,5 @@ function ClientsContent() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-// Create a thin wrapper that ONLY uses useSearchParams
-function ClientsWithSearchParams() {
-  // This component ONLY uses the useSearchParams hook 
-  // and passes any necessary data to ClientsContent
-  const searchParams = useSearchParams();
-  
-  // Make sure to use searchParams so it's not tree-shaken
-  const filterParam = searchParams.get("filter");
-  const typeParam = searchParams.get("type");
-  
-  return <ClientsContent />;
-}
-
-// Main component with explicit Suspense boundary
-export default function ClientsPage() {
-  return (
-    <Suspense fallback={
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-64 mt-2" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-9 w-32" />
-            <Skeleton className="h-9 w-32" />
-          </div>
-        </div>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <Skeleton className="h-10 w-full" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
-      </div>
-    }>
-      <ClientsWithSearchParams />
-    </Suspense>
   );
 }

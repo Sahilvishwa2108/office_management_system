@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter } from "next/navigation"; // Remove useSearchParams
-import dynamic from "next/dynamic"; // Add dynamic import
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -35,12 +34,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { canModifyClient } from "@/lib/permissions";
 import { useSession } from "next-auth/react";
-import { Skeleton } from "@/components/ui/skeleton";
-
-// Dynamically import the search params component
-const SearchParamsComponent = dynamic(() => import("./search-params"), { 
-  ssr: false 
-});
 
 // Schema for permanent client
 const clientFormSchema = z.object({
@@ -55,12 +48,36 @@ const clientFormSchema = z.object({
 
 type ClientFormValues = z.infer<typeof clientFormSchema>;
 
-// Keep your ClientFormContent component the same
-function ClientFormContent() {
+export default function ClientCreatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [sourceParam, setSourceParam] = useState<string | null>(null);
+  const [referrerParam, setReferrerParam] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   const router = useRouter();
   const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        const source = url.searchParams.get('source');
+        const referrer = url.searchParams.get('referrer');
+        
+        setSourceParam(source);
+        setReferrerParam(referrer);
+        
+        // Log the parameters if needed (same as the original code did)
+        console.log('Source:', source, 'Referrer:', referrer);
+      } catch (error) {
+        console.error("Error parsing URL parameters:", error);
+      } finally {
+        // Set loading to false regardless of outcome
+        setIsLoading(false);
+      }
+    }
+  }, []);
 
   // Check for permissions when component mounts
   useEffect(() => {
@@ -72,12 +89,12 @@ function ClientFormContent() {
   }, [session, status, router]);
 
   // Prevent rendering the form for non-admin users
-  if (status === "loading") {
+  if (status === "loading" || isLoading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Checking permissions...</p>
+          <p className="text-sm text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -113,9 +130,12 @@ function ClientFormContent() {
     setSuccessMessage(null);
 
     try {
+      // Include source and referrer from URL in the API request if available
       await axios.post("/api/clients", {
         ...data,
-        isGuest: false // Explicitly mark as permanent client
+        isGuest: false, // Explicitly mark as permanent client
+        source: sourceParam,
+        referrer: referrerParam
       });
 
       toast.success(`Client ${data.contactPerson} created successfully!`);
@@ -357,79 +377,5 @@ function ClientFormContent() {
         </CardFooter>
       </Card>
     </div>
-  );
-}
-
-// Update ClientForm to use the SearchParamsComponent
-function ClientForm() {
-  return (
-    <>
-      <SearchParamsComponent />
-      <ClientFormContent />
-    </>
-  );
-}
-
-// Your Page component stays the same
-export default function Page() {
-  return (
-    <Suspense fallback={
-      <div>
-        <div className="mb-6 flex items-center gap-2">
-          <Skeleton className="h-8 w-8 rounded-full" />
-          <Skeleton className="h-8 w-56" />
-        </div>
-        
-        <Card className="max-w-2xl mx-auto border shadow-sm">
-          <CardHeader>
-            <Skeleton className="h-6 w-48 mb-2" />
-            <Skeleton className="h-4 w-full" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="flex gap-2 mb-4">
-                <Skeleton className="h-10 w-20 flex-1" />
-                <Skeleton className="h-10 w-20 flex-1" />
-              </div>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-10 w-full" />
-                  </div>
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-28" />
-                    <Skeleton className="h-10 w-full" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2 mt-4">
-                <Skeleton className="h-10 w-24" />
-                <Skeleton className="h-10 w-32" />
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="bg-muted/30 border-t flex justify-center">
-            <Skeleton className="h-4 w-full" />
-          </CardFooter>
-        </Card>
-      </div>
-    }>
-      <ClientForm />
-    </Suspense>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -38,9 +38,25 @@ const passwordSchema = z
 
 export default function SetPasswordForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Get token from URL using window.location on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        const urlToken = url.searchParams.get("token");
+        setToken(urlToken);
+      } catch (error) {
+        console.error("Error parsing URL parameters:", error);
+        toast.error("Invalid URL format");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }, []);
 
   const form = useForm<z.infer<typeof passwordSchema>>({
     resolver: zodResolver(passwordSchema),
@@ -49,6 +65,13 @@ export default function SetPasswordForm() {
       confirmPassword: "",
     },
   });
+
+  // Show error if token is missing after loading completes
+  useEffect(() => {
+    if (!isLoading && !token) {
+      toast.error("Invalid or missing token");
+    }
+  }, [token, isLoading]);
 
   const onSubmit = async (data: z.infer<typeof passwordSchema>) => {
     if (!token) {
@@ -72,6 +95,33 @@ export default function SetPasswordForm() {
       setIsSubmitting(false);
     }
   };
+
+  // Show loading indicator while checking for token
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="ml-2">Loading...</span>
+      </div>
+    );
+  }
+
+  // Don't render form if token is missing
+  if (!token) {
+    return (
+      <div className="text-center p-4 border rounded-md bg-destructive/10 text-destructive">
+        <p className="font-medium">Invalid or missing token</p>
+        <p className="text-sm mt-2">Please check your email for a valid password reset link.</p>
+        <Button 
+          className="mt-4" 
+          variant="outline" 
+          onClick={() => router.push("/login")}
+        >
+          Back to Login
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
