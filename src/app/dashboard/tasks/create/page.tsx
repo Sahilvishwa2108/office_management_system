@@ -1,7 +1,8 @@
+
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { SearchableMultiSelect } from "@/components/tasks/searchable-multi-select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Update the task form schema
 const taskFormSchema = z.object({
@@ -73,14 +75,28 @@ interface Client {
   companyName?: string;
 }
 
-function CreateTaskContent() {
+// Single component approach without Suspense
+export default function CreateTaskPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const clientId = searchParams.get("clientId");
+  const [clientIdParam, setClientIdParam] = useState<string | null>(null);
   
   const [users, setUsers] = useState<User[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  
+  // Get URL parameters using window.location on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        const clientId = url.searchParams.get('clientId');
+        setClientIdParam(clientId);
+      } catch (error) {
+        console.error("Error parsing URL parameters:", error);
+      }
+    }
+  }, []);
   
   // Initialize form with updated defaults
   const form = useForm<TaskFormValues>({
@@ -93,13 +109,21 @@ function CreateTaskContent() {
       dueDate: null,
       assignedToIds: [], // Initialize as empty array
       assignedToId: null, // Keep for compatibility
-      clientId: clientId || null,
+      clientId: null, // Will be updated once we have the clientIdParam
     },
   });
+
+  // Update form when clientIdParam changes
+  useEffect(() => {
+    if (clientIdParam) {
+      form.setValue('clientId', clientIdParam);
+    }
+  }, [clientIdParam, form]);
 
   // Load users and clients on component mount
   useEffect(() => {
     const fetchData = async () => {
+      setIsDataLoading(true);
       try {
         // Fetch users (only staff who can be assigned tasks)
         const usersResponse = await axios.get<User[]>('/api/users');
@@ -109,19 +133,16 @@ function CreateTaskContent() {
         
         // Fetch clients
         await fetchClients();
-        
-        // If clientId is provided, set it in the form
-        if (clientId) {
-          form.setValue('clientId', clientId);
-        }
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to load required data');
+      } finally {
+        setIsDataLoading(false);
       }
     };
     
     fetchData();
-  }, [clientId, form]);
+  }, []);
 
   // Fetch clients with proper error handling
   const fetchClients = async () => {
@@ -186,6 +207,38 @@ function CreateTaskContent() {
       setIsLoading(false);
     }
   };
+
+  // Loading state
+  if (isDataLoading) {
+    return (
+      <TaskPageLayout title="Create New Task" backHref="/dashboard/tasks" maxWidth="max-w-3xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>Loading Task Form...</CardTitle>
+            <CardDescription>Please wait</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <Skeleton className="h-10 w-full" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-28 w-full" />
+              <div className="flex justify-end gap-3 pt-4">
+                <Skeleton className="h-10 w-20" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </TaskPageLayout>
+    );
+  }
 
   return (
     <TaskPageLayout title="Create New Task" backHref="/dashboard/tasks" maxWidth="max-w-3xl">
@@ -273,6 +326,7 @@ function CreateTaskContent() {
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value || "null"}
+                        value={field.value || "null"}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -408,40 +462,5 @@ function CreateTaskContent() {
         </CardContent>
       </Card>
     </TaskPageLayout>
-  );
-}
-
-export default function CreateTaskPage() {
-  return (
-    <Suspense fallback={
-      <TaskPageLayout title="Create New Task" backHref="/dashboard/tasks" maxWidth="max-w-3xl">
-        <Card>
-          <CardHeader>
-            <CardTitle>Loading Task Form...</CardTitle>
-            <CardDescription>Please wait</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <Skeleton className="h-10 w-full" />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <Skeleton className="h-28 w-full" />
-              <div className="flex justify-end gap-3 pt-4">
-                <Skeleton className="h-10 w-20" />
-                <Skeleton className="h-10 w-32" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </TaskPageLayout>
-    }>
-      <CreateTaskContent />
-    </Suspense>
   );
 }

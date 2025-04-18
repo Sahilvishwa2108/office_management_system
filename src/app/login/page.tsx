@@ -1,13 +1,13 @@
+
 "use client";
 
-import { useState, Suspense } from "react";
-import { useRouter } from "next/navigation"; // Remove useSearchParams from here
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import axios from "axios";
-import dynamic from "next/dynamic"; // Add this import
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -23,30 +23,28 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import Link from "next/link";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-
-// Dynamically import the search params wrapper with SSR disabled
-const SearchParamsWrapper = dynamic(() => import("./search-params"), { 
-  ssr: false 
-});
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
-// Create a component that doesn't directly use useSearchParams
-function LoginContent() {
+export default function LoginPage() {
   const router = useRouter();
-  const [blocked, setBlocked] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Get blocked parameter from URL without using useSearchParams
-  useState(() => {
-    // Safe way to access URL on client without hooks
-    const url = new URL(window.location.href);
-    setBlocked(url.searchParams.get("blocked"));
-  });
+  // Read URL parameters using window.location
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        setBlocked(url.searchParams.get("blocked") === "true");
+      } catch (error) {
+        console.error("Error parsing URL parameters:", error);
+      }
+    }
+  }, []);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -178,39 +176,5 @@ function LoginContent() {
         </CardFooter>
       </Card>
     </div>
-  );
-}
-
-// Main component with proper structure
-export default function LoginPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <h1 className="text-2xl font-bold">Login</h1>
-            <p className="text-muted-foreground">Loading...</p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <Skeleton className="h-10 w-full" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    }>
-      <>
-        <SearchParamsWrapper />
-        <LoginContent />
-      </>
-    </Suspense>
   );
 }
