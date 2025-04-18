@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useTransition } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
@@ -11,20 +11,13 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Tabs,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +40,8 @@ import {
   Building,
   LayoutGrid,
   LayoutList,
+  Mail,
+  Phone,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -61,6 +56,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { canModifyClient } from "@/lib/permissions";
+import { DataTable } from "@/components/ui/data-table";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface Client {
   id: string;
@@ -76,8 +73,8 @@ interface Client {
   completedTasks: number;
 }
 
-// Client List Item Component
-const ClientListItem = ({ 
+// Client Card Component
+const ClientCard = ({ 
   client, 
   confirmDelete,
   canDelete
@@ -88,8 +85,8 @@ const ClientListItem = ({
 }) => {
   const router = useRouter();
   
-  // Function to handle click on the entire row
-  const handleRowClick = () => {
+  // Function to handle click on the card
+  const handleCardClick = () => {
     router.push(`/dashboard/clients/${client.id}`);
   };
   
@@ -101,56 +98,86 @@ const ClientListItem = ({
   const isExpired = client.isGuest && client.accessExpiry ? 
     isAfter(new Date(), new Date(client.accessExpiry)) : false;
   
+  // Get initials for avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+  };
+  
   return (
-    <div 
-      onClick={handleRowClick}
-      className="p-4 border rounded-lg mb-4 hover:bg-muted/50 cursor-pointer transition-colors"
+    <Card 
+      className="overflow-hidden cursor-pointer hover:shadow-md transition-all border-solid border-gray-200 hover:border-primary/20 flex flex-col h-full group"
+      onClick={handleCardClick}
     >
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{client.contactPerson}</span>
-            {client.isGuest && (
-              <Badge variant={isExpired ? "destructive" : "secondary"} className="text-xs">
-                {isExpired ? "Expired Guest" : "Guest"}
-              </Badge>
-            )}
-            {!client.isGuest && (
-              <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 text-xs">
-                Permanent
-              </Badge>
-            )}
+      <CardHeader className="pb-2 bg-muted/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Avatar className="h-12 w-12 border-2 border-background shadow-sm group-hover:border-primary/20 transition-all">
+              <AvatarImage
+                src={`https://api.dicebear.com/7.x/initials/svg?seed=${client.contactPerson}`}
+                alt={client.contactPerson}
+              />
+              <AvatarFallback>{getInitials(client.contactPerson)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <CardTitle className="text-base line-clamp-1">{client.contactPerson}</CardTitle>
+              {client.companyName && (
+                <CardDescription className="text-xs line-clamp-1">{client.companyName}</CardDescription>
+              )}
+            </div>
           </div>
-          <div className="text-sm text-muted-foreground mt-1">
-            {client.companyName && <span className="mr-3">{client.companyName}</span>}
-            {client.email && <span className="mr-3">{client.email}</span>}
-            {client.phone && <span>{client.phone}</span>}
-            {!client.companyName && !client.email && !client.phone && (
-              <span className="italic">No contact information</span>
-            )}
-          </div>
-          <div className="text-xs mt-2 flex items-center gap-2">
-            <span className="text-muted-foreground">Tasks:</span>
-            <Badge variant="outline" className="text-xs">
-              {client.activeTasks} active
+          
+          {client.isGuest ? (
+            <Badge variant={isExpired ? "destructive" : "secondary"} className="shrink-0">
+              {isExpired ? "Expired" : "Guest"}
             </Badge>
-            <Badge variant="outline" className="text-xs text-muted-foreground">
-              {client.completedTasks} completed
+          ) : (
+            <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 shrink-0">
+              Permanent
             </Badge>
+          )}
+        </div>
+      </CardHeader>
+      
+      <CardContent className="pb-2 flex-grow">
+        <div className="space-y-3 text-sm pt-1">
+          {(client.email || client.phone) && (
+            <div className="space-y-2">
+              {client.email && (
+                <div className="flex items-center text-muted-foreground group-hover:text-foreground/80 transition-colors">
+                  <Mail className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
+                  <span className="truncate">{client.email}</span>
+                </div>
+              )}
+              {client.phone && (
+                <div className="flex items-center text-muted-foreground group-hover:text-foreground/80 transition-colors">
+                  <Phone className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
+                  <span>{client.phone}</span>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <div className="flex justify-between items-center pt-2 border-t border-border/50">
+            <span className="text-xs text-muted-foreground">Tasks:</span>
+            <div className="flex gap-2">
+              <div className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 rounded-full text-xs font-medium">
+                {client.activeTasks} active
+              </div>
+              <div className="bg-gray-50 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400 px-2 py-0.5 rounded-full text-xs font-medium">
+                {client.completedTasks} done
+              </div>
+            </div>
           </div>
         </div>
-        
-        <div 
-          className="flex flex-wrap gap-2"
-          onClick={handleActionClick}
-        >
-          {/* Action buttons */}
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-            className="h-8"
-          >
+      </CardContent>
+      
+      <CardFooter className="border-t pt-3 bg-muted/10" onClick={handleActionClick}>
+        <div className="flex justify-between w-full">
+          <Button variant="ghost" size="sm" className="hover:bg-primary/10" asChild>
             <Link href={`/dashboard/clients/${client.id}`}>
               <Eye className="h-3.5 w-3.5 mr-1" />
               View
@@ -158,37 +185,33 @@ const ClientListItem = ({
           </Button>
           
           {canDelete && (
-            <Button
-              variant="outline"
-              size="sm"
-              asChild
-              className="h-8"
-            >
-              <Link href={`/dashboard/clients/${client.id}/edit`}>
-                <Edit className="h-3.5 w-3.5 mr-1" />
-                Edit
-              </Link>
-            </Button>
-          )}
-          
-          {canDelete && (
-            <Button
-              variant="destructive"
-              size="sm"
-              className="h-8"
-              onClick={() => confirmDelete(client.id)}
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-1" />
-              Delete
-            </Button>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" className="hover:bg-blue-50 hover:text-blue-600" asChild>
+                <Link href={`/dashboard/clients/${client.id}/edit`}>
+                  <Edit className="h-3.5 w-3.5 mr-1" />
+                  Edit
+                </Link>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:bg-red-50 dark:hover:bg-red-950/20"
+                onClick={() => confirmDelete(client.id)}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                Delete
+              </Button>
+            </div>
           )}
         </div>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 };
 
 export default function ClientsPage() {
+  console.log("ClientsPage rendering");
   const router = useRouter();
   const { data: session } = useSession();
   const [clients, setClients] = useState<Client[]>([]);
@@ -205,7 +228,162 @@ export default function ClientsPage() {
   const [totalClients, setTotalClients] = useState(0);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
+
+  // Check if user can modify clients - MOVED UP
+  const hasWriteAccess = useMemo(() => {
+    return canModifyClient(session);
+  }, [session]);
+
+  // Function to confirm delete - MOVED UP
+  const confirmDelete = useCallback((clientId: string) => {
+    setClientToDelete(clientId);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  // Utility functions
+  const getDisplayName = (client: Client): string => {
+    return client?.contactPerson || "Unnamed Client";
+  };
+
+  const isClientExpired = (client: Client) => {
+    if (!client.isGuest || !client.accessExpiry) return false;
+    return isAfter(new Date(), new Date(client.accessExpiry));
+  };
+
+  // NOW define columns after the functions it depends on are defined
+  const columns = useMemo(() => [
+    {
+      header: "Name",
+      accessorKey: "contactPerson",
+      cell: (client: Client) => (
+        <div className="font-medium">{getDisplayName(client)}</div>
+      )
+    },
+    {
+      header: "Company",
+      accessorKey: "companyName",
+      cell: (client: Client) => (
+        <div>
+          {client.companyName || (
+            <span className="text-muted-foreground italic">Not provided</span>
+          )}
+        </div>
+      )
+    },
+    {
+      header: "Contact",
+      accessorKey: "email",
+      cell: (client: Client) => (
+        <div>
+          {client.email || client.phone || (
+            <span className="text-muted-foreground italic">No contact</span>
+          )}
+        </div>
+      )
+    },
+    {
+      header: "Type",
+      accessorKey: "isGuest",
+      cell: (client: Client) => (
+        <div>
+          {client.isGuest ? (
+            <div className="flex flex-col">
+              <Badge className="bg-amber-500 hover:bg-amber-600">Guest</Badge>
+              {client.accessExpiry && (
+                <span
+                  className={`text-xs mt-1 ${
+                    isClientExpired(client)
+                      ? "text-red-500"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {isClientExpired(client)
+                    ? "Expired"
+                    : `Expires: ${format(
+                        new Date(client.accessExpiry),
+                        "MMM d, yyyy"
+                      )}`}
+                </span>
+              )}
+            </div>
+          ) : (
+            <Badge
+              variant="outline"
+              className="bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400"
+            >
+              Permanent
+            </Badge>
+          )}
+        </div>
+      )
+    },
+    {
+      header: "Tasks",
+      accessorKey: "activeTasks",
+      cell: (client: Client) => (
+        <div className="flex flex-col">
+          <span className="text-sm">
+            <span className="font-medium">{client.activeTasks}</span> active
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {client.completedTasks} completed
+          </span>
+        </div>
+      )
+    },
+    {
+      header: "Actions",
+      accessorKey: "actions", // Added accessorKey to fix type error
+      cell: (client: Client) => (
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="sr-only">Open menu</span>
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem asChild>
+                <Link href={`/dashboard/clients/${client.id}`}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Details
+                </Link>
+              </DropdownMenuItem>
+              {hasWriteAccess && (
+                <DropdownMenuItem asChild>
+                  <Link href={`/dashboard/clients/${client.id}/edit`}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Client
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              {hasWriteAccess && (
+                <DropdownMenuItem
+                  className="text-red-600 focus:text-red-600"
+                  onClick={() => confirmDelete(client.id)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Client
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+      className: "text-right"
+    }
+  ], [hasWriteAccess, confirmDelete]); // Remove isClientExpired and getDisplayName from deps since they're now component functions
+
+  // Handle view mode toggle
+  const handleViewModeChange = useCallback((value: string) => {
+    setViewMode(value as "table" | "card");
+  }, []);
 
   // Read URL parameters and apply filters on mount
   useEffect(() => {
@@ -267,8 +445,13 @@ export default function ClientsPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
-      url.searchParams.set('filter', activeTab);
-      window.history.replaceState({}, '', url.toString());
+      
+      // Only set if different to avoid loops
+      const currentFilter = url.searchParams.get('filter');
+      if (currentFilter !== activeTab) {
+        url.searchParams.set('filter', activeTab);
+        window.history.replaceState({}, '', url.toString());
+      }
     }
   }, [activeTab]);
 
@@ -280,16 +463,6 @@ export default function ClientsPage() {
       window.history.replaceState({}, '', url.toString());
     }
   }, [page]);
-
-  // Check if user can modify clients
-  const hasWriteAccess = useMemo(() => {
-    return canModifyClient(session);
-  }, [session]);
-
-  // Handle view mode toggle
-  const handleViewModeChange = useCallback((value: string) => {
-    setViewMode(value as "table" | "card");
-  }, []);
 
   // Memoize expensive computations
   const filteredClients = useMemo(() => {
@@ -320,35 +493,30 @@ export default function ClientsPage() {
 
   // Optimize search handling with transitions
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Use startTransition to avoid blocking UI during filtering
-    startTransition(() => {
-      setSearchTerm(value);
-      
-      // Update URL with search term
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        if (value) {
-          url.searchParams.set('search', value);
-        } else {
-          url.searchParams.delete('search');
-        }
-        window.history.replaceState({}, '', url.toString());
-      }
-    });
+    setSearchTerm(e.target.value);
   }, []);
 
-  // Function to load clients with search and filtering
-  const loadClients = useCallback(async () => {
-    setLoading(true);
-    setDataError(null);
+  // Add this ref at the top of your component
+  const currentRequestRef = useRef<number>(0);
 
+  // Function to load clients with search and filtering
+  const loadClients = useCallback(async (options?: {
+    skipLoading?: boolean;
+    forceRefresh?: boolean;
+  }) => {
+    // Only show loading UI for initial load or forced refreshes
+    if (!options?.skipLoading) {
+      setLoading(true);
+    }
+    
+    // Use a ref to track the latest request to avoid race conditions
+    const requestId = Date.now();
+    currentRequestRef.current = requestId;
+    
+    setDataError(null);
+    
     try {
       let url = `/api/clients?page=${page}&limit=10`;
-
-      if (searchTerm) {
-        url += `&search=${encodeURIComponent(searchTerm)}`;
-      }
 
       if (activeTab === "permanent") {
         url += "&isGuest=false";
@@ -393,9 +561,12 @@ export default function ClientsPage() {
         completedTasks: typeof client.completedTasks === "number" ? client.completedTasks : 0,
       }));
 
-      setClients(processedClients);
-      setTotalPages(response.data.pagination?.pages || 1);
-      setTotalClients(response.data.pagination?.total || processedClients.length);
+      // Only update state if this is still the most recent request
+      if (currentRequestRef.current === requestId) {
+        setClients(processedClients);
+        setTotalPages(response.data.pagination?.pages || 1);
+        setTotalClients(response.data.pagination?.total || processedClients.length);
+      }
     } catch (error: unknown) {
       console.error("Error loading clients:", error);
       const typedError = error as { response?: { data?: { error?: string } } };
@@ -403,20 +574,19 @@ export default function ClientsPage() {
       toast.error(errorMessage);
       setClients([]);
     } finally {
-      setLoading(false);
+      if (currentRequestRef.current === requestId) {
+        setLoading(false);
+      }
     }
-  }, [page, searchTerm, activeTab]);
+  }, [page, activeTab]);
 
-  // Initial load and when dependencies change
+  // Add this effect to load clients when component mounts or dependencies change
   useEffect(() => {
+    console.log("Loading clients effect triggered");
     loadClients();
   }, [loadClients]);
 
-  // Handler for client deletion
-  const confirmDelete = (clientId: string) => {
-    setClientToDelete(clientId);
-    setDeleteDialogOpen(true);
-  };
+  // deleteClient function implementation
 
   const deleteClient = async () => {
     if (!clientToDelete) return;
@@ -436,20 +606,12 @@ export default function ClientsPage() {
     }
   };
 
-  // Check if a client is expired
-  const isClientExpired = (client: Client) => {
-    if (!client.isGuest || !client.accessExpiry) return false;
-    return isAfter(new Date(), new Date(client.accessExpiry));
-  };
-
-  // Get formatted text for display
-  const getDisplayName = (client: Client): string => {
-    // Ensure we have a valid string even if data is inconsistent
-    return client?.contactPerson || "Unnamed Client";
-  };
+  // Note: isClientExpired function is already defined earlier in the component
+  // and is used in the columns definition
 
   // Add proper skeleton state for loading
   if (loading) {
+    console.log("Rendering loading state");
     return (
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -500,7 +662,7 @@ export default function ClientsPage() {
   return (
     <div className="space-y-6">
       {/* Title and action buttons */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Client Management</h1>
           <p className="text-muted-foreground">
@@ -512,17 +674,19 @@ export default function ClientsPage() {
 
         {/* Only show create buttons for admin users */}
         {hasWriteAccess && (
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button asChild>
+          <div className="flex flex-col xs:flex-row gap-2">
+            <Button asChild className="w-full xs:w-auto">
               <Link href="/dashboard/clients/create">
                 <Building className="mr-2 h-4 w-4" />
-                Add Permanent Client
+                <span className="hidden xs:inline">Add Permanent Client</span>
+                <span className="xs:hidden">Add Permanent</span>
               </Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="w-full xs:w-auto">
               <Link href="/dashboard/clients/guest/create">
                 <Plus className="mr-2 h-4 w-4" />
-                Add Guest Client
+                <span className="hidden xs:inline">Add Guest Client</span>
+                <span className="xs:hidden">Add Guest</span>
               </Link>
             </Button>
           </div>
@@ -598,7 +762,7 @@ export default function ClientsPage() {
                 <Users className="h-10 w-10 mx-auto text-muted-foreground opacity-20 mb-2" />
                 <h3 className="text-lg font-medium mb-2">Error loading clients</h3>
                 <p className="text-muted-foreground mb-6">{dataError}</p>
-                <Button onClick={loadClients}>Try Again</Button>
+                <Button onClick={() => loadClients()}>Try Again</Button>
               </div>
             ) : filteredClients.length === 0 ? (
               <div className="text-center py-12 border rounded-md bg-background">
@@ -624,123 +788,17 @@ export default function ClientsPage() {
               </div>
             ) : viewMode === "table" ? (
               // TABLE VIEW
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Tasks</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredClients.map((client) => (
-                      <TableRow key={client.id}>
-                        <TableCell className="font-medium">
-                          {getDisplayName(client)}
-                        </TableCell>
-                        <TableCell>
-                          {client.companyName || (
-                            <span className="text-muted-foreground italic">Not provided</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {client.email || client.phone || (
-                            <span className="text-muted-foreground italic">No contact</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {client.isGuest ? (
-                            <div className="flex flex-col">
-                              <Badge className="bg-amber-500 hover:bg-amber-600">Guest</Badge>
-                              {client.accessExpiry && (
-                                <span
-                                  className={`text-xs mt-1 ${
-                                    isClientExpired(client)
-                                      ? "text-red-500"
-                                      : "text-muted-foreground"
-                                  }`}
-                                >
-                                  {isClientExpired(client)
-                                    ? "Expired"
-                                    : `Expires: ${format(
-                                        new Date(client.accessExpiry),
-                                        "MMM d, yyyy"
-                                      )}`}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400"
-                            >
-                              Permanent
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="text-sm">
-                              <span className="font-medium">{client.activeTasks}</span> active
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {client.completedTasks} completed
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                              >
-                                <span className="sr-only">Open menu</span>
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/clients/${client.id}`}>
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  View Details
-                                </Link>
-                              </DropdownMenuItem>
-                              {hasWriteAccess && (
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/dashboard/clients/${client.id}/edit`}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Edit Client
-                                  </Link>
-                                </DropdownMenuItem>
-                              )}
-                              {hasWriteAccess && (
-                                <DropdownMenuItem
-                                  className="text-red-600 focus:text-red-600"
-                                  onClick={() => confirmDelete(client.id)}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete Client
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <DataTable
+                data={filteredClients}
+                columns={columns}
+                isLoading={loading}
+                keyExtractor={(client) => client.id}
+              />
             ) : (
               // CARD VIEW
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filteredClients.map((client) => (
-                  <ClientListItem 
+                  <ClientCard 
                     key={client.id} 
                     client={client} 
                     confirmDelete={confirmDelete} 
