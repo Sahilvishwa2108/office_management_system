@@ -176,6 +176,15 @@ export default function ProfilePage() {
         ...prevProfile,
         avatar: avatarUrl,
       }));
+
+      // Update the session with the new avatar
+      await update({
+        ...session,
+        user: {
+          ...session?.user,
+          avatar: avatarUrl,
+        },
+      });
   
       toast.success("Profile picture uploaded successfully");
     } catch (error) {
@@ -199,6 +208,16 @@ export default function ProfilePage() {
           ...prevProfile,
           avatar: "", // Clear the avatar in the state
         }));
+
+        // Update the session to remove the avatar
+        await update({
+          ...session,
+          user: {
+            ...session?.user,
+            avatar: null,
+          },
+        });
+
         toast.success("Profile picture removed successfully");
       } else {
         // Even if Cloudinary deletion fails, update the UI

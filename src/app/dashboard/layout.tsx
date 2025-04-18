@@ -301,7 +301,7 @@ export default function DashboardLayout({
                 >
                   <Avatar className="h-9 w-9">
                     <AvatarImage
-                      src={`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
+                      src={session?.user?.avatar ||`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
                       alt={session?.user?.name}
                     />
                     <AvatarFallback>
@@ -442,7 +442,7 @@ export default function DashboardLayout({
                     <div className="flex items-center gap-3 rounded-md p-2">
                       <Avatar className="h-9 w-9">
                         <AvatarImage
-                          src={`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
+                          src={session?.user?.avatar ||`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
                           alt={session?.user?.name}
                         />
                         <AvatarFallback>

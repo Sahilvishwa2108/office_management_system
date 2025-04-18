@@ -107,7 +107,7 @@ export function DashboardHeader() {
                 <Avatar className="h-9 w-9">
                   <AvatarImage
                     src={
-                      session?.user?.image ||
+                      session?.user?.avatar ||
                       `https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`
                     }
                     alt={session?.user?.name || "User"}

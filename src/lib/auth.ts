@@ -43,6 +43,7 @@ export const authOptions: NextAuthOptions = {
         const normalizedEmail = credentials.email.toLowerCase().trim();  
         const user = await prisma.user.findUnique({
           where: { email: normalizedEmail },
+          select: { id: true, name: true, email: true, role: true, avatar: true, isActive: true, password: true }, // Include avatar, isActive, and password
         });
 
         if (!user) {
@@ -65,6 +66,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           role: user.role,
+          avatar: user.avatar,
         };
       },
     }),
@@ -76,13 +78,14 @@ export const authOptions: NextAuthOptions = {
           ...token,
           id: user.id,
           role: user.role,
+          avatar: user.avatar || null,
         };
       }
 
       try {
         const user = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { isActive: true },
+          select: { isActive: true, avatar: true },
         });
 
         if (!user || !user.isActive) {
@@ -92,7 +95,10 @@ export const authOptions: NextAuthOptions = {
           };
         }
 
-        return token;
+        return {
+          ...token,
+          avatar: user.avatar || null,
+        };
       } catch (error) {
         console.error("Database error in JWT callback:", error);
         // Return token anyway to prevent login blocking
@@ -111,6 +117,7 @@ export const authOptions: NextAuthOptions = {
           ...session.user,
           id: token.id as string,
           role: token.role,
+          avatar: token.avatar || null,
         },
       };
     },
