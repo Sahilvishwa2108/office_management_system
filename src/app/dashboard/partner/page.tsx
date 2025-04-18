@@ -19,7 +19,6 @@ import {
 import { StaffCard } from "@/components/dashboard/staff-card";
 import { DashboardCard } from "@/components/ui/dashboard-card";
 import { StatsCard } from "@/components/dashboard/stats-card";
-import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { TaskProgress } from "@/components/dashboard/task-progress";
 import { TaskSummary } from "@/components/dashboard/task-summary";
 import { useRouter } from "next/navigation";
@@ -27,6 +26,7 @@ import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/l
 import { UserCardSkeleton } from "@/components/loading/user-skeleton";
 import { TaskListSkeleton } from "@/components/loading/task-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RecentNotificationsCard } from "@/components/dashboard/recent-notifications-card";
 
 interface PartnerDashboardData {
   stats: {
@@ -278,14 +278,9 @@ function PartnerDashboardContent() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <DashboardCard title="Recent Activity" className="col-span-4" loading={loading}>
-              <ActivityFeed 
-                fetchUrl="/api/activities"
-                loading={loading}
-                showUserInfo={true}
-                showRoleInfo={true}
-              />
-            </DashboardCard>
+            <div className="col-span-4 lg:col-span-4">
+              <RecentNotificationsCard />
+            </div>
 
             <Card className="col-span-3">
               <CardHeader>

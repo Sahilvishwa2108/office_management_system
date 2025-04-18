@@ -22,6 +22,7 @@ import { TaskProgress } from "@/components/dashboard/task-progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/loading/dashboard-skeleton";
 import { useRouter } from "next/navigation";
+import { RecentNotificationsCard } from "@/components/dashboard/recent-notifications-card";
 
 interface JuniorDashboardData {
   stats: {
@@ -302,6 +303,14 @@ function JuniorDashboardContent() {
                     </div>
                   </CardContent>
                 </Card>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  {/* Existing card content */}
+                </Card>
+                
+                <RecentNotificationsCard />
               </div>
             </>
           )}

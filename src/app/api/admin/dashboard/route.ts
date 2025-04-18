@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     // Get the session to check if user is authenticated and has admin role
     const session = await getServerSession(authOptions);
@@ -13,12 +13,98 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only admin can create tasks
-    if (session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Only administrators can create tasks" }, { status: 403 });
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const dataType = searchParams.get('dataType') || 'full';
+
+    // For overview tab, we only need tasks
+    if (dataType === 'overview') {
+      // Fetch only tasks
+      const highPriorityTasks = await prisma.task.findMany({
+        where: { 
+          priority: "high",
+          status: { not: "completed" }
+        },
+        take: 5,
+        orderBy: { dueDate: "asc" },
+        include: {
+          assignedTo: { select: { name: true } }
+        }
+      });
+
+      return NextResponse.json({
+        tasks: highPriorityTasks.map(task => ({
+          id: task.id,
+          title: task.title,
+          status: task.status,
+          priority: task.priority,
+          dueDate: task.dueDate?.toISOString() || null,
+          assignedTo: task.assignedTo
+        }))
+      });
     }
 
-    // Fetch dashboard stats data
+    // For analytics tab, we only need stats
+    if (dataType === 'stats') {
+      const [
+        totalUsers,
+        activeUsers,
+        totalClients,
+        totalTasks,
+        completedTasks,
+        pendingTasks,
+        inProgressTasks,
+        overdueTasks,
+        newUsersThisMonth
+      ] = await Promise.all([
+        prisma.user.count(),
+        prisma.user.count({
+          where: { isActive: true }
+        }),
+        prisma.client.count(),
+        prisma.task.count(),
+        prisma.task.count({
+          where: { status: "completed" }
+        }),
+        prisma.task.count({
+          where: { status: "pending" }
+        }),
+        prisma.task.count({
+          where: { status: "in-progress" }
+        }),
+        prisma.task.count({
+          where: {
+            status: { not: "completed" },
+            dueDate: { lt: new Date() }
+          }
+        }),
+        // Count users created in the last 30 days
+        prisma.user.count({
+          where: {
+            createdAt: {
+              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+            }
+          }
+        })
+      ]);
+
+      return NextResponse.json({
+        stats: {
+          totalUsers,
+          activeUsers,
+          totalClients,
+          totalTasks,
+          completedTasks,
+          pendingTasks,
+          inProgressTasks,
+          overdueTasksCount: overdueTasks,
+          newUsersThisMonth
+        }
+      });
+    }
+
+    // For full data request, return everything
+    // This is the original implementation
     const [
       totalUsers,
       activeUsers,

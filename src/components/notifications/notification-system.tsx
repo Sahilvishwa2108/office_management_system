@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { Bell } from "lucide-react";
@@ -27,7 +27,7 @@ export interface Notification {
   sentById?: string;
   sentByName?: string;
   type?: "info" | "success" | "warning" | "error";
-  taskId?: string; // Added taskId property
+  taskId?: string;
 }
 
 interface NotificationContextProps {
@@ -61,14 +61,23 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastFetched, setLastFetched] = useState<number>(0);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  // Fetch notifications
-  const fetchNotifications = async (): Promise<void> => {
+  // Fetch notifications - stabilize with useCallback
+  const fetchNotifications = useCallback(async (): Promise<void> => {
+    // Prevent multiple near-simultaneous fetches (debounce-like behavior)
+    const now = Date.now();
+    if (now - lastFetched < 5000) {
+      return; // Skip if less than 5 seconds since last fetch
+    }
+    
     try {
       setLoading(true);
       setError(null);
+      setLastFetched(now);
+      
       const response = await axios.get("/api/notifications");
       const data = response.data as { data: Notification[] };
       setNotifications(data.data || []);
@@ -78,10 +87,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } finally {
       setLoading(false);
     }
-  };
+  }, [lastFetched]); // Only depends on lastFetched
 
-  // Mark a notification as read
-  const markAsRead = async (id: string) => {
+  // Mark a notification as read - stabilized with useCallback
+  const markAsRead = useCallback(async (id: string) => {
     try {
       await axios.patch(`/api/notifications/${id}`, { isRead: true });
       setNotifications(prev =>
@@ -93,10 +102,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       console.error("Failed to mark notification as read:", err);
       toast.error("Failed to mark notification as read");
     }
-  };
+  }, []);
 
-  // Clear all notifications
-  const markAllAsRead = async () => {
+  // Clear all notifications - stabilized with useCallback
+  const markAllAsRead = useCallback(async () => {
     try {
       await axios.delete("/api/notifications");
       setNotifications([]); // Clear all notifications
@@ -105,10 +114,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       console.error("Failed to clear notifications:", err);
       toast.error("Failed to clear notifications");
     }
-  };
+  }, []);
 
-  // Delete a notification
-  const deleteNotification = async (id: string) => {
+  // Delete a notification - stabilized with useCallback
+  const deleteNotification = useCallback(async (id: string) => {
     try {
       await axios.delete(`/api/notifications/${id}`);
       setNotifications(prev =>
@@ -119,30 +128,34 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       console.error("Failed to delete notification:", err);
       toast.error("Failed to delete notification");
     }
-  };
+  }, []);
 
   // Initial fetch and polling setup
   useEffect(() => {
+    // Initial fetch
     fetchNotifications();
     
     // Set up polling every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
+    
+    // Cleanup
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchNotifications]); // Safe to include the memoized function
+
+  // Create a stable context value
+  const contextValue = {
+    notifications,
+    unreadCount,
+    loading,
+    error,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    refreshNotifications: fetchNotifications,
+  };
 
   return (
-    <NotificationContext.Provider
-      value={{
-        notifications,
-        unreadCount,
-        loading,
-        error,
-        markAsRead,
-        markAllAsRead,
-        deleteNotification,
-        refreshNotifications: fetchNotifications,
-      }}
-    >
+    <NotificationContext.Provider value={contextValue}>
       {children}
     </NotificationContext.Provider>
   );

@@ -16,8 +16,6 @@ import {
   Plus,
   CheckCircle,
   ClipboardList,
-  CheckSquare,
-  AlertTriangle,
 } from "lucide-react";
 import { OverviewStats } from "@/components/dashboard/overview-stats";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
@@ -27,6 +25,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/loading/dashboard-skeleton";
 import { PendingBillingTasks } from "@/components/admin/pending-billing-tasks";
+import { RecentNotificationsCard } from "@/components/dashboard/recent-notifications-card";
 
 interface Task {
   id: string;
@@ -73,13 +72,14 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
+  const [statsLoaded, setStatsLoaded] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
         const url = new URL(window.location.href);
         const tab = url.searchParams.get('tab');
-        if (tab && (tab === 'overview' || tab === 'analytics')) {
+        if (tab && (tab === 'overview' || tab === 'analytics' || tab === 'activities')) {
           setActiveTab(tab);
         }
       } catch (error) {
@@ -88,40 +88,94 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // Fetch admin dashboard data - only the tasks for the Overview tab
+  const fetchOverviewData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        // Make API call to fetch dashboard data
-        const response = await fetch('/api/admin/dashboard');
-        
-        if (!response.ok) {
-          throw new Error(`Error fetching dashboard data: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setDashboardData(data);
-      } catch (err) {
-        console.error('Failed to fetch dashboard data:', err);
-        setError('Failed to load dashboard data. Please try again later.');
-      } finally {
-        setLoading(false);
+      // Make API call to fetch dashboard data
+      const response = await fetch('/api/admin/dashboard?dataType=overview');
+      
+      if (!response.ok) {
+        throw new Error(`Error fetching dashboard data: ${response.status}`);
       }
-    };
+      
+      const data = await response.json();
+      setDashboardData(prev => ({
+        ...prev,
+        stats: prev?.stats || {
+          totalUsers: 0,
+          activeUsers: 0,
+          totalClients: 0,
+          totalTasks: 0,
+          completedTasks: 0,
+          pendingTasks: 0,
+          inProgressTasks: 0,
+          overdueTasksCount: 0,
+          newUsersThisMonth: 0
+        },
+        recentActivities: prev?.recentActivities || [],
+        tasks: data.tasks || []
+      }));
+    } catch (err) {
+      console.error('Failed to fetch dashboard data:', err);
+      setError('Failed to load dashboard data. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    // Fetch data initially
-    fetchDashboardData();
-    
-    // Set up polling for real-time updates
-    const intervalId = setInterval(() => {
-      fetchDashboardData();
-    }, 30000); // Poll every 30 seconds
-    
-    // Clean up interval on component unmount
-    return () => clearInterval(intervalId);
+  // Fetch stats data for Analytics tab
+  const fetchStatsData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Make API call to fetch analytics data
+      const response = await fetch('/api/admin/dashboard?dataType=analytics');
+      
+      if (!response.ok) {
+        throw new Error(`Error fetching analytics data: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setDashboardData(prev => ({
+        ...prev,
+        stats: data.stats || {
+          totalUsers: 0,
+          activeUsers: 0,
+          totalClients: 0,
+          totalTasks: 0,
+          completedTasks: 0,
+          pendingTasks: 0,
+          inProgressTasks: 0,
+          overdueTasksCount: 0,
+          newUsersThisMonth: 0
+        },
+        recentActivities: prev?.recentActivities || [],
+        tasks: prev?.tasks || []
+      }));
+      setStatsLoaded(true);
+    } catch (err) {
+      console.error('Failed to fetch stats data:', err);
+      setError('Failed to load stats data. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load initial data for Overview tab
+  useEffect(() => {
+    fetchOverviewData();
   }, []);
+
+  // Conditionally load data based on active tab
+  useEffect(() => {
+    if (activeTab === "analytics" && !statsLoaded) {
+      fetchStatsData();
+    }
+  }, [activeTab, statsLoaded]);
 
   // Update URL when tab changes without using router
   const handleTabChange = (value: string) => {
@@ -155,7 +209,7 @@ export default function AdminDashboard() {
   }, [stats.activeUsers, stats.totalUsers]);
 
   // Loading state for dashboard data
-  if (loading) {
+  if (loading && !dashboardData) {
     return (
       <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between">
@@ -167,94 +221,14 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-4">
-          {/* <TabsList>
+          <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList> */}
+            <TabsTrigger value="activities">Activities</TabsTrigger>
+          </TabsList>
           <TabsContent value="overview" className="space-y-4">
-            {/* Stats cards skeleton */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {Array(4).fill(0).map((_, i) => (
-                <Card key={i}>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <Skeleton className="h-5 w-20" />
-                    <Skeleton className="h-4 w-4 rounded-full" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-8 w-16 mb-1" />
-                    <Skeleton className="h-4 w-24" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            
-            {/* Task status card skeleton */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <Card className="col-span-3 lg:col-span-1">
-                <CardHeader>
-                  <Skeleton className="h-6 w-32" />
-                  <Skeleton className="h-4 w-48" />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Skeleton className="h-12 w-full rounded-md" />
-                  <div className="flex flex-wrap gap-4">
-                    {Array(4).fill(0).map((_, i) => (
-                      <div key={i} className="flex items-center gap-1.5">
-                        <Skeleton className="h-2 w-2 rounded-full" />
-                        <Skeleton className="h-4 w-16" />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="col-span-3 lg:col-span-2">
-                <CardHeader>
-                  <Skeleton className="h-6 w-32" />
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {Array(3).fill(0).map((_, i) => (
-                      <Skeleton key={i} className="h-16 w-full" />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Activity feed skeleton */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-              <Card className="col-span-4">
-                <CardHeader>
-                  <Skeleton className="h-6 w-32" />
-                  <Skeleton className="h-4 w-48" />
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {Array(5).fill(0).map((_, i) => (
-                      <div key={i} className="flex gap-4">
-                        <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
-                        <div className="space-y-2 flex-1">
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-3/4" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="col-span-3">
-                <CardHeader>
-                  <Skeleton className="h-6 w-32" />
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                  {Array(4).fill(0).map((_, i) => (
-                    <Skeleton key={i} className="h-10 w-full" />
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
+            <DashboardStatsSkeleton />
+            <DashboardContentSkeleton />
           </TabsContent>
         </Tabs>
       </div>
@@ -282,187 +256,138 @@ export default function AdminDashboard() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="activities">Activities</TabsTrigger>
         </TabsList>
+        
+        {/* OVERVIEW TAB */}
         <TabsContent value="overview" className="space-y-4">
-        {loading ? (
+          {loading && !dashboardData?.tasks ? (
             <>
-              <DashboardStatsSkeleton />
               <DashboardContentSkeleton />
             </>
           ) : (
             <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <OverviewStats 
-              title="Total Users" 
-              value={loading ? "..." : stats.totalUsers.toString()} 
-              description={`${activeUserPercentage}% active`}
-              icon={<UsersIcon className="h-4 w-4 text-muted-foreground" />} 
-            />
-            <OverviewStats 
-              title="Active Users" 
-              value={loading ? "..." : stats.activeUsers.toString()} 
-              icon={<UserCheck className="h-4 w-4 text-muted-foreground" />} 
-            />
-            <OverviewStats 
-              title="Total Clients" 
-              value={loading ? "..." : stats.totalClients.toString()} 
-              icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} 
-            />
-            <OverviewStats 
-              title="Active Tasks" 
-              value={loading ? "..." : stats.totalTasks.toString()} 
-              icon={<Activity className="h-4 w-4 text-muted-foreground" />} 
-            />
-          </div>
-          
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card className="col-span-3 lg:col-span-1">
-              <CardHeader>
-                <CardTitle>Task Status</CardTitle>
-                <CardDescription>Overall task distribution</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="space-y-3">
-                    <div className="h-4 w-2/3 bg-muted rounded animate-pulse"></div>
-                    <div className="h-8 w-full bg-muted rounded animate-pulse"></div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <TaskProgress 
-                      items={[
-                        { label: "Completed", value: stats.completedTasks || 0, color: "bg-green-500" },
-                        { label: "In Progress", value: stats.inProgressTasks || 0, color: "bg-blue-500" },
-                        { label: "Pending", value: stats.pendingTasks || 0, color: "bg-amber-500" },
-                        { label: "Overdue", value: stats.overdueTasksCount || 0, color: "bg-red-500" }
-                      ]}
-                      size="md"
-                      showLabels={true}
-                      showPercentages={true}
-                    />
-                    
-                    <Button asChild variant="outline" className="w-full mt-4">
-                      <Link href="/dashboard/tasks">
-                        View All Tasks
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            <Card className="col-span-3 lg:col-span-2">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Priority Tasks</CardTitle>
-                  <CardDescription>Tasks that need immediate attention</CardDescription>
-                </div>
-                <Button size="sm" onClick={() => router.push('/dashboard/tasks/create')}>
-                  <Plus className="mr-2 h-3 w-3" />
-                  New Task
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {dashboardData?.tasks && dashboardData.tasks
-                    .filter(task => task.priority === 'high' && task.status !== 'completed')
-                    .slice(0, 3)
-                    .map(task => (
-                      <div 
-                        key={task.id} 
-                        className="border rounded-md p-3 hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-medium">{task.title}</h3>
-                          <Badge className="bg-red-500">{task.priority}</Badge>
-                        </div>
-                        <div className="flex items-center justify-between mt-2 text-sm">
-                          <span className="text-muted-foreground">
-                            {task.assignedTo ? `Assigned to: ${task.assignedTo.name}` : "Unassigned"}
-                          </span>
-                          <Badge variant="outline" className="bg-muted">
-                            {task.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  
-                  {dashboardData?.tasks && dashboardData.tasks.length > 0 && 
-                   dashboardData.tasks.filter(task => task.priority === 'high' && task.status !== 'completed').length === 0 && (
-                    <div className="text-center py-6">
-                      <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2 opacity-50" />
-                      <p className="text-muted-foreground">No high priority tasks</p>
-                    </div>
-                  )}
-                  
-                  {(!dashboardData?.tasks || dashboardData.tasks.length === 0) && (
-                    <div className="text-center py-6">
-                      <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-2" />
-                      <p className="text-muted-foreground mb-4">No tasks created yet</p>
-                      <Button onClick={() => router.push('/dashboard/tasks/create')}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create First Task
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Notifications Card */}
+                <RecentNotificationsCard />
+                
+                {/* Quick Actions Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Quick Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                    <Link href="/dashboard/admin/users">
+                      <Button variant="outline" className="w-full justify-between">
+                        Manage Users
+                        <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-6">
-            <PendingBillingTasks />
+                    </Link>
+                    <Link href="/dashboard/admin/clients">
+                      <Button variant="outline" className="w-full justify-between">
+                        Manage Clients
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard/tasks">
+                      <Button variant="outline" className="w-full justify-between">
+                        View All Tasks
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard/tasks/create">
+                      <Button variant="outline" className="w-full justify-between">
+                        Create New Task
+                        <Plus className="h-4 w-4 ml-2" />
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard/admin/documents">
+                      <Button variant="outline" className="w-full justify-between">
+                        Document Repository
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard/settings">
+                      <Button variant="outline" className="w-full justify-between">
+                        System Settings
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              </div>
             
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-              <DashboardCard title="Recent Activity" className="col-span-4" loading={loading}>
-                <ActivityFeed 
-                  fetchUrl="/api/activities"
-                  loading={loading} 
-                  showUserInfo={true}
-                  showRoleInfo={true}
-                />
-              </DashboardCard>
-              
-              <Card className="col-span-3">
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                  <Link href="/dashboard/admin/users">
-                    <Button variant="outline" className="w-full justify-between">
-                      Manage Users
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard/admin/clients">
-                    <Button variant="outline" className="w-full justify-between">
-                      Manage Clients
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard/tasks">
-                    <Button variant="outline" className="w-full justify-between">
-                      View All Tasks
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard/admin/documents">
-                    <Button variant="outline" className="w-full justify-between">
-                      Document Repository
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-          </>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Card className="col-span-3 lg:col-span-1">
+                  <CardHeader>
+                    <CardTitle>Task Status</CardTitle>
+                    <CardDescription>Tasks that need immediate attention</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {dashboardData?.tasks && dashboardData.tasks
+                        .filter(task => task.priority === 'high' && task.status !== 'completed')
+                        .slice(0, 3)
+                        .map(task => (
+                          <div 
+                            key={task.id} 
+                            className="border rounded-md p-3 hover:bg-muted/50 transition-colors cursor-pointer"
+                            onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-medium">{task.title}</h3>
+                              <Badge className="bg-red-500">{task.priority}</Badge>
+                            </div>
+                            <div className="flex items-center justify-between mt-2 text-sm">
+                              <span className="text-muted-foreground">
+                                {task.assignedTo ? `Assigned to: ${task.assignedTo.name}` : "Unassigned"}
+                              </span>
+                              <Badge variant="outline" className="bg-muted">
+                                {task.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                    
+                      {dashboardData?.tasks && dashboardData.tasks.length > 0 && 
+                       dashboardData.tasks.filter(task => task.priority === 'high' && task.status !== 'completed').length === 0 && (
+                        <div className="text-center py-6">
+                          <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2 opacity-50" />
+                          <p className="text-muted-foreground">No high priority tasks</p>
+                        </div>
+                      )}
+                      
+                      {(!dashboardData?.tasks || dashboardData.tasks.length === 0) && (
+                        <div className="text-center py-6">
+                          <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-2" />
+                          <p className="text-muted-foreground mb-4">No tasks created yet</p>
+                          <Button onClick={() => router.push('/dashboard/tasks/create')}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create First Task
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="col-span-3 lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle>Pending Billing Tasks</CardTitle>
+                    <CardDescription>Tasks ready for billing</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <PendingBillingTasks />
+                  </CardContent>
+                </Card>
+              </div>
+            </>
           )}
         </TabsContent>
+        
+        {/* ANALYTICS TAB */}
         <TabsContent value="analytics" className="space-y-6">
-          {loading ? (
+          {loading && !statsLoaded ? (
             <>
               <DashboardStatsSkeleton />
               <DashboardContentSkeleton />
@@ -470,64 +395,34 @@ export default function AdminDashboard() {
           ) : (
             <>
               {/* Metrics section */}
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                <Card className="col-span-1">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                    <UsersIcon className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.totalUsers}</div>
-                    <p className="text-xs text-muted-foreground">
-                      +{stats.newUsersThisMonth} new this month
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="col-span-1">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-                    <UserCheck className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.activeUsers}</div>
-                    <p className="text-xs text-muted-foreground">
-                      {activeUserPercentage}% of total users
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="col-span-1">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Tasks</CardTitle>
-                    <CheckSquare className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.totalTasks}</div>
-                    <p className="text-xs text-muted-foreground">
-                      {stats.completedTasks} completed ({Math.round((stats.completedTasks / (stats.totalTasks || 1)) * 100)}%)
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="col-span-1">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Overdue Tasks</CardTitle>
-                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.overdueTasksCount}</div>
-                    <p className="text-xs text-muted-foreground">
-                      Need immediate attention
-                    </p>
-                  </CardContent>
-                </Card>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <OverviewStats 
+                  title="Total Users" 
+                  value={stats.totalUsers.toString()} 
+                  description={`${activeUserPercentage}% active`}
+                  icon={<UsersIcon className="h-4 w-4 text-muted-foreground" />} 
+                />
+                <OverviewStats 
+                  title="Active Users" 
+                  value={stats.activeUsers.toString()} 
+                  icon={<UserCheck className="h-4 w-4 text-muted-foreground" />} 
+                />
+                <OverviewStats 
+                  title="Total Clients" 
+                  value={stats.totalClients.toString()} 
+                  icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} 
+                />
+                <OverviewStats 
+                  title="Active Tasks" 
+                  value={stats.totalTasks.toString()} 
+                  icon={<Activity className="h-4 w-4 text-muted-foreground" />} 
+                />
               </div>
 
               {/* User statistics cards */}
               <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-                <DashboardCard title="User Analytics" loading={loading} className="col-span-1 lg:col-span-1">
-                  {!loading && !error && (
+                <DashboardCard title="User Analytics" loading={!statsLoaded} className="col-span-1 lg:col-span-1">
+                  {statsLoaded && !error && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="text-sm font-medium">Activity Overview</h3>
@@ -554,8 +449,8 @@ export default function AdminDashboard() {
                   )}
                 </DashboardCard>
                     
-                <DashboardCard title="Task Performance" loading={loading} className="col-span-1 lg:col-span-2">
-                  {!loading && !error && (
+                <DashboardCard title="Task Performance" loading={!statsLoaded} className="col-span-1 lg:col-span-2">
+                  {statsLoaded && !error && (
                     <div className="space-y-6">
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                         <div className="p-2 bg-muted/20 rounded-md">
@@ -599,6 +494,23 @@ export default function AdminDashboard() {
               </div>
             </>
           )}
+        </TabsContent>
+
+        {/* ACTIVITIES TAB */}
+        <TabsContent value="activities" className="space-y-4">
+          <DashboardCard title="Recent Activity" className="w-full" loading={activeTab === "activities" && loading}>
+            {activeTab === "activities" && (
+              <ActivityFeed 
+                fetchUrl="/api/activities"
+                loading={false} 
+                showUserInfo={true}
+                showRoleInfo={true}
+                expanded={true}
+                maxHeight="calc(20 * 72px)"
+                limit={20}
+              />
+            )}
+          </DashboardCard>
         </TabsContent>
       </Tabs>
     </div>

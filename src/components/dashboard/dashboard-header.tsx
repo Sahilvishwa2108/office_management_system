@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { signOut } from "next-auth/react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { NotificationBell } from "@/components/notifications/notification-system";
 import { useRouter } from "next/navigation";
 import { SunIcon, MoonIcon, CloudSunIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -99,7 +98,6 @@ export function DashboardHeader() {
       {/* Right section */}
       <div className="flex items-center justify-end gap-3">
         <ThemeToggle />
-        <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">

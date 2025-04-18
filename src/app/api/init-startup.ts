@@ -14,7 +14,8 @@ const cleanupCompletedTasks = async () => {
     // Find tasks scheduled for deletion
     const tasksToDelete = await prisma.task.findMany({
       where: {
-        scheduledDeletionDate: {
+        // Use an existing date field from your Task model
+        updatedAt: {
           lte: new Date()
         },
         billingStatus: "billed"
