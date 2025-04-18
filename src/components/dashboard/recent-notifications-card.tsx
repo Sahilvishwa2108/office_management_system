@@ -12,7 +12,11 @@ import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export function RecentNotificationsCard() {
+interface RecentNotificationsCardProps {
+  className?: string;
+}
+
+export function RecentNotificationsCard({ className = "" }: RecentNotificationsCardProps) {
   const { notifications, markAsRead, refreshNotifications, loading, error } = useNotifications();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const router = useRouter();
@@ -55,12 +59,12 @@ export function RecentNotificationsCard() {
   };
 
   return (
-    <Card>
+    <Card className={`h-full flex flex-col ${className}`}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-xl">Recent Notifications</CardTitle>
         <Bell className="h-5 w-5 text-muted-foreground" />
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col">
         {loading && isInitialLoad ? (
           <div className="space-y-3">
             {Array(3).fill(0).map((_, i) => (
@@ -74,13 +78,13 @@ export function RecentNotificationsCard() {
             ))}
           </div>
         ) : notifications.length === 0 ? (
-          <div className="text-center py-6">
+          <div className="text-center py-6 flex-1 flex flex-col items-center justify-center">
             <Bell className="mx-auto h-8 w-8 text-muted-foreground opacity-50 mb-2" />
             <p className="text-sm text-muted-foreground">No notifications yet</p>
           </div>
         ) : (
           <>
-            <ScrollArea className="h-[280px] pr-4">
+            <ScrollArea className="flex-1 pr-4">
               <div className="space-y-3">
                 {notifications.slice(0, 6).map(notification => (
                   <div
