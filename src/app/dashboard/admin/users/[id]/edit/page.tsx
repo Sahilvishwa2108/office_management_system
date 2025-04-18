@@ -249,7 +249,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           </Form>
         </CardContent>
       </Card>
-      <p>You can&apos;t change the user&apos;s role</p>
     </div>
   );
 }

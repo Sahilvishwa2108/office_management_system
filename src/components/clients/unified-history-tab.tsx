@@ -251,7 +251,7 @@ export function UnifiedHistoryTab({ clientId, isPermanent, isAdmin }: UnifiedHis
   // Load history on component mount
   useEffect(() => {
     fetchAllHistory();
-  }, [clientId, fetchAllHistory]);
+  }, [clientId]);
 
   if (!isPermanent) {
     return (

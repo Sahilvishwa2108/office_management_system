@@ -251,7 +251,7 @@ export function TaskComments({
               </div>
             ) : (
               comments.map((comment) => (
-                <div key={comment.id} className="flex gap-4">
+                <div key={comment.id} className="flex gap-4 mb-6">
                   <Avatar className="h-10 w-10">
                     <AvatarImage
                       src={`https://api.dicebear.com/7.x/initials/svg?seed=${comment.user.name}`}

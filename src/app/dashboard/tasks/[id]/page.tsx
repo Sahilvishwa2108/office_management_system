@@ -198,6 +198,17 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     }
   }, [fetchTask, fetchComments, fetchCurrentUser, taskId]);
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending": return "bg-gray-500 hover:bg-gray-600";
+      case "in-progress": return "bg-blue-500 hover:bg-blue-600";
+      case "review": return "bg-yellow-500 hover:bg-yellow-600";
+      case "completed": return "bg-green-500 hover:bg-green-600";
+      case "cancelled": return "bg-red-500 hover:bg-red-600";
+      default: return "bg-gray-500 hover:bg-gray-600";
+    }
+  };
+
   // Use useMemo where appropriate
   const statusColor = useMemo(() => getStatusColor(task?.status || "pending"), [task?.status]);
   
@@ -217,17 +228,6 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
       toast.error("Failed to update task status");
     } finally {
       setUpdating(false);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending": return "bg-gray-500 hover:bg-gray-600";
-      case "in-progress": return "bg-blue-500 hover:bg-blue-600";
-      case "review": return "bg-yellow-500 hover:bg-yellow-600";
-      case "completed": return "bg-green-500 hover:bg-green-600";
-      case "cancelled": return "bg-red-500 hover:bg-red-600";
-      default: return "bg-gray-500 hover:bg-gray-600";
     }
   };
 

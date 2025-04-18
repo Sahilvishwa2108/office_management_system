@@ -9,12 +9,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const clientId = params.id;
+    const resolvedParams = params instanceof Promise ? await params : params; // Await params if it's a Promise
+    const clientId = resolvedParams.id;
 
     // Check if client exists
     const client = await prisma.client.findUnique({
@@ -74,7 +70,8 @@ export async function POST(
       );
     }
 
-    const clientId = params.id;
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const clientId = resolvedParams.id;
     const body = await request.json();
 
     // Validate required fields
@@ -128,7 +125,8 @@ export async function DELETE(
       );
     }
 
-    const clientId = params.id;
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const clientId = resolvedParams.id;
     const { searchParams } = new URL(request.url);
     const entryId = searchParams.get("entryId");
 

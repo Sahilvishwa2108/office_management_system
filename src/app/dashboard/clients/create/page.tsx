@@ -88,6 +88,20 @@ export default function ClientCreatePage() {
     }
   }, [session, status, router]);
 
+  // Pre-set default values
+  const form = useForm<ClientFormValues>({
+    resolver: zodResolver(clientFormSchema),
+    defaultValues: {
+      contactPerson: "",
+      companyName: "",
+      email: "",
+      phone: "",
+      address: "",
+      notes: "",
+      gstin: "",
+    },
+  });
+
   // Prevent rendering the form for non-admin users
   if (status === "loading" || isLoading) {
     return (
@@ -103,20 +117,6 @@ export default function ClientCreatePage() {
   if (!canModifyClient(session)) {
     return null; // Will redirect in the useEffect
   }
-
-  // Pre-set default values
-  const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientFormSchema),
-    defaultValues: {
-      contactPerson: "",
-      companyName: "",
-      email: "",
-      phone: "",
-      address: "",
-      notes: "",
-      gstin: "",
-    },
-  });
 
   // Handle form submission
   const onSubmit = async (data: ClientFormValues) => {

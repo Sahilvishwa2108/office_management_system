@@ -8,12 +8,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { id: clientId } = params; // Use destructuring instead of direct access
+    const resolvedParams = params instanceof Promise ? await params : params; // Await params if it's a Promise
+    const { id: clientId } = resolvedParams;
 
     // Check if client exists
     const client = await prisma.client.findUnique({

@@ -330,9 +330,8 @@ export default function ProfilePage() {
             <div className="flex items-start w-full">
               <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 mr-2" />
               <p className="text-xs text-muted-foreground">
-                Your profile information is visible to administrators and may be shared with team members as needed for collaboration.
+                Your profile information is visible to administrators and may be shared with team members as needed for collaboration. Changes will be applied the next time you&apos;re online
               </p>
-              <p>Changes will be applied the next time you&apos;re online</p>
             </div>
           </CardFooter>
         </Card>

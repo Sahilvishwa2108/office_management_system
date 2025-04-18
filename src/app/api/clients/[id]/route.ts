@@ -139,7 +139,7 @@ export async function PATCH(
     }
 
     // Handle the potential date string to Date conversion
-    let accessExpiry = undefined;
+    let accessExpiry: Date | null | undefined = undefined;
     if (data.accessExpiry === null) {
       accessExpiry = null;
     } else if (data.accessExpiry) {
