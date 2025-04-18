@@ -5,11 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -26,7 +22,17 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { UserPlus, Search, Eye, Edit, Ban, CheckCircle, MoreHorizontal, KeyIcon, FilterX } from "lucide-react";
+import {
+  UserPlus,
+  Search,
+  Eye,
+  Edit,
+  Ban,
+  CheckCircle,
+  MoreHorizontal,
+  KeyIcon,
+  FilterX,
+} from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
@@ -43,9 +49,11 @@ interface User {
   name: string;
   email: string;
   role: string;
+  avatar?: string;
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
+  assignedTasksCount: number;
 }
 
 // Client roles to exclude
@@ -55,8 +63,16 @@ const CLIENT_ROLES = ["PERMANENT_CLIENT", "GUEST_CLIENT"];
 const roleConfigs = [
   { role: "ADMIN", label: "Admins", color: "bg-blue-500" },
   { role: "PARTNER", label: "Partners", color: "bg-purple-500" },
-  { role: "BUSINESS_EXECUTIVE", label: "Business Executives", color: "bg-green-500" },
-  { role: "BUSINESS_CONSULTANT", label: "Business Consultants", color: "bg-teal-500" },
+  {
+    role: "BUSINESS_EXECUTIVE",
+    label: "Business Executives",
+    color: "bg-green-500",
+  },
+  {
+    role: "BUSINESS_CONSULTANT",
+    label: "Business Consultants",
+    color: "bg-teal-500",
+  },
 ];
 
 // Format the role for display
@@ -70,20 +86,20 @@ const formatRole = (role: string) => {
 // Get initials from name
 const getInitials = (name: string): string => {
   return name
-    .split(' ')
-    .map(part => part[0])
-    .join('')
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
     .toUpperCase()
     .substring(0, 2);
 };
 
 // UserListItem component
-const UserListItem = ({ 
-  user, 
-  onToggleStatus 
-}: { 
-  user: User, 
-  onToggleStatus: (id: string, status: boolean) => Promise<void> 
+const UserListItem = ({
+  user,
+  onToggleStatus,
+}: {
+  user: User;
+  onToggleStatus: (id: string, status: boolean) => Promise<void>;
 }) => {
   const router = useRouter();
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
@@ -98,7 +114,7 @@ const UserListItem = ({
   };
 
   return (
-    <div 
+    <div
       onClick={navigateToUser}
       className="p-4 border rounded-lg mb-4 hover:bg-muted/50 cursor-pointer transition-colors"
     >
@@ -106,7 +122,10 @@ const UserListItem = ({
         <div className="flex items-center gap-3">
           <Avatar>
             <AvatarImage
-              src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
+              src={
+                user.avatar ||
+                `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`
+              }
               alt={user.name}
             />
             <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
@@ -119,22 +138,32 @@ const UserListItem = ({
                 {formatRole(user.role)}
               </Badge>
               {user.isActive !== false ? (
-                <Badge variant="outline" className="bg-green-100 text-green-800 text-xs">Active</Badge>
+                <Badge
+                  variant="outline"
+                  className="bg-green-100 text-green-800 text-xs"
+                >
+                  Active
+                </Badge>
               ) : (
-                <Badge variant="destructive" className="text-xs">Blocked</Badge>
+                <Badge variant="destructive" className="text-xs">
+                  Blocked
+                </Badge>
               )}
+              <Badge variant="secondary" className="text-xs">
+                {user.assignedTasksCount} Tasks
+              </Badge>
             </div>
           </div>
         </div>
 
-        <div 
-          className="flex items-center gap-2"
-          onClick={handleActionClick}
-        >
+        <div className="flex items-center gap-2" onClick={handleActionClick}>
           <p className="text-xs text-muted-foreground">
-            {format(new Date(user.createdAt), 'PPP')}
+            {format(new Date(user.createdAt), "PPP")}
           </p>
-          <DropdownMenu open={isActionMenuOpen} onOpenChange={setIsActionMenuOpen}>
+          <DropdownMenu
+            open={isActionMenuOpen}
+            onOpenChange={setIsActionMenuOpen}
+          >
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
@@ -158,7 +187,9 @@ const UserListItem = ({
                   Edit User
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onToggleStatus(user.id, user.isActive !== false)}>
+              <DropdownMenuItem
+                onClick={() => onToggleStatus(user.id, user.isActive !== false)}
+              >
                 {user.isActive !== false ? (
                   <>
                     <Ban className="w-4 h-4 mr-2" />
@@ -198,18 +229,18 @@ export default function UsersPage() {
 
   // Check for URL parameters only on client side in useEffect
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
         const url = new URL(window.location.href);
-        const role = url.searchParams.get('role');
-        const view = url.searchParams.get('view');
-        
+        const role = url.searchParams.get("role");
+        const view = url.searchParams.get("view");
+
         // Apply URL parameters if present
         if (role) {
           setSelectedRoles([role]);
         }
-        
-        if (view === 'table' || view === 'card') {
+
+        if (view === "table" || view === "card") {
           setViewMode(view);
         }
       } catch (error) {
@@ -227,15 +258,15 @@ export default function UsersPage() {
       if (selectedRoles.length > 0) {
         params.roles = selectedRoles.join(",");
       }
-      
+
       const response = await axios.get("/api/users", { params });
-      
+
       // Filter out client users and the current logged-in user
-      const filteredUsers = response.data.filter((user: User) => 
-        !CLIENT_ROLES.includes(user.role) && 
-        user.id !== session?.user?.id
+      const filteredUsers = response.data.filter(
+        (user: User) =>
+          !CLIENT_ROLES.includes(user.role) && user.id !== session?.user?.id
       );
-      
+
       setUsers(filteredUsers);
     } catch (error) {
       console.error("Error loading users:", error);
@@ -281,9 +312,10 @@ export default function UsersPage() {
   }, [selectedRoles, session, loadUsers]);
 
   // Filter users based on search term
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Define the roles available for filtering
@@ -295,7 +327,7 @@ export default function UsersPage() {
   ];
 
   const navigateToCreate = () => {
-    router.push('/dashboard/admin/users/create');
+    router.push("/dashboard/admin/users/create");
   };
 
   if (loading) {
@@ -308,9 +340,9 @@ export default function UsersPage() {
           </div>
           <Skeleton className="h-10 w-32" />
         </div>
-        
+
         <Skeleton className="h-40 w-full" />
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <Skeleton className="h-7 w-28" />
@@ -332,26 +364,36 @@ export default function UsersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Array(5).fill(0).map((_, i) => (
-                    <TableRow key={`skeleton-${i}`}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Skeleton className="h-8 w-8 rounded-full" />
-                          <div>
-                            <Skeleton className="h-4 w-32 mb-1" />
-                            <Skeleton className="h-3 w-24" />
+                  {Array(5)
+                    .fill(0)
+                    .map((_, i) => (
+                      <TableRow key={`skeleton-${i}`}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="h-8 w-8 rounded-full" />
+                            <div>
+                              <Skeleton className="h-4 w-32 mb-1" />
+                              <Skeleton className="h-3 w-24" />
+                            </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell><Skeleton className="h-4 w-36" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                      <TableCell className="text-right">
-                        <Skeleton className="h-8 w-20 ml-auto" />
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-36" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-5 w-24" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-5 w-16" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-20" />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Skeleton className="h-8 w-20 ml-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
             </div>
@@ -367,7 +409,9 @@ export default function UsersPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
-          <p className="text-muted-foreground">Manage users and their access levels</p>
+          <p className="text-muted-foreground">
+            Manage users and their access levels
+          </p>
         </div>
         <Button onClick={navigateToCreate}>
           <UserPlus className="mr-2 h-4 w-4" />
@@ -377,7 +421,7 @@ export default function UsersPage() {
 
       {/* Role distribution chart */}
       {users.length > 0 && (
-        <UserCount 
+        <UserCount
           users={users}
           excludeRoles={CLIENT_ROLES}
           roleConfigs={roleConfigs}
@@ -405,10 +449,10 @@ export default function UsersPage() {
                   selectedRoles={selectedRoles}
                   onChange={setSelectedRoles}
                 />
-                
+
                 {(selectedRoles.length > 0 || searchTerm) && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => {
                       setSelectedRoles([]);
@@ -421,9 +465,13 @@ export default function UsersPage() {
                 )}
               </div>
             </div>
-            
+
             {/* View toggle */}
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "table" | "card")} className="w-[200px]">
+            <Tabs
+              value={viewMode}
+              onValueChange={(v) => setViewMode(v as "table" | "card")}
+              className="w-[200px]"
+            >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="table">Table</TabsTrigger>
                 <TabsTrigger value="card">Cards</TabsTrigger>
@@ -440,6 +488,7 @@ export default function UsersPage() {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Assigned Tasks</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="w-[80px]">Actions</TableHead>
@@ -449,18 +498,28 @@ export default function UsersPage() {
                   {filteredUsers.length > 0 ? (
                     filteredUsers.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell className="font-medium">
+                          {user.name}
+                        </TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{formatRole(user.role)}</TableCell>
                         <TableCell>
+                            {user.assignedTasksCount}
+                        </TableCell>
+                        <TableCell>
                           {user.isActive !== false ? (
-                            <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
+                            <Badge
+                              variant="outline"
+                              className="bg-green-100 text-green-800"
+                            >
+                              Active
+                            </Badge>
                           ) : (
                             <Badge variant="destructive">Blocked</Badge>
                           )}
                         </TableCell>
                         <TableCell>
-                          {format(new Date(user.createdAt), 'PPP')}
+                          {format(new Date(user.createdAt), "PPP")}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -474,20 +533,34 @@ export default function UsersPage() {
                                 <span className="sr-only">Toggle menu</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-[160px]">
+                            <DropdownMenuContent
+                              align="end"
+                              className="w-[160px]"
+                            >
                               <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/admin/users/${user.id}`}>
+                                <Link
+                                  href={`/dashboard/admin/users/${user.id}`}
+                                >
                                   <Eye className="w-4 h-4 mr-2" />
                                   View Details
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/admin/users/${user.id}/edit`}>
+                                <Link
+                                  href={`/dashboard/admin/users/${user.id}/edit`}
+                                >
                                   <Edit className="w-4 h-4 mr-2" />
                                   Edit User
                                 </Link>
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleToggleStatus(user.id, user.isActive !== false)}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleToggleStatus(
+                                    user.id,
+                                    user.isActive !== false
+                                  )
+                                }
+                              >
                                 {user.isActive !== false ? (
                                   <>
                                     <Ban className="w-4 h-4 mr-2" />
@@ -502,7 +575,9 @@ export default function UsersPage() {
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/admin/users/${user.id}/reset-password`}>
+                                <Link
+                                  href={`/dashboard/admin/users/${user.id}/reset-password`}
+                                >
                                   <KeyIcon className="w-4 h-4 mr-2" />
                                   Reset Password
                                 </Link>
@@ -514,7 +589,10 @@ export default function UsersPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                      <TableCell
+                        colSpan={7}
+                        className="text-center py-6 text-muted-foreground"
+                      >
                         No users found
                       </TableCell>
                     </TableRow>
@@ -526,10 +604,10 @@ export default function UsersPage() {
             <div className="space-y-4">
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => (
-                  <UserListItem 
-                    key={user.id} 
-                    user={user} 
-                    onToggleStatus={handleToggleStatus} 
+                  <UserListItem
+                    key={user.id}
+                    user={user}
+                    onToggleStatus={handleToggleStatus}
                   />
                 ))
               ) : (

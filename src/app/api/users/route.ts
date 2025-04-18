@@ -153,13 +153,25 @@ export async function GET(request: NextRequest) {
         name: true,
         email: true,
         role: true,
+        avatar: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
+        _count: {
+          select: {
+            assignedTasks: true,
+          }
+        }
       },
     });
 
-    return NextResponse.json(users);
+    // Map the response to include assignedTasksCount
+    const response = users.map((user) => ({
+      ...user,
+      assignedTasksCount: user._count.assignedTasks, // Add assignedTasksCount
+    }));
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Error fetching users:", error);
     return NextResponse.json(

@@ -44,6 +44,26 @@ export async function GET(
     // Get user data
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatar: true, // Ensure avatar is included
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        assignedTasks: { // Include assigned tasks
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            status: true,
+            priority: true,
+            dueDate: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -71,8 +91,10 @@ export async function GET(
       name: user.name,
       email: user.email,
       role: user.role,
+      avatar: user.avatar,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      assignedTasks: user.assignedTasks, // Include assigned tasks in the response
     });
   } catch (error) {
     console.error("Error getting user:", error);

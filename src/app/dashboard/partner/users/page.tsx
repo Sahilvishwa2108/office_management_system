@@ -53,12 +53,22 @@ interface User {
   isActive?: boolean;
   createdAt: string;
   updatedAt: string;
+  assignedTasksCount: number;
+  avatar?: string;
 }
 
 // For partner page showing only team members
 const partnerRoleConfigs = [
-  { role: "BUSINESS_EXECUTIVE", label: "Business Executives", color: "bg-green-500" },
-  { role: "BUSINESS_CONSULTANT", label: "Business Consultants", color: "bg-teal-500" },
+  {
+    role: "BUSINESS_EXECUTIVE",
+    label: "Business Executives",
+    color: "bg-green-500",
+  },
+  {
+    role: "BUSINESS_CONSULTANT",
+    label: "Business Consultants",
+    color: "bg-teal-500",
+  },
 ];
 
 // Simplified - no Suspense or separate components
@@ -82,24 +92,27 @@ export default function PartnerUsersPage() {
 
   // Get URL parameters on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
         const url = new URL(window.location.href);
-        
+
         // Get roles from URL
-        const rolesParam = url.searchParams.get('roles');
+        const rolesParam = url.searchParams.get("roles");
         if (rolesParam) {
-          setSelectedRoles(rolesParam.split(','));
+          setSelectedRoles(rolesParam.split(","));
         }
-        
+
         // Get status from URL
-        const statusParam = url.searchParams.get('status');
-        if (statusParam && ['all', 'active', 'inactive'].includes(statusParam)) {
+        const statusParam = url.searchParams.get("status");
+        if (
+          statusParam &&
+          ["all", "active", "inactive"].includes(statusParam)
+        ) {
           setStatusFilter(statusParam);
         }
-        
+
         // Get search term from URL
-        const searchParam = url.searchParams.get('search');
+        const searchParam = url.searchParams.get("search");
         if (searchParam) {
           setSearchTerm(searchParam);
         }
@@ -113,32 +126,32 @@ export default function PartnerUsersPage() {
 
   // Update URL when filters change
   useEffect(() => {
-    if (typeof window !== 'undefined' && !pageLoading) {
+    if (typeof window !== "undefined" && !pageLoading) {
       const url = new URL(window.location.href);
-      
+
       // Update roles in URL
       if (selectedRoles.length > 0) {
-        url.searchParams.set('roles', selectedRoles.join(','));
+        url.searchParams.set("roles", selectedRoles.join(","));
       } else {
-        url.searchParams.delete('roles');
+        url.searchParams.delete("roles");
       }
-      
+
       // Update status in URL
-      if (statusFilter !== 'all') {
-        url.searchParams.set('status', statusFilter);
+      if (statusFilter !== "all") {
+        url.searchParams.set("status", statusFilter);
       } else {
-        url.searchParams.delete('status');
+        url.searchParams.delete("status");
       }
-      
+
       // Update search in URL
       if (searchTerm) {
-        url.searchParams.set('search', searchTerm);
+        url.searchParams.set("search", searchTerm);
       } else {
-        url.searchParams.delete('search');
+        url.searchParams.delete("search");
       }
-      
+
       // Update URL without page reload
-      window.history.replaceState({}, '', url.toString());
+      window.history.replaceState({}, "", url.toString());
     }
   }, [selectedRoles, statusFilter, searchTerm, pageLoading]);
 
@@ -226,9 +239,11 @@ export default function PartnerUsersPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {Array(5).fill(0).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
+              {Array(5)
+                .fill(0)
+                .map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
             </div>
           </CardContent>
         </Card>
@@ -252,10 +267,10 @@ export default function PartnerUsersPage() {
         </Button>
       </div>
 
-      <UserCount 
-        users={users.map(user => ({
+      <UserCount
+        users={users.map((user) => ({
           ...user,
-          isActive: user.isActive !== false // Ensures isActive is a boolean, defaulting to true if undefined
+          isActive: user.isActive !== false, // Ensures isActive is a boolean, defaulting to true if undefined
         }))}
         title="Team Members"
         description="Your team distribution by role"
@@ -295,7 +310,9 @@ export default function PartnerUsersPage() {
                 </SelectContent>
               </Select>
 
-              {(selectedRoles.length > 0 || statusFilter !== "all" || searchTerm) && (
+              {(selectedRoles.length > 0 ||
+                statusFilter !== "all" ||
+                searchTerm) && (
                 <Button variant="outline" onClick={clearFilters} size="icon">
                   <FilterX className="h-4 w-4" />
                 </Button>
@@ -312,18 +329,22 @@ export default function PartnerUsersPage() {
             <div className="text-center py-12 border rounded-md bg-background">
               <h3 className="text-lg font-medium mb-2">No staff found</h3>
               <p className="text-muted-foreground mb-6">
-                {searchTerm || selectedRoles.length > 0 || statusFilter !== "all"
+                {searchTerm ||
+                selectedRoles.length > 0 ||
+                statusFilter !== "all"
                   ? "No results match your search criteria. Try adjusting your filters."
                   : "No junior staff have been added yet."}
               </p>
 
-              {!searchTerm && selectedRoles.length === 0 && statusFilter === "all" && (
-                <Button asChild>
-                  <Link href="/dashboard/partner/users/create">
-                    <Plus className="h-4 w-4 mr-2" /> Add New Staff
-                  </Link>
-                </Button>
-              )}
+              {!searchTerm &&
+                selectedRoles.length === 0 &&
+                statusFilter === "all" && (
+                  <Button asChild>
+                    <Link href="/dashboard/partner/users/create">
+                      <Plus className="h-4 w-4 mr-2" /> Add New Staff
+                    </Link>
+                  </Button>
+                )}
             </div>
           ) : (
             <Table>
@@ -332,6 +353,7 @@ export default function PartnerUsersPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead>Assigned Tasks</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -345,6 +367,7 @@ export default function PartnerUsersPage() {
                     <TableCell>
                       <Badge variant="outline">{formatRole(user.role)}</Badge>
                     </TableCell>
+                    <TableCell>{user.assignedTasksCount}</TableCell>
                     <TableCell>
                       {user.isActive !== false ? (
                         <Badge className="bg-green-500 hover:bg-green-600">
