@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -17,13 +23,16 @@ import {
   Plus,
   Calendar,
   UserPlus,
-  Briefcase
+  Briefcase,
 } from "lucide-react";
 import { RecentNotificationsCard } from "@/components/dashboard/recent-notifications-card";
 import { OverviewStats } from "@/components/dashboard/overview-stats";
 import { TaskProgress } from "@/components/dashboard/task-progress";
 import { PendingBillingTasks } from "@/components/admin/pending-billing-tasks";
-import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/loading/dashboard-skeleton";
+import {
+  DashboardStatsSkeleton,
+  DashboardContentSkeleton,
+} from "@/components/loading/dashboard-skeleton";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -66,6 +75,12 @@ interface DashboardData {
     activeTasks: number;
     role: string;
   }>;
+  staffWithoutTasks: Array<{
+    id: string;
+    name: string;
+    avatar?: string;
+    role: string;
+  }>;
   recentActivities: Array<{
     id: string;
     type: string;
@@ -83,7 +98,9 @@ interface DashboardData {
 
 // Main dashboard component
 export default function AdminDashboard() {
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statsLoaded, setStatsLoaded] = useState(false);
@@ -95,18 +112,18 @@ export default function AdminDashboard() {
       setError(null);
       try {
         // Fetch dashboard data from API
-        const response = await fetch('/api/admin/dashboard');
-        
+        const response = await fetch("/api/admin/dashboard");
+
         if (!response.ok) {
-          throw new Error('Failed to fetch dashboard data');
+          throw new Error("Failed to fetch dashboard data");
         }
-        
+
         const data = await response.json();
         setDashboardData(data);
         setStatsLoaded(true);
       } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error occurred');
+        console.error("Error fetching dashboard data:", err);
+        setError(err instanceof Error ? err.message : "Unknown error occurred");
       } finally {
         setLoading(false);
       }
@@ -133,13 +150,15 @@ export default function AdminDashboard() {
   };
 
   // Calculate percentages for analytics display
-  const activeUserPercentage = stats.totalUsers > 0
-    ? Math.round((stats.activeUsers / stats.totalUsers) * 100)
-    : 0;
+  const activeUserPercentage =
+    stats.totalUsers > 0
+      ? Math.round((stats.activeUsers / stats.totalUsers) * 100)
+      : 0;
 
-  const taskCompletionRate = (stats.totalTasks > 0)
-    ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
-    : 0;
+  const taskCompletionRate =
+    stats.totalTasks > 0
+      ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
+      : 0;
 
   if (loading && !dashboardData) {
     return (
@@ -206,37 +225,59 @@ export default function AdminDashboard() {
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Link href="/dashboard/admin/users/create">
-                      <Button variant="outline" className="w-full justify-between h-20 p-4">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between h-20 p-4"
+                      >
                         <div className="flex flex-col items-start">
                           <span className="font-medium">Create User</span>
-                          <span className="text-xs text-muted-foreground">Add new team members</span>
+                          <span className="text-xs text-muted-foreground">
+                            Add new team members
+                          </span>
                         </div>
                         <UserPlus className="h-4 w-4 ml-2" />
                       </Button>
                     </Link>
                     <Link href="/dashboard/admin/clients/create">
-                      <Button variant="outline" className="w-full justify-between h-20 p-4">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between h-20 p-4"
+                      >
                         <div className="flex flex-col items-start">
                           <span className="font-medium">Create Client</span>
-                          <span className="text-xs text-muted-foreground">Add new client accounts</span>
+                          <span className="text-xs text-muted-foreground">
+                            Add new client accounts
+                          </span>
                         </div>
                         <Briefcase className="h-4 w-4 ml-2" />
                       </Button>
                     </Link>
                     <Link href="/dashboard/tasks/create">
-                      <Button variant="outline" className="w-full justify-between h-20 p-4">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between h-20 p-4"
+                      >
                         <div className="flex flex-col items-start">
                           <span className="font-medium">Create Task</span>
-                          <span className="text-xs text-muted-foreground">Assign new work items</span>
+                          <span className="text-xs text-muted-foreground">
+                            Assign new work items
+                          </span>
                         </div>
                         <Plus className="h-4 w-4 ml-2" />
                       </Button>
                     </Link>
                     <Link href="/dashboard/admin/clients/guest/create">
-                      <Button variant="outline" className="w-full justify-between h-20 p-4">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between h-20 p-4"
+                      >
                         <div className="flex flex-col items-start">
-                          <span className="font-medium">Create Guest Client</span>
-                          <span className="text-xs text-muted-foreground">Add temporary accounts</span>
+                          <span className="font-medium">
+                            Create Guest Client
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            Add temporary accounts
+                          </span>
                         </div>
                         <Plus className="h-4 w-4 ml-2" />
                       </Button>
@@ -246,7 +287,6 @@ export default function AdminDashboard() {
                 <div className="col-span-2 lg:col-span-3 h-full">
                   <RecentNotificationsCard className="h-full" />
                 </div>
-
               </div>
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
@@ -254,56 +294,77 @@ export default function AdminDashboard() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Staff Distribution</CardTitle>
-                    <CardDescription>Available staff for task assignment</CardDescription>
+                    <CardDescription>
+                      Available staff for task assignment
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {!loading && !error && dashboardData?.users && (
+                    {!loading && !error && dashboardData?.staffWithoutTasks ? (
                       <div className="space-y-4">
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">Staff without Tasks</span>
-                            <Badge variant="outline" className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                              {dashboardData.users.filter(u => u.activeTasks === 0).length}/{dashboardData.users.length}
+                            <span className="text-sm font-medium">
+                              Staff without Tasks
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                            >
+                              {dashboardData.staffWithoutTasks.length}/
+                              {dashboardData.stats.totalUsers}
                             </Badge>
                           </div>
-                          
+
+                          {/* Scrollable container for staff list */}
                           {/* Scrollable container for staff list */}
                           <div className="max-h-[180px] overflow-y-auto space-y-2 mt-2 border rounded-md p-1">
-                            {dashboardData.users.filter(u => u.activeTasks === 0).length > 0 ? (
-                              dashboardData.users
-                                .filter(u => u.activeTasks === 0)
-                                .map((user) => (
-                                  <Link
-                                    key={user.id}
-                                    href={`/dashboard/admin/users/${user.id}`}
-                                    className="flex items-center justify-between p-2 rounded-md hover:bg-muted"
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <Avatar className="h-7 w-7">
-                                        <AvatarImage src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} />
-                                        <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                      </Avatar>
-                                      <div>
-                                        <span className="text-sm font-medium">{user.name}</span>
-                                        <p className="text-xs text-muted-foreground">
-                                          {typeof user.role === 'string' 
-                                            ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase().replace(/_/g, " ")
-                                            : "Staff member"}
-                                        </p>
-                                      </div>
+                            {dashboardData.staffWithoutTasks.length > 0 ? (
+                              dashboardData.staffWithoutTasks.map((user) => (
+                                <div
+                                  key={user.id}
+                                  className="flex items-center justify-between p-2 rounded-md hover:bg-muted"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-7 w-7">
+                                      <AvatarImage
+                                        src={
+                                          user.avatar ||
+                                          `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`
+                                        }
+                                      />
+                                      <AvatarFallback>
+                                        {user.name
+                                          .substring(0, 2)
+                                          .toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                      <span className="text-sm font-medium">
+                                        {user.name}
+                                      </span>
+                                      <p className="text-xs text-muted-foreground">
+                                        {user.role.charAt(0).toUpperCase() +
+                                          user.role
+                                            .slice(1)
+                                            .toLowerCase()
+                                            .replace(/_/g, " ")}
+                                      </p>
                                     </div>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon" 
-                                      className="h-7 w-7"
-                                      asChild
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    asChild
+                                  >
+                                    <Link
+                                      href={`/dashboard/tasks/create?assignedTo=${user.id}`}
                                     >
-                                      <Link href={`/dashboard/tasks/create?assignedTo=${user.id}`}>
-                                        <UserPlus className="h-4 w-4 text-muted-foreground" />
-                                      </Link>
-                                    </Button>
-                                  </Link>
-                                ))
+                                      <UserPlus className="h-4 w-4 text-muted-foreground" />
+                                    </Link>
+                                  </Button>
+                                </div>
+                              ))
                             ) : (
                               <div className="text-center py-4 text-muted-foreground text-sm">
                                 All staff members are currently assigned tasks
@@ -311,18 +372,21 @@ export default function AdminDashboard() {
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="mt-4">
-                          <Button variant="outline" size="sm" className="w-full" asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            asChild
+                          >
                             <Link href="/dashboard/tasks/create">
                               <Plus className="h-4 w-4 mr-2" /> Create New Task
                             </Link>
                           </Button>
                         </div>
                       </div>
-                    )}
-                    
-                    {(loading || !dashboardData?.users) && (
+                    ) : (
                       <div className="space-y-3">
                         <Skeleton className="h-5 w-full" />
                         <Skeleton className="h-24 w-full" />
@@ -334,7 +398,9 @@ export default function AdminDashboard() {
                 <Card className="col-span-1">
                   <CardHeader>
                     <CardTitle>Upcoming Deadlines</CardTitle>
-                    <CardDescription>Tasks due within the next 7 days</CardDescription>
+                    <CardDescription>
+                      Tasks due within the next 7 days
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {loading ? (
@@ -353,13 +419,17 @@ export default function AdminDashboard() {
                     ) : (
                       <>
                         {(dashboardData?.tasks || [])
-                          .filter(t => {
+                          .filter((t) => {
                             if (!t.dueDate) return false;
                             const dueDate = new Date(t.dueDate);
                             const today = new Date();
                             const weekFromNow = new Date();
                             weekFromNow.setDate(today.getDate() + 7);
-                            return dueDate > today && dueDate <= weekFromNow && t.status !== "completed";
+                            return (
+                              dueDate > today &&
+                              dueDate <= weekFromNow &&
+                              t.status !== "completed"
+                            );
                           })
                           .slice(0, 3)
                           .map((task) => (
@@ -370,43 +440,58 @@ export default function AdminDashboard() {
                             >
                               <div className="border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-900/50 border rounded-md p-3 hover:bg-blue-100/80 dark:hover:bg-blue-900/30 transition-colors">
                                 <div className="flex justify-between items-center">
-                                  <p className="font-medium truncate">{task.title}</p>
-                                  <Badge className={
-                                    task.priority === "high"
-                                      ? "bg-red-500 text-white"
-                                      : task.priority === "medium"
+                                  <p className="font-medium truncate">
+                                    {task.title}
+                                  </p>
+                                  <Badge
+                                    className={
+                                      task.priority === "high"
+                                        ? "bg-red-500 text-white"
+                                        : task.priority === "medium"
                                         ? "bg-yellow-500 text-white"
                                         : "bg-green-500 text-white"
-                                  }>
-                                    {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                                    }
+                                  >
+                                    {task.priority.charAt(0).toUpperCase() +
+                                      task.priority.slice(1)}
                                   </Badge>
                                 </div>
                                 {task.dueDate && (
                                   <div className="text-xs text-blue-700 dark:text-blue-400 mt-2 flex items-center">
                                     <Calendar className="h-3 w-3 mr-1" />
-                                    Due {new Date(task.dueDate).toLocaleDateString()}
+                                    Due{" "}
+                                    {new Date(
+                                      task.dueDate
+                                    ).toLocaleDateString()}
                                   </div>
                                 )}
                               </div>
                             </Link>
                           ))}
-                        {(dashboardData?.tasks || []).filter(t => {
+                        {(dashboardData?.tasks || []).filter((t) => {
                           if (!t.dueDate) return false;
                           const dueDate = new Date(t.dueDate);
                           const today = new Date();
                           const weekFromNow = new Date();
                           weekFromNow.setDate(today.getDate() + 7);
-                          return dueDate > today && dueDate <= weekFromNow && t.status !== "completed";
+                          return (
+                            dueDate > today &&
+                            dueDate <= weekFromNow &&
+                            t.status !== "completed"
+                          );
                         }).length === 0 && (
-                            <div className="flex flex-col items-center justify-center p-6 text-center">
-                              <Calendar className="h-10 w-10 text-blue-500 mb-2 opacity-50" />
-                              <p className="text-sm text-muted-foreground">
-                                No upcoming deadlines for the next 7 days
-                              </p>
-                            </div>
-                          )}
+                          <div className="flex flex-col items-center justify-center p-6 text-center">
+                            <Calendar className="h-10 w-10 text-blue-500 mb-2 opacity-50" />
+                            <p className="text-sm text-muted-foreground">
+                              No upcoming deadlines for the next 7 days
+                            </p>
+                          </div>
+                        )}
                         <Link href="/dashboard/tasks?filter=upcoming">
-                          <Button variant="outline" className="w-full justify-between">
+                          <Button
+                            variant="outline"
+                            className="w-full justify-between"
+                          >
                             View All Upcoming Deadlines
                             <ArrowRight className="h-4 w-4 ml-2" />
                           </Button>
@@ -442,7 +527,9 @@ export default function AdminDashboard() {
                 <OverviewStats
                   title="Active Users"
                   value={stats.activeUsers.toString()}
-                  icon={<CheckCircle className="h-4 w-4 text-muted-foreground" />}
+                  icon={
+                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                  }
                 />
                 <OverviewStats
                   title="Total Clients"
@@ -461,30 +548,49 @@ export default function AdminDashboard() {
                 <Card className="col-span-1 lg:col-span-1">
                   <CardHeader>
                     <CardTitle>User Analytics</CardTitle>
-                    <CardDescription>User activity and statistics</CardDescription>
+                    <CardDescription>
+                      User activity and statistics
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {statsLoaded && !error && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-sm font-medium">Activity Overview</h3>
-                          <Badge variant="outline">{activeUserPercentage}% active</Badge>
+                          <h3 className="text-sm font-medium">
+                            Activity Overview
+                          </h3>
+                          <Badge variant="outline">
+                            {activeUserPercentage}% active
+                          </Badge>
                         </div>
 
-                        <Progress value={activeUserPercentage} className="h-2" />
+                        <Progress
+                          value={activeUserPercentage}
+                          className="h-2"
+                        />
 
                         <div className="grid grid-cols-3 gap-4 pt-2 text-center">
                           <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Total</p>
-                            <p className="text-xl font-bold">{stats.totalUsers}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Total
+                            </p>
+                            <p className="text-xl font-bold">
+                              {stats.totalUsers}
+                            </p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Active</p>
-                            <p className="text-xl font-bold">{stats.activeUsers}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Active
+                            </p>
+                            <p className="text-xl font-bold">
+                              {stats.activeUsers}
+                            </p>
                           </div>
                           <div className="space-y-1">
                             <p className="text-xs text-muted-foreground">New</p>
-                            <p className="text-xl font-bold">{stats.newUsersThisMonth}</p>
+                            <p className="text-xl font-bold">
+                              {stats.newUsersThisMonth}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -501,15 +607,29 @@ export default function AdminDashboard() {
                     {statsLoaded && !error && (
                       <div className="space-y-6">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-sm font-medium">Completion Rate</h3>
+                          <h3 className="text-sm font-medium">
+                            Completion Rate
+                          </h3>
                           <Badge variant="outline">{taskCompletionRate}%</Badge>
                         </div>
 
                         <TaskProgress
                           items={[
-                            { label: "Completed", value: stats.completedTasks, color: "bg-green-500" },
-                            { label: "In Progress", value: stats.inProgressTasks, color: "bg-blue-500" },
-                            { label: "Pending", value: stats.pendingTasks, color: "bg-amber-500" }
+                            {
+                              label: "Completed",
+                              value: stats.completedTasks,
+                              color: "bg-green-500",
+                            },
+                            {
+                              label: "In Progress",
+                              value: stats.inProgressTasks,
+                              color: "bg-blue-500",
+                            },
+                            {
+                              label: "Pending",
+                              value: stats.pendingTasks,
+                              color: "bg-amber-500",
+                            },
                           ]}
                           size="lg"
                           showLabels={true}
@@ -518,20 +638,36 @@ export default function AdminDashboard() {
 
                         <div className="grid grid-cols-4 gap-4 pt-2 text-center">
                           <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Total</p>
-                            <p className="text-xl font-bold">{stats.totalTasks}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Total
+                            </p>
+                            <p className="text-xl font-bold">
+                              {stats.totalTasks}
+                            </p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Completed</p>
-                            <p className="text-xl font-bold">{stats.completedTasks}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Completed
+                            </p>
+                            <p className="text-xl font-bold">
+                              {stats.completedTasks}
+                            </p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">In Progress</p>
-                            <p className="text-xl font-bold">{stats.inProgressTasks}</p>
+                            <p className="text-xs text-muted-foreground">
+                              In Progress
+                            </p>
+                            <p className="text-xl font-bold">
+                              {stats.inProgressTasks}
+                            </p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Overdue</p>
-                            <p className="text-xl font-bold text-red-500">{stats.overdueTasksCount}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Overdue
+                            </p>
+                            <p className="text-xl font-bold text-red-500">
+                              {stats.overdueTasksCount}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -543,7 +679,9 @@ export default function AdminDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle>Priority Tasks</CardTitle>
-                  <CardDescription>Tasks requiring immediate attention</CardDescription>
+                  <CardDescription>
+                    Tasks requiring immediate attention
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {loading ? (
@@ -559,7 +697,9 @@ export default function AdminDashboard() {
                       <AlertTriangle className="h-10 w-10 text-muted-foreground mb-2 opacity-20" />
                       <p className="text-sm text-muted-foreground">{error}</p>
                     </div>
-                  ) : !dashboardData?.tasks?.some(t => t.priority === "high") ? (
+                  ) : !dashboardData?.tasks?.some(
+                      (t) => t.priority === "high"
+                    ) ? (
                     <div className="flex flex-col items-center justify-center p-6 text-center">
                       <CheckCircle className="h-10 w-10 text-green-500 mb-2 opacity-50" />
                       <p className="text-sm text-muted-foreground">
@@ -568,7 +708,7 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     dashboardData.tasks
-                      .filter(t => t.priority === "high")
+                      .filter((t) => t.priority === "high")
                       .slice(0, 3)
                       .map((task) => (
                         <Link
@@ -578,12 +718,17 @@ export default function AdminDashboard() {
                         >
                           <div className="border rounded-md p-3 hover:bg-muted/50 transition-colors">
                             <div className="flex justify-between items-center">
-                              <p className="font-medium truncate">{task.title}</p>
-                              <Badge className="bg-red-500 text-white">High</Badge>
+                              <p className="font-medium truncate">
+                                {task.title}
+                              </p>
+                              <Badge className="bg-red-500 text-white">
+                                High
+                              </Badge>
                             </div>
                             {task.dueDate && (
                               <div className="text-xs text-muted-foreground mt-2">
-                                Due {new Date(task.dueDate).toLocaleDateString()}
+                                Due{" "}
+                                {new Date(task.dueDate).toLocaleDateString()}
                               </div>
                             )}
                           </div>
@@ -591,7 +736,10 @@ export default function AdminDashboard() {
                       ))
                   )}
                   <Link href="/dashboard/tasks?priority=high">
-                    <Button variant="outline" className="w-full justify-between">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
                       View All Priority Tasks
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
@@ -607,7 +755,9 @@ export default function AdminDashboard() {
           <Card className="w-full overflow-hidden">
             <CardHeader>
               <CardTitle>System Activity Feed</CardTitle>
-              <CardDescription>Recent actions and events across the system</CardDescription>
+              <CardDescription>
+                Recent actions and events across the system
+              </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <div className="h-[600px] px-6 py-4 bg-background">

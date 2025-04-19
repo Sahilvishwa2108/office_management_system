@@ -13,6 +13,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Fetch staff without tasks
+    const staffWithoutTasks = await prisma.user.findMany({
+      where: {
+        isActive: true,
+        assignedTasks: { none: {} }, // No assigned tasks
+      },
+      select: {
+        id: true,
+        name: true,
+        avatar: true,
+        role: true,
+      },
+    });
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const dataType = searchParams.get('dataType') || 'full';
@@ -99,7 +112,8 @@ export async function GET(request: NextRequest) {
           inProgressTasks,
           overdueTasksCount: overdueTasks,
           newUsersThisMonth
-        }
+        },
+        staffWithoutTasks,
       });
     }
 
@@ -218,7 +232,8 @@ export async function GET(request: NextRequest) {
         dueDate: task.dueDate?.toISOString() || null,
         assignedTo: task.assignedTo
       })),
-      recentActivities: transformedActivities
+      recentActivities: transformedActivities,
+      staffWithoutTasks,
     });
   } catch (error) {
     console.error("Error fetching admin dashboard data:", error);
