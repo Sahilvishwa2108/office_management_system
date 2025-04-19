@@ -126,6 +126,15 @@ const canReassignTask = (currentUser: User) => {
   return currentUser.role === "ADMIN" || currentUser.role === "PARTNER";
 };
 
+// Add this helper function near the other permission functions
+const isTaskEditable = (task, billingStatus) => {
+  // Task is not editable if billing is approved
+  if (billingStatus === "billed") {
+    return false;
+  }
+  return true;
+};
+
 export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   // Properly type the unwrapped params
@@ -239,6 +248,11 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
       default: return "bg-gray-500 hover:bg-gray-600";
     }
   };
+
+  // Update the existing canEditTask function call to include billing status check
+  const taskEditableStatus = useMemo(() => 
+    task ? (isTaskEditable(task, currentBillingStatus) && canEditTask(task, session?.user)) : false,
+  [task, currentBillingStatus, session?.user]);
 
   if (loading) {
     return <TaskDetailSkeleton />;
@@ -368,7 +382,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 <Select
                   value={newStatus || task.status}
                   onValueChange={setNewStatus}
-                  disabled={updating}
+                  disabled={updating || currentBillingStatus === "billed"}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
@@ -385,7 +399,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               
               <Button 
                 onClick={updateTaskStatus} 
-                disabled={!newStatus || newStatus === task.status || updating} 
+                disabled={!newStatus || newStatus === task.status || updating || currentBillingStatus === "billed"} 
                 className="w-full"
               >
                 {updating ? (
@@ -400,8 +414,13 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               
               {/* Action buttons */}
               <div className="pt-4 space-y-3 border-t">
-                {canEditTask(task, session?.user) && (
-                  <Button variant="outline" className="w-full" asChild>
+                {taskEditableStatus && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    asChild
+                    disabled={currentBillingStatus === "billed"}
+                  >
                     <Link href={`/dashboard/tasks/${task.id}/edit`}>
                       <Edit className="mr-2 h-4 w-4" />
                       Edit Task
@@ -409,8 +428,12 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                   </Button>
                 )}
                 
-                {canReassignTask(session?.user) && (
-                  <Button variant="outline" className="w-full" asChild>
+                {canReassignTask(session?.user) && currentBillingStatus !== "billed" && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    asChild
+                  >
                     <Link href={`/dashboard/tasks/${task.id}/reassign`}>
                       <UserPlus className="mr-2 h-4 w-4" />
                       Reassign Task
@@ -441,7 +464,6 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                           </p>
                           <BillingApprovalButton 
                             taskId={task.id} 
-                            taskTitle={task.title}
                             onApproved={() => {
                               setTask(prev => prev ? { ...prev, billingStatus: "billed" } : null);
                               toast.success("Task billing approved successfully");
@@ -458,10 +480,13 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                     <div className="p-3 bg-green-50 border border-green-200 rounded-md">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="h-5 w-5 text-green-500" />
-                        <p className="text-sm text-green-700">
+                        <p className="text-sm text-green-700 font-medium">
                           This task has been completed and billed
                         </p>
                       </div>
+                      <p className="text-xs text-green-600 mt-1">
+                        Task details have been saved to client history and this task is now locked for editing.
+                      </p>
                     </div>
                   </div>
                 )}

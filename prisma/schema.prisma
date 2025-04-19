@@ -86,6 +86,7 @@ model Task {
   dueDate        DateTime?
   billingStatus  String?   @default("pending_billing") // "pending_billing", "billed", "paid"
   billingDate    DateTime?
+  scheduledDeletionDate DateTime? // Add this field
   
   // Keep the original assignment fields (for backward compatibility)
   assignedById   String

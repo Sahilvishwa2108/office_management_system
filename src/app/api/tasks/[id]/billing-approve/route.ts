@@ -22,7 +22,9 @@ export async function POST(
       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
     }
 
-    const taskId = params.id;
+    // Fix: Resolve params if it's a Promise
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const taskId = resolvedParams.id;
 
     // Get the task with client information
     const task = await prisma.task.findUnique({
@@ -64,7 +66,18 @@ export async function POST(
             billingDetails: {
               billedBy: session.user.id,
               billedByName: session.user.name,
-              billedAt: new Date().toISOString()
+              billedAt: new Date().toISOString(),
+              priority: task.priority,
+              dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+              // Only include relevant task details, not comments/discussions
+              assignedBy: task.assignedBy ? {
+                id: task.assignedBy.id,
+                name: task.assignedBy.name
+              } : null,
+              assignedTo: task.assignedTo ? {
+                id: task.assignedTo.id,
+                name: task.assignedTo.name
+              } : null
             }
           }
         });

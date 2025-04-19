@@ -19,7 +19,8 @@ import {
   AlertCircle,
   XCircle,
   Loader2,
-  Receipt
+  Receipt,
+  LockIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +60,9 @@ export function TaskStatusChanger({
   const [pendingBilling, setPendingBilling] = useState(billingStatus === "pending_billing");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isAdmin = userRole === "ADMIN";
+
+  // Check if task is locked due to billing
+  const isTaskLocked = billingStatus === "billed";
 
   const handleStatusChange = async (newStatus: string) => {
     if (newStatus === status) return;
@@ -129,7 +133,7 @@ export function TaskStatusChanger({
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <Select
-        disabled={disabled || isSubmitting || pendingBilling}
+        disabled={disabled || isSubmitting || pendingBilling || isTaskLocked}
         value={status}
         onValueChange={handleStatusChange}
       >
@@ -153,6 +157,15 @@ export function TaskStatusChanger({
           ))}
         </SelectContent>
       </Select>
+      
+      {/* Add a visual indicator when task is locked */}
+      {isTaskLocked && (
+        <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+          <LockIcon className="h-3 w-3 mr-1" />
+          Locked
+        </Badge>
+      )}
+      
       {clientId && (
         <p className="text-xs text-muted-foreground">Client: {clientId}</p>
       )}

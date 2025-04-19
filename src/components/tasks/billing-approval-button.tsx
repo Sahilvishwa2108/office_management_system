@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import axios from "axios";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation"; // Import the router
 import { Button } from "@/components/ui/button";
-import { Receipt } from "lucide-react";
-import { toast } from "sonner";
+import { Receipt, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,14 +18,12 @@ import {
 
 interface BillingApprovalButtonProps {
   taskId: string;
-  taskTitle: string;
   className?: string;
   onApproved?: () => void;
 }
 
 export function BillingApprovalButton({
   taskId,
-  // Remove or comment out taskTitle,
   className,
   onApproved,
 }: BillingApprovalButtonProps) {
@@ -39,35 +36,36 @@ export function BillingApprovalButton({
     setIsSubmitting(true);
     
     try {
-      // Log request details
-      console.log(`📤 Sending POST request to /api/tasks/${taskId}/billing-approve`);
-      
-      const response = await axios.post(`/api/tasks/${taskId}/billing-approve`);
-      console.log(`📥 Approval response:`, response.data);
-      
-      toast.success("Task billing approved successfully");
-      setConfirmDialogOpen(false);
+      const response = await fetch(`/api/tasks/${taskId}/billing-approve`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to approve billing");
+      }
+
+      // Success handling
+      const data = await response.json();
+      console.log("Billing approved successfully:", data);
       
       // Call the onApproved callback if provided
       if (onApproved) {
-        console.log(`🔔 Calling onApproved callback`);
         onApproved();
-      } else {
-        // Default behavior - redirect to admin dashboard
-        console.log(`🔀 Redirecting to admin dashboard`);
-        router.push("/dashboard/admin");
-        router.refresh();
       }
+      
+      // Close the dialog
+      setConfirmDialogOpen(false);
+      
+      // Redirect to the tasks page after successful billing approval
+      router.push('/dashboard/tasks');
+      
     } catch (error) {
-      console.error("❌ Error approving task billing:", error);
-      if (axios.isAxiosError(error)) {
-        console.error("❌ Axios error details:", {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data
-        });
-      }
-      toast.error("Failed to approve task billing");
+      console.error("Error approving billing:", error);
+      // Handle error display here (e.g., with a toast notification)
     } finally {
       setIsSubmitting(false);
     }
@@ -77,10 +75,15 @@ export function BillingApprovalButton({
     <>
       <Button
         variant="outline"
-        className={`border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 ${className}`}
+        size="sm"
+        className={cn(
+          "flex items-center gap-1 text-green-700 bg-green-50 hover:bg-green-100 hover:text-green-800",
+          className
+        )}
         onClick={() => setConfirmDialogOpen(true)}
+        disabled={isSubmitting}
       >
-        <Receipt className="h-4 w-4 mr-2" />
+        <Receipt className="h-4 w-4" />
         Approve Billing
       </Button>
 
@@ -89,26 +92,35 @@ export function BillingApprovalButton({
           <AlertDialogHeader>
             <AlertDialogTitle>Approve Billing</AlertDialogTitle>
             <AlertDialogDescription>
-              <p>Are you sure you want to approve this client&apos;s billing?</p>
-              <br /><br />
-              This will:
-              <ul className="list-disc pl-5 mt-2">
-                <li>Mark the task as billed</li>
-                <li>Add an entry to the client&apos;s billing history</li>
-                <li>Schedule the task for deletion in 24 hours</li>
-              </ul>
+              Are you sure you want to approve this client&apos;s billing?
             </AlertDialogDescription>
           </AlertDialogHeader>
+          
+          {/* Move additional content outside of AlertDialogDescription */}
+          <div className="py-2">
+            <div className="mb-2">This will:</div>
+            <ul className="list-disc pl-5">
+              <li>Mark the task as billed</li>
+              <li>Add an entry to the client&apos;s billing history</li>
+              <li>Schedule the task for deletion in 24 hours</li>
+            </ul>
+          </div>
+
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleApprove();
-              }}
+              onClick={handleApprove}
               disabled={isSubmitting}
+              className="bg-green-600 hover:bg-green-700"
             >
-              {isSubmitting ? "Approving..." : "Approve Billing"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Confirm Approval"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
