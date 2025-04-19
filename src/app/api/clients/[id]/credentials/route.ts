@@ -8,7 +8,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const clientId = params.id;
+  const resolvedParams = params instanceof Promise ? await params : params;
+  const clientId = resolvedParams.id;
 
   if (!clientId) {
     return NextResponse.json({ error: "Client ID is required" }, { status: 400 });
@@ -39,7 +40,8 @@ export async function POST(
   request: NextRequest, 
   { params }: { params: { id: string } }
 ) {
-  const clientId = params.id;
+  const resolvedParams = params instanceof Promise ? await params : params;
+  const clientId = resolvedParams.id;
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
@@ -91,7 +93,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const clientId = params.id;
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const clientId = resolvedParams.id;
     const session = await getServerSession(authOptions);
     
     if (!session?.user) {

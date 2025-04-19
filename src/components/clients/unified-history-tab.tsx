@@ -34,6 +34,17 @@ import {
 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Types for different history entries
 interface GeneralHistoryEntry {
@@ -73,7 +84,6 @@ interface TaskHistoryEntry {
 }
 
 type HistoryEntry = GeneralHistoryEntry | TaskHistoryEntry;
-
 interface UnifiedHistoryTabProps {
   clientId: string;
   isPermanent: boolean;
@@ -100,6 +110,8 @@ export function UnifiedHistoryTab({
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
 
   // Initialize form
   const form = useForm<HistoryFormValues>({
@@ -259,10 +271,6 @@ export function UnifiedHistoryTab({
 
   // Delete history entry
   const deleteHistoryEntry = async (entryId: string) => {
-    if (!confirm("Are you sure you want to delete this history entry?")) {
-      return;
-    }
-
     try {
       const response = await fetch(
         `/api/clients/${clientId}/history?entryId=${entryId}`,
@@ -277,6 +285,8 @@ export function UnifiedHistoryTab({
 
       // Remove entry from state
       setGeneralHistory((prev) => prev.filter((entry) => entry.id !== entryId));
+      setDeleteDialogOpen(false);
+      setEntryToDelete(null);
 
       toast.success("History entry deleted successfully");
     } catch (err: any) {
@@ -298,9 +308,9 @@ export function UnifiedHistoryTab({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
-        return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Completed</Badge>;
       case "cancelled":
-        return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">Cancelled</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -389,11 +399,12 @@ export function UnifiedHistoryTab({
             <Tabs
               value={activeTab}
               onValueChange={(v) => setActiveTab(v as any)}
+              className="w-fit"
             >
-              <TabsList>
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="notes">Notes</TabsTrigger>
-                <TabsTrigger value="tasks">Tasks</TabsTrigger>
+              <TabsList className="grid grid-cols-3 w-[300px]">
+                <TabsTrigger value="all" className="data-[state=active]:bg-primary/10">All</TabsTrigger>
+                <TabsTrigger value="notes" className="data-[state=active]:bg-primary/10">Notes</TabsTrigger>
+                <TabsTrigger value="tasks" className="data-[state=active]:bg-primary/10">Tasks</TabsTrigger>
               </TabsList>
             </Tabs>
             <Button
@@ -412,7 +423,18 @@ export function UnifiedHistoryTab({
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="bg-muted h-24 rounded-md"></div>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="bg-muted h-8 w-8 rounded-full"></div>
+                      <div>
+                        <div className="bg-muted h-4 w-32 rounded-md mb-2"></div>
+                        <div className="bg-muted h-3 w-20 rounded-md"></div>
+                      </div>
+                    </div>
+                    <div className="bg-muted h-16 rounded-md w-full"></div>
+                  </CardContent>
+                </Card>
               </div>
             ))}
           </div>
@@ -424,37 +446,56 @@ export function UnifiedHistoryTab({
             </Button>
           </div>
         ) : getFilteredHistory().length === 0 ? (
-          <div className="bg-muted p-6 text-center rounded-md">
-            <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-            <p className="text-muted-foreground">
+          <div className="bg-muted/30 p-8 text-center rounded-md border border-dashed border-muted-foreground/30">
+            <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-3 opacity-70" />
+            <p className="text-muted-foreground font-medium">
               {activeTab === "all"
                 ? "No history entries yet"
                 : activeTab === "notes"
                 ? "No notes yet"
                 : "No task history yet"}
             </p>
+            <p className="text-sm text-muted-foreground/70 mt-1">
+              {activeTab === "all"
+                ? "Start by adding a new entry"
+                : activeTab === "notes"
+                ? "Add a note to keep track of client interactions"
+                : "Completed tasks will appear here"}
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
             {getFilteredHistory().map((entry) => (
-              <Card key={entry.id} className="overflow-hidden">
+              <Card 
+                key={entry.id} 
+                className={`overflow-hidden transition-all ${
+                  !isTaskHistory(entry) && entry.pinned 
+                    ? "border-primary/50 bg-primary/5 shadow-[0_0_0_1px_rgba(var(--primary),0.2)]" 
+                    : ""
+                }`}
+              >
                 <CardContent className="p-4">
                   {!isTaskHistory(entry) ? (
                     // General history entry
                     <>
                       <div className="flex justify-between items-start">
                         <div className="flex items-start gap-3">
-                          <Avatar className="h-8 w-8">
+                          <Avatar className="h-8 w-8 ring-2 ring-muted-foreground/10">
                             <AvatarImage
                               src={`https://api.dicebear.com/7.x/initials/svg?seed=${entry.createdBy.name}`}
                             />
-                            <AvatarFallback>
+                            <AvatarFallback className="bg-primary/10 text-primary">
                               {getInitials(entry.createdBy.name)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">
+                            <div className="font-medium flex items-center gap-2">
                               {entry.createdBy.name}
+                              {entry.pinned && (
+                                <span className="inline-flex items-center gap-1 text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
+                                  <Pin className="h-3 w-3" /> Pinned
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(entry.createdAt), {
@@ -469,17 +510,17 @@ export function UnifiedHistoryTab({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="hover:bg-muted/10 p-1 rounded-full"
+                            className={`hover:bg-muted/10 p-1 rounded-full ${
+                              entry.pinned ? "text-primary" : "text-muted-foreground"
+                            }`}
                             onClick={() =>
                               togglePinHistoryEntry(entry.id, !entry.pinned)
                             }
                           >
                             <span title={entry.pinned ? "Unpin" : "Pin"}>
                               <Pin
-                                className={`h-5 w-5 ${
-                                  entry.pinned
-                                    ? "text-primary fill-current"
-                                    : "text-muted-foreground"
+                                className={`h-5 w-5 transition-all ${
+                                  entry.pinned ? "scale-110" : ""
                                 }`}
                                 fill={entry.pinned ? "currentColor" : "none"} // Fill only when pinned
                               />
@@ -487,18 +528,42 @@ export function UnifiedHistoryTab({
                           </Button>
 
                           {/* Delete Button */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                            onClick={() => deleteHistoryEntry(entry.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <AlertDialog open={deleteDialogOpen && entryToDelete === entry.id} onOpenChange={setDeleteDialogOpen}>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                onClick={() => {
+                                  setEntryToDelete(entry.id);
+                                  setDeleteDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete History Entry</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete this history entry.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => deleteHistoryEntry(entry.id)}
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
 
-                      <div className="mt-4 whitespace-pre-wrap text-sm">
+                      <div className="mt-4 whitespace-pre-wrap text-sm bg-card p-3 rounded-md border">
                         {entry.content}
                       </div>
                     </>
@@ -506,18 +571,23 @@ export function UnifiedHistoryTab({
                     // Task history entry
                     <>
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium">{entry.taskTitle}</h3>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            entry.taskStatus === "completed" ? "bg-green-500" : "bg-red-500"
+                          }`}></div>
+                          <h3 className="font-medium">{entry.taskTitle}</h3>
+                        </div>
                         {getStatusBadge(entry.taskStatus)}
                       </div>
 
                       {entry.taskDescription && (
-                        <p className="text-sm text-muted-foreground mb-3">
+                        <div className="text-sm text-muted-foreground mb-3 bg-muted/50 p-2 rounded-md">
                           {entry.taskDescription}
-                        </p>
+                        </div>
                       )}
 
                       <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 bg-muted/30 px-2 py-1 rounded-md">
                           <CalendarIcon className="h-3.5 w-3.5" />
                           <span>
                             Completed:{" "}
@@ -529,7 +599,7 @@ export function UnifiedHistoryTab({
                         </div>
 
                         {entry.taskBilledDate && (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 bg-muted/30 px-2 py-1 rounded-md">
                             <Receipt className="h-3.5 w-3.5" />
                             <span>
                               Billed:{" "}
