@@ -1,0 +1,25 @@
+.rdp {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: var(--primary);
+  --rdp-background-color: var(--primary-foreground);
+  --rdp-accent-color-dark: var(--primary-foreground);
+  --rdp-background-color-dark: var(--primary);
+  --rdp-outline: 2px solid var(--focus-ring);
+  --rdp-outline-offset: 2px;
+  margin: 0;
+}
+
+.rdp-caption {
+  padding: 0 1rem;
+}
+
+.rdp-button:hover:not([disabled]) {
+  background-color: var(--muted);
+}
+
+.rdp-day_selected, 
+.rdp-day_selected:focus-visible, 
+.rdp-day_selected:hover {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}

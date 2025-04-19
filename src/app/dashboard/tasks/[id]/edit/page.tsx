@@ -38,13 +38,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
+import "react-day-picker/style.css";
+import "@/styles/day-picker.css"; // Import after the default styles
 import { TaskPageLayout } from "@/components/layouts/task-page-layout";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CalendarIcon, Loader2, AlertCircle } from "lucide-react";
 import { SearchableMultiSelect } from "@/components/tasks/searchable-multi-select";
 import { SearchableSelect } from "@/components/tasks/searchable-select";
+import { DayPicker } from "react-day-picker";
 
 // Update the task form schema to include assignedToIds
 const taskFormSchema = z.object({
@@ -333,8 +335,8 @@ export default function EditTaskPage() {
                           <SelectItem value="cancelled" className="flex items-center gap-2">
                             <span className="h-2 w-2 rounded-full bg-red-500"></span>
                             <span>Cancelled</span>
-                          </SelectItem>
-                        </SelectContent>
+</SelectItem>
+                          </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
@@ -422,11 +424,14 @@ export default function EditTaskPage() {
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
-                        <Calendar
+                        <DayPicker
                           mode="single"
                           selected={field.value || undefined}
                           onSelect={field.onChange}
-                          initialFocus
+                          captionLayout="dropdown-months"
+                          showOutsideDays
+                          footer={field.value ? `Selected: ${format(field.value, 'PPP')}` : "Please select a date"}
+                          className="p-3"
                         />
                         <div className="p-3 border-t border-border">
                           <Button

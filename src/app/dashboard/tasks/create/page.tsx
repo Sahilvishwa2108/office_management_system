@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -39,7 +38,8 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
+import "react-day-picker/style.css";
+import "@/styles/day-picker.css"; // Import after the default styles
 import { TaskPageLayout } from "@/components/layouts/task-page-layout";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -47,6 +47,7 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { SearchableMultiSelect } from "@/components/tasks/searchable-multi-select";
 import { SearchableSelect } from "@/components/tasks/searchable-select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DayPicker } from "react-day-picker";
 
 // Update the task form schema
 const taskFormSchema = z.object({
@@ -402,13 +403,16 @@ export default function CreateTaskPage() {
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
+                          <DayPicker
                             mode="single"
                             selected={field.value || undefined}
                             onSelect={field.onChange}
-                            initialFocus
+                            captionLayout="dropdown-months"
+                            showOutsideDays
+                            fixedWeeks
                             disabled={(date) => date < new Date(Date.now() - 86400000)}
-                            className="rounded-md border"
+                            footer={field.value ? `Selected: ${format(field.value, 'PPP')}` : "Please select a date"}
+                            className="p-3"
                           />
                           <div className="p-3 border-t border-border flex justify-end">
                             <Button
