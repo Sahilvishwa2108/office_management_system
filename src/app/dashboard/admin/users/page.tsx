@@ -93,8 +93,8 @@ const getInitials = (name: string): string => {
     .substring(0, 2);
 };
 
-// UserListItem component
-const UserListItem = ({
+// UserCard component for card view
+const UserCard = ({
   user,
   onToggleStatus,
 }: {
@@ -108,112 +108,117 @@ const UserListItem = ({
     router.push(`/dashboard/admin/users/${user.id}`);
   };
 
-  // Prevent row click when clicking on actions
-  const handleActionClick = (e: React.MouseEvent) => {
+  // Prevent card click when clicking on or focusing on actions
+  const handleActionClick = (e: React.SyntheticEvent) => {
     e.stopPropagation();
   };
 
   return (
-    <div
+    <Card
       onClick={navigateToUser}
-      className="p-4 border rounded-lg mb-4 hover:bg-muted/50 cursor-pointer transition-colors"
+      className="group cursor-pointer hover:shadow-lg transition-shadow border rounded-xl flex flex-col items-center p-6 relative"
+      tabIndex={0}
+      role="button"
+      aria-label={`View details for ${user.name}`}
     >
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarImage
-              src={
-                user.avatar ||
-                `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`
-              }
-              alt={user.name}
-            />
-            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-medium">{user.name}</p>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant="outline" className="text-xs">
-                {formatRole(user.role)}
-              </Badge>
-              {user.isActive !== false ? (
-                <Badge
-                  variant="outline"
-                  className="bg-green-100 text-green-800 text-xs"
-                >
-                  Active
-                </Badge>
-              ) : (
-                <Badge variant="destructive" className="text-xs">
-                  Blocked
-                </Badge>
-              )}
-              <Badge variant="secondary" className="text-xs">
-                {user.assignedTasksCount} Tasks
-              </Badge>
-            </div>
-          </div>
+      <div className="flex flex-col items-center w-full">
+        <Avatar className="h-20 w-20 mb-3 ring-2 ring-primary/20 group-hover:ring-primary mx-auto">
+          <AvatarImage
+            src={
+              user.avatar ||
+              `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`
+            }
+            alt={user.name}
+          />
+          <AvatarFallback className="text-2xl">{getInitials(user.name)}</AvatarFallback>
+        </Avatar>
+        <div className="text-center w-full">
+          <p className="font-semibold text-lg">{user.name}</p>
+          <p className="text-sm text-muted-foreground">{user.email}</p>
         </div>
-
-        <div className="flex items-center gap-2" onClick={handleActionClick}>
-          <p className="text-xs text-muted-foreground">
-            {format(new Date(user.createdAt), "PPP")}
-          </p>
-          <DropdownMenu
-            open={isActionMenuOpen}
-            onOpenChange={setIsActionMenuOpen}
-          >
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="data-[state=open]:bg-muted"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[160px]">
-              <DropdownMenuItem asChild>
-                <Link href={`/dashboard/admin/users/${user.id}`}>
-                  <Eye className="w-4 h-4 mr-2" />
-                  View Details
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={`/dashboard/admin/users/${user.id}/edit`}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit User
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onToggleStatus(user.id, user.isActive !== false)}
-              >
-                {user.isActive !== false ? (
-                  <>
-                    <Ban className="w-4 h-4 mr-2" />
-                    Block User
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Activate User
-                  </>
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href={`/dashboard/admin/users/${user.id}/reset-password`}>
-                  <KeyIcon className="w-4 h-4 mr-2" />
-                  Reset Password
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex flex-wrap justify-center gap-2 mt-3">
+          <Badge variant="outline" className="text-xs">
+            {formatRole(user.role)}
+          </Badge>
+          {user.isActive !== false ? (
+            <Badge
+              variant="outline"
+              className="bg-green-100 text-green-800 text-xs"
+            >
+              Active
+            </Badge>
+          ) : (
+            <Badge variant="destructive" className="text-xs">
+              Blocked
+            </Badge>
+          )}
+          <Badge variant="secondary" className="text-xs">
+            {user.assignedTasksCount} Tasks
+          </Badge>
         </div>
       </div>
-    </div>
+      <div
+        className="absolute top-4 right-4 z-10"
+        onClick={handleActionClick}
+        onFocus={handleActionClick}
+      >
+        <DropdownMenu open={isActionMenuOpen} onOpenChange={setIsActionMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="data-[state=open]:bg-muted"
+              tabIndex={-1}
+              aria-label="Open user actions"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Toggle menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[160px]">
+            <DropdownMenuItem asChild>
+              <Link href={`/dashboard/admin/users/${user.id}`}>
+                <Eye className="w-4 h-4 mr-2" />
+                View Details
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/dashboard/admin/users/${user.id}/edit`}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit User
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onToggleStatus(user.id, user.isActive !== false)}
+            >
+              {user.isActive !== false ? (
+                <>
+                  <Ban className="w-4 h-4 mr-2" />
+                  Block User
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Activate User
+                </>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href={`/dashboard/admin/users/${user.id}/reset-password`}>
+                <KeyIcon className="w-4 h-4 mr-2" />
+                Reset Password
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className="w-full flex justify-center mt-4">
+        <span className="text-xs text-muted-foreground">
+          Joined {format(new Date(user.createdAt), "PPP")}
+        </span>
+      </div>
+    </Card>
   );
 };
 
@@ -481,7 +486,7 @@ export default function UsersPage() {
         </CardHeader>
         <CardContent>
           {viewMode === "table" ? (
-            <div className="border rounded-md">
+            <div className="border rounded-md overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -497,15 +502,17 @@ export default function UsersPage() {
                 <TableBody>
                   {filteredUsers.length > 0 ? (
                     filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">
-                          {user.name}
-                        </TableCell>
+                      <TableRow
+                        key={user.id}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => router.push(`/dashboard/admin/users/${user.id}`)}
+                        tabIndex={0}
+                        aria-label={`View details for ${user.name}`}
+                      >
+                        <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{formatRole(user.role)}</TableCell>
-                        <TableCell>
-                            {user.assignedTasksCount}
-                        </TableCell>
+                        <TableCell>{user.assignedTasksCount}</TableCell>
                         <TableCell>
                           {user.isActive !== false ? (
                             <Badge
@@ -521,13 +528,18 @@ export default function UsersPage() {
                         <TableCell>
                           {format(new Date(user.createdAt), "PPP")}
                         </TableCell>
-                        <TableCell>
+                        <TableCell
+                          onClick={(e) => e.stopPropagation()}
+                          className="!pr-0"
+                        >
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="data-[state=open]:bg-muted"
+                                tabIndex={-1}
+                                aria-label="Open user actions"
                               >
                                 <MoreHorizontal className="h-4 w-4" />
                                 <span className="sr-only">Toggle menu</span>
@@ -601,17 +613,17 @@ export default function UsersPage() {
               </Table>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => (
-                  <UserListItem
+                  <UserCard
                     key={user.id}
                     user={user}
                     onToggleStatus={handleToggleStatus}
                   />
                 ))
               ) : (
-                <div className="text-center py-6 text-muted-foreground border rounded-md">
+                <div className="text-center py-6 text-muted-foreground border rounded-md col-span-full">
                   No users found
                 </div>
               )}

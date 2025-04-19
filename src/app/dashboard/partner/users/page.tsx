@@ -44,6 +44,8 @@ import Link from "next/link";
 import { UserCount } from "@/components/dashboard/user-count";
 import { RoleFilter } from "@/components/ui/role-filter";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface User {
   id: string;
@@ -71,6 +73,86 @@ const partnerRoleConfigs = [
   },
 ];
 
+// Get initials from name
+const getInitials = (name: string): string => {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+    .substring(0, 2);
+};
+
+// UserCard component for card view (partner version, no admin/partner actions)
+const UserCard = ({
+  user,
+}: {
+  user: User;
+}) => {
+  const router = useRouter();
+  const navigateToUser = () => {
+    router.push(`/dashboard/partner/users/${user.id}`);
+  };
+  const formatRole = (role: string): React.ReactNode => {
+    return role
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
+  return (
+    <Card
+      onClick={navigateToUser}
+      className="group cursor-pointer hover:shadow-lg transition-shadow border rounded-xl flex flex-col items-center p-6 relative"
+      tabIndex={0}
+      role="button"
+      aria-label={`View details for ${user.name}`}
+    >
+      <div className="flex flex-col items-center w-full">
+        <Avatar className="h-20 w-20 mb-3 ring-2 ring-primary/20 group-hover:ring-primary mx-auto">
+          <AvatarImage
+            src={
+              user.avatar ||
+              `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`
+            }
+            alt={user.name}
+          />
+          <AvatarFallback className="text-2xl">{getInitials(user.name)}</AvatarFallback>
+        </Avatar>
+        <div className="text-center w-full">
+          <p className="font-semibold text-lg">{user.name}</p>
+          <p className="text-sm text-muted-foreground">{user.email}</p>
+        </div>
+        <div className="flex flex-wrap justify-center gap-2 mt-3">
+          <Badge variant="outline" className="text-xs">
+            {formatRole(user.role)}
+          </Badge>
+          {user.isActive !== false ? (
+            <Badge
+              variant="outline"
+              className="bg-green-100 text-green-800 text-xs"
+            >
+              Active
+            </Badge>
+          ) : (
+            <Badge variant="destructive" className="text-xs">
+              Blocked
+            </Badge>
+          )}
+          <Badge variant="secondary" className="text-xs">
+            {user.assignedTasksCount} Tasks
+          </Badge>
+        </div>
+      </div>
+      <div className="w-full flex justify-center mt-4">
+        <span className="text-xs text-muted-foreground">
+          Joined {format(new Date(user.createdAt), "PPP")}
+        </span>
+      </div>
+    </Card>
+  );
+};
+
 // Simplified - no Suspense or separate components
 export default function PartnerUsersPage() {
   const { data: session } = useSession();
@@ -81,6 +163,7 @@ export default function PartnerUsersPage() {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [pageLoading, setPageLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<"table" | "card">("table");
 
   // Format the role for display
   const formatRole = (role: string) => {
@@ -199,8 +282,9 @@ export default function PartnerUsersPage() {
   // Filter users based on search term
   const filteredUsers = users.filter(
     (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      (user.role === "BUSINESS_EXECUTIVE" || user.role === "BUSINESS_CONSULTANT") &&
+      (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Handle search input with URL update
@@ -280,44 +364,51 @@ export default function PartnerUsersPage() {
       />
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-4 w-full">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or email..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={handleSearchChange}
-              />
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or email..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                />
+              </div>
+              <div className="flex gap-2">
+                <RoleFilter
+                  roles={availableRoles}
+                  selectedRoles={selectedRoles}
+                  onChange={setSelectedRoles}
+                />
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+                {(selectedRoles.length > 0 || statusFilter !== "all" || searchTerm) && (
+                  <Button variant="outline" onClick={clearFilters} size="icon">
+                    <FilterX className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
-
-            <div className="flex gap-2">
-              <RoleFilter
-                roles={availableRoles}
-                selectedRoles={selectedRoles}
-                onChange={setSelectedRoles}
-              />
-
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {(selectedRoles.length > 0 ||
-                statusFilter !== "all" ||
-                searchTerm) && (
-                <Button variant="outline" onClick={clearFilters} size="icon">
-                  <FilterX className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            <Tabs
+              value={viewMode}
+              onValueChange={(v) => setViewMode(v as "table" | "card")}
+              className="w-[200px]"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="table">Table</TabsTrigger>
+                <TabsTrigger value="card">Cards</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </CardHeader>
         <CardContent>
@@ -329,84 +420,90 @@ export default function PartnerUsersPage() {
             <div className="text-center py-12 border rounded-md bg-background">
               <h3 className="text-lg font-medium mb-2">No staff found</h3>
               <p className="text-muted-foreground mb-6">
-                {searchTerm ||
-                selectedRoles.length > 0 ||
-                statusFilter !== "all"
+                {searchTerm || selectedRoles.length > 0 || statusFilter !== "all"
                   ? "No results match your search criteria. Try adjusting your filters."
                   : "No junior staff have been added yet."}
               </p>
-
-              {!searchTerm &&
-                selectedRoles.length === 0 &&
-                statusFilter === "all" && (
-                  <Button asChild>
-                    <Link href="/dashboard/partner/users/create">
-                      <Plus className="h-4 w-4 mr-2" /> Add New Staff
-                    </Link>
-                  </Button>
-                )}
+              {!searchTerm && selectedRoles.length === 0 && statusFilter === "all" && (
+                <Button asChild>
+                  <Link href="/dashboard/partner/users/create">
+                    <Plus className="h-4 w-4 mr-2" /> Add New Staff
+                  </Link>
+                </Button>
+              )}
+            </div>
+          ) : viewMode === "table" ? (
+            <div className="border rounded-md overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Assigned Tasks</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((user) => (
+                    <TableRow
+                      key={user.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => router.push(`/dashboard/partner/users/${user.id}`)}
+                      tabIndex={0}
+                      aria-label={`View details for ${user.name}`}
+                    >
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{formatRole(user.role)}</Badge>
+                      </TableCell>
+                      <TableCell>{user.assignedTasksCount}</TableCell>
+                      <TableCell>
+                        {user.isActive !== false ? (
+                          <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>
+                        ) : (
+                          <Badge variant="destructive">Blocked</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>{format(new Date(user.createdAt), "MMM d, yyyy")}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              tabIndex={-1}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/dashboard/partner/users/${user.id}`}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                View Details
+                              </Link>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Assigned Tasks</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{formatRole(user.role)}</Badge>
-                    </TableCell>
-                    <TableCell>{user.assignedTasksCount}</TableCell>
-                    <TableCell>
-                      {user.isActive !== false ? (
-                        <Badge className="bg-green-500 hover:bg-green-600">
-                          Active
-                        </Badge>
-                      ) : (
-                        <Badge variant="destructive">Blocked</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(user.createdAt), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">Open menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/dashboard/partner/users/${user.id}`}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              View Details
-                            </Link>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredUsers.map((user) => (
+                <UserCard key={user.id} user={user} />
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
