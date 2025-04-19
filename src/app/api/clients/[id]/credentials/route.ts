@@ -5,7 +5,6 @@ import { Session } from "next-auth";
 import { authOptions } from "@/lib/auth"; 
 
 export async function GET(
-  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const resolvedParams = params instanceof Promise ? await params : params;
@@ -84,60 +83,6 @@ export async function POST(
   } catch (error) {
     console.error("Error adding credential:", error);
     return NextResponse.json({ error: "Failed to add credential" }, { status: 500 });
-  }
-}
-
-// Update the DELETE handler as well
-export async function DELETE(
-  request: NextRequest, 
-  { params }: { params: { id: string } }
-) {
-  try {
-    const resolvedParams = params instanceof Promise ? await params : params;
-    const clientId = resolvedParams.id;
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    
-    // Only ADMIN can delete credentials
-    if (session.user.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Only administrators can delete credentials" }, 
-        { status: 403 }
-      );
-    }
-    
-    // Get the credential ID from the URL
-    const url = new URL(request.url);
-    const credentialId = url.pathname.split('/').pop();
-    
-    if (!credentialId) {
-      return NextResponse.json({ error: "Credential ID is required" }, { status: 400 });
-    }
-    
-    // Verify the credential belongs to the client
-    const credential = await prisma.credential.findFirst({
-      where: {
-        id: credentialId,
-        clientId
-      }
-    });
-    
-    if (!credential) {
-      return NextResponse.json({ error: "Credential not found" }, { status: 404 });
-    }
-    
-    // Delete the credential
-    await prisma.credential.delete({
-      where: { id: credentialId }
-    });
-    
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting credential:", error);
-    return NextResponse.json({ error: "Failed to delete credential" }, { status: 500 });
   }
 }
 
