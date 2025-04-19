@@ -99,7 +99,7 @@ interface Task {
   [key: string]: unknown; // Add index signature to satisfy canDeleteTask requirements
 }
 
-// Task Card Component
+// Task Card Component - Improved styling for grid layout
 const TaskListItem = ({ 
   task, 
   confirmDelete,
@@ -142,94 +142,83 @@ const TaskListItem = ({
   return (
     <div 
       onClick={handleRowClick}
-      className="p-4 border rounded-lg mb-4 hover:bg-muted/50 cursor-pointer transition-colors"
+      className="h-full border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors shadow-sm hover:shadow-md p-4 flex flex-col"
     >
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{task.title}</span>
-            <Badge className={getStatusColor(task.status)}>
-              {task.status}
-            </Badge>
+      <div className="flex items-center justify-between mb-2">
+        <Badge className={getStatusColor(task.status)}>
+          {task.status}
+        </Badge>
+        <Badge variant="outline" className={getPriorityColor(task.priority)}>
+          {task.priority} priority
+        </Badge>
+      </div>
+      
+      <h3 className="font-medium text-lg mb-2 line-clamp-2">{task.title}</h3>
+      
+      <div className="text-sm text-muted-foreground mt-auto">
+        Due: {task.dueDate ? format(new Date(task.dueDate), 'MMM dd, yyyy') : 'No due date'}
+      </div>
+      
+      <div className="mt-3 pt-3 border-t">
+        <span className="text-sm font-medium block mb-2">Assigned to:</span>
+        {task.assignees && task.assignees.length > 0 ? (
+          <TaskAssignees 
+            assignees={task.assignees} 
+            limit={3} 
+            size="sm" 
+          />
+        ) : task.assignedTo ? (
+          <div className="flex items-center gap-1.5">
+            <Avatar className="h-5 w-5">
+              <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedTo.name}`} />
+              <AvatarFallback>{getInitials(task.assignedTo.name)}</AvatarFallback>
+            </Avatar>
+            <span className="text-sm">{task.assignedTo.name}</span>
           </div>
-          <div className="text-sm text-muted-foreground mt-1">
-            Due: {task.dueDate ? format(new Date(task.dueDate), 'MMM dd, yyyy') : 'No due date'}
-          </div>
-          <div className="text-xs mt-2 flex items-center gap-2">
-            <Badge variant="outline" className={getPriorityColor(task.priority)}>
-              {task.priority} priority
-            </Badge>
-            <span className="text-muted-foreground">
-              Assigned to: {task.assignedTo?.name || 'Unassigned'}
-            </span>
-            {task.client && (
-              <span className="text-muted-foreground">
-                Client: {task.client.contactPerson}
-              </span>
-            )}
-          </div>
-          <div className="mt-2">
-            <span className="text-sm font-medium">Assigned to: </span>
-            {task.assignees && task.assignees.length > 0 ? (
-              <TaskAssignees 
-                assignees={task.assignees} 
-                limit={3} 
-                size="sm" 
-              />
-            ) : task.assignedTo ? (
-              <div className="flex items-center gap-1.5">
-                <Avatar className="h-5 w-5">
-                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedTo.name}`} />
-                  <AvatarFallback>{getInitials(task.assignedTo.name)}</AvatarFallback>
-                </Avatar>
-                <span className="text-sm">{task.assignedTo.name}</span>
-              </div>
-            ) : (
-              <span className="text-sm text-muted-foreground">Unassigned</span>
-            )}
-          </div>
-        </div>
-        
-        <div 
-          className="flex flex-wrap gap-2"
-          onClick={handleActionClick}
+        ) : (
+          <span className="text-sm text-muted-foreground">Unassigned</span>
+        )}
+      </div>
+      
+      <div 
+        className="flex flex-wrap gap-2 mt-4 pt-3 border-t"
+        onClick={handleActionClick}
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          asChild
+          className="h-8"
         >
+          <Link href={`/dashboard/tasks/${task.id}`}>
+            <Eye className="h-3.5 w-3.5 mr-1" />
+            View
+          </Link>
+        </Button>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          asChild
+          className="h-8"
+        >
+          <Link href={`/dashboard/tasks/${task.id}/edit`}>
+            <Edit className="h-3.5 w-3.5 mr-1" />
+            Edit
+          </Link>
+        </Button>
+        
+        {canDelete && (
           <Button
-            variant="outline"
+            variant="destructive"
             size="sm"
-            asChild
             className="h-8"
+            onClick={() => confirmDelete(task.id)}
           >
-            <Link href={`/dashboard/tasks/${task.id}`}>
-              <Eye className="h-3.5 w-3.5 mr-1" />
-              View
-            </Link>
+            <Trash2 className="h-3.5 w-3.5 mr-1" />
+            Delete
           </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-            className="h-8"
-          >
-            <Link href={`/dashboard/tasks/${task.id}/edit`}>
-              <Edit className="h-3.5 w-3.5 mr-1" />
-              Edit
-            </Link>
-          </Button>
-          
-          {canDelete && (
-            <Button
-              variant="destructive"
-              size="sm"
-              className="h-8"
-              onClick={() => confirmDelete(task.id)}
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-1" />
-              Delete
-            </Button>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
@@ -349,19 +338,21 @@ export default function TasksPage() {
   const { data: session } = useSession();
   
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [searchInputValue, setSearchInputValue] = useState<string>("");
   const [viewMode, setViewMode] = useState<"table" | "card">("card");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
+  const [searchMode, setSearchMode] = useState<"client" | "server">("client");
 
-  // Use debounced search for better performance
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  // Use debounced search with longer delay for smoother experience
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   // Read URL parameters on mount
   useEffect(() => {
@@ -379,6 +370,7 @@ export default function TasksPage() {
         const searchParam = url.searchParams.get('search');
         if (searchParam) {
           setSearchTerm(searchParam);
+          setSearchInputValue(searchParam);
         }
         
         // Get view mode from URL or localStorage
@@ -403,7 +395,7 @@ export default function TasksPage() {
     }
   }, []);
 
-  // Update URL when filters change
+  // Update URL when filters change, but don't trigger re-renders
   useEffect(() => {
     if (typeof window !== 'undefined' && !isInitialLoad) {
       try {
@@ -441,6 +433,7 @@ export default function TasksPage() {
     }
   }, [statusFilter, debouncedSearchTerm, viewMode, isInitialLoad]);
 
+  // Fetch all tasks - but only when necessary
   const fetchTasks = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
@@ -454,12 +447,13 @@ export default function TasksPage() {
         url.searchParams.append("status", statusFilter);
       }
 
-      if (debouncedSearchTerm) {
+      // Only apply search to server request if server-side search is enabled
+      if (searchMode === "server" && debouncedSearchTerm) {
         url.searchParams.append("search", debouncedSearchTerm);
       }
 
       const response = await axios.get<Task[]>(url.toString(), { timeout: 8000 });
-      setTasks(response.data);
+      setAllTasks(response.data);
     } catch (error) {
       console.error("Error fetching tasks:", error);
       setDataError("Failed to load tasks. Please try again.");
@@ -468,13 +462,23 @@ export default function TasksPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [statusFilter, debouncedSearchTerm]);
+  }, [statusFilter, debouncedSearchTerm, searchMode]);
 
+  // Only fetch when status filter changes or on refresh - not on search term changes
   useEffect(() => {
     if (!isInitialLoad) {
       fetchTasks();
     }
-  }, [fetchTasks, isInitialLoad]);
+  }, [fetchTasks, statusFilter, isInitialLoad]);
+
+  // Smooth client-side search handling
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchInputValue(value);
+    
+    // Update the search term after typing stops (will trigger URL update)
+    setSearchTerm(value);
+  }, []);
 
   // Permission check - memoized
   const canManageTasks = useMemo(() => {
@@ -486,20 +490,27 @@ export default function TasksPage() {
     return canDeleteTask(session, task);
   }, [session]);
 
-  // Filter tasks based on search and status
+  // Filter tasks based on search and status - client-side filtering for search
   const filteredTasks = useMemo(() => {
-    if (!tasks || !Array.isArray(tasks)) return [];
-    return tasks;
-  }, [tasks]);
+    if (!allTasks || !Array.isArray(allTasks)) return [];
+    
+    // If using server-side search, return all tasks as they're already filtered
+    if (searchMode === "server") return allTasks;
+    
+    // Client-side search filtering
+    if (!debouncedSearchTerm) return allTasks;
+    
+    const searchLower = debouncedSearchTerm.toLowerCase();
+    return allTasks.filter(task => 
+      task.title.toLowerCase().includes(searchLower) || 
+      (task.client?.contactPerson && task.client.contactPerson.toLowerCase().includes(searchLower)) ||
+      (task.assignedTo?.name && task.assignedTo.name.toLowerCase().includes(searchLower))
+    );
+  }, [allTasks, debouncedSearchTerm, searchMode]);
 
   // Handle view mode toggle
   const handleViewModeChange = useCallback((mode: "table" | "card") => {
     setViewMode(mode);
-  }, []);
-
-  // Handle search input change
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
   }, []);
 
   // Delete task handler
@@ -526,6 +537,12 @@ export default function TasksPage() {
     }
   };
 
+  // Clear search button handler
+  const clearSearch = () => {
+    setSearchInputValue("");
+    setSearchTerm("");
+  };
+
   // Loading state
   if (loading && !refreshing) {
     return (
@@ -548,21 +565,18 @@ export default function TasksPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {Array(5)
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array(6)
                 .fill(0)
                 .map((_, i) => (
-                  <div key={i} className="p-4 border rounded-lg">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                      <div className="flex-1">
-                        <Skeleton className="h-6 w-40 mb-1" />
-                        <Skeleton className="h-4 w-24" />
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Skeleton className="h-8 w-20" />
-                        <Skeleton className="h-8 w-20" />
-                      </div>
+                  <div key={i} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <Skeleton className="h-5 w-20" />
+                      <Skeleton className="h-5 w-16" />
                     </div>
+                    <Skeleton className="h-6 w-2/3 mb-2" />
+                    <Skeleton className="h-4 w-1/2 mb-4" />
+                    <Skeleton className="h-10 w-full mt-2" />
                   </div>
                 ))}
             </div>
@@ -673,20 +687,20 @@ export default function TasksPage() {
                 </div>
               </div>
 
-              {/* Search box */}
+              {/* Search box - improved for smoother experience */}
               <div className="relative w-full sm:max-w-sm">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search tasks..."
                   className="pl-8 pr-10"
-                  value={searchTerm}
+                  value={searchInputValue}
                   onChange={handleSearchChange}
                 />
                 {refreshing ? (
                   <RefreshCw className="animate-spin absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                ) : searchTerm && (
+                ) : searchInputValue && (
                   <button 
-                    onClick={() => setSearchTerm("")}
+                    onClick={clearSearch}
                     className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
                     aria-label="Clear search"
                   >
@@ -767,9 +781,9 @@ export default function TasksPage() {
               </div>
             )}
 
-            {/* Task list - card view */}
+            {/* Task list - card view - now uses grid layout */}
             {!dataError && filteredTasks.length > 0 && viewMode === "card" && (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredTasks.map((task) => (
                   <TaskListItem 
                     key={task.id} 
