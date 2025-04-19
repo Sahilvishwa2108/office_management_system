@@ -17,7 +17,7 @@ interface RecentNotificationsCardProps {
 }
 
 export function RecentNotificationsCard({ className = "" }: RecentNotificationsCardProps) {
-  const { notifications, markAsRead, refreshNotifications, loading, error } = useNotifications();
+  const { notifications, markAsRead, refreshNotifications, loading } = useNotifications();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const router = useRouter();
   const initialLoadRef = useRef(true);
@@ -60,13 +60,13 @@ export function RecentNotificationsCard({ className = "" }: RecentNotificationsC
 
   return (
     <Card className={`h-full flex flex-col ${className}`}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 flex-shrink-0">
         <CardTitle className="text-xl">Recent Notifications</CardTitle>
         <Bell className="h-5 w-5 text-muted-foreground" />
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
+      <CardContent className="flex-1 flex flex-col overflow-hidden p-0 pt-2">
         {loading && isInitialLoad ? (
-          <div className="space-y-3">
+          <div className="space-y-3 px-6">
             {Array(3).fill(0).map((_, i) => (
               <div key={i} className="flex items-start gap-3">
                 <Skeleton className="h-8 w-8 rounded-full" />
@@ -78,15 +78,15 @@ export function RecentNotificationsCard({ className = "" }: RecentNotificationsC
             ))}
           </div>
         ) : notifications.length === 0 ? (
-          <div className="text-center py-6 flex-1 flex flex-col items-center justify-center">
+          <div className="text-center py-6 flex-1 flex flex-col items-center justify-center px-6">
             <Bell className="mx-auto h-8 w-8 text-muted-foreground opacity-50 mb-2" />
             <p className="text-sm text-muted-foreground">No notifications yet</p>
           </div>
         ) : (
           <>
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-3">
-                {notifications.slice(0, 6).map(notification => (
+            <ScrollArea className="flex-1 max-h-[calc(100%-48px)]"> {/* Modified this line */}
+              <div className="space-y-3 px-6 py-2"> {/* Added py-2 for better spacing */}
+                {notifications.slice(0, notifications.length > 2 ? notifications.length : 2).map(notification => (
                   <div
                     key={notification.id}
                     className={`p-3 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors ${
@@ -117,10 +117,10 @@ export function RecentNotificationsCard({ className = "" }: RecentNotificationsC
                 ))}
               </div>
             </ScrollArea>
-            <div className="pt-3 mt-3 border-t">
+            <div className="pt-3 mt-auto border-t flex-shrink-0 px-6">
               <Link href="/dashboard/settings/notifications">
                 <Button variant="outline" size="sm" className="w-full">
-                  View All Notifications
+                  View All
                 </Button>
               </Link>
             </div>

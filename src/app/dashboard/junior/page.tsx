@@ -9,7 +9,6 @@ import Link from "next/link";
 import { 
   CheckCircle, 
   Activity, 
-  BadgePlus,
   Users2,
   AlertTriangle,
   Clock,
@@ -304,7 +303,7 @@ function JuniorDashboardContent() {
                     </Button>
                   </CardContent>
                 </Card>
-                <div className="col-span-2 lg:col-span-3 h-full">
+                <div className="col-span-2 lg:col-span-3 h-full max-h-[350px]">
                   <RecentNotificationsCard className="h-full" />
                 </div>
               </div>
