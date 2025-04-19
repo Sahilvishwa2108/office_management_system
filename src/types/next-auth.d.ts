@@ -5,6 +5,7 @@ declare module "next-auth" {
     id: string
     role: UserRole;
     avatar: string | null
+    canApproveBilling?: boolean 
   }
 
   interface Session {

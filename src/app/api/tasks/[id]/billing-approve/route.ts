@@ -17,7 +17,8 @@ export async function POST(
     }
 
     // Only admin can approve billing
-    if (session.user.role !== "ADMIN") {
+    if (session.user.role !== "ADMIN" &&
+      !(session.user.role === "PARTNER" && session.user.canApproveBilling)) {
       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
     }
 
@@ -76,7 +77,7 @@ export async function POST(
           billingStatus: "billed",
           billingDate: new Date(),
           // Schedule task for deletion after history is created
-          scheduledDeletionDate: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours later
+          // scheduledDeletionDate: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours later
         }
       });
       console.log(`Task ${updatedTask.id} updated with billing status: ${updatedTask.billingStatus}`);

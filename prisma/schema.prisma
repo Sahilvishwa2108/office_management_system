@@ -46,6 +46,7 @@ model User {
   managedClients          Client[]       // Staff who manages clients
   taskComments            TaskComment[]
   clientHistories         ClientHistory[] @relation("CreatedBy")
+  canApproveBilling       Boolean        @default(false) // Whether this user can approve billing
 }
 
 model Client {

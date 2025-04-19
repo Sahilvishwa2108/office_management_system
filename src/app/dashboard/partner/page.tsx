@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useSession } from "next-auth/react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -25,10 +32,15 @@ import { StatsCard } from "@/components/dashboard/stats-card";
 import { TaskProgress } from "@/components/dashboard/task-progress";
 import { TaskSummary } from "@/components/dashboard/task-summary";
 import { useRouter } from "next/navigation";
-import { DashboardStatsSkeleton, DashboardContentSkeleton } from "@/components/loading/dashboard-skeleton";
+import {
+  DashboardStatsSkeleton,
+  DashboardContentSkeleton,
+} from "@/components/loading/dashboard-skeleton";
 import { UserCardSkeleton } from "@/components/loading/user-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { PendingBillingTasks } from "@/components/admin/pending-billing-tasks";
+import { RecentNotificationsCard } from "@/components/dashboard/recent-notifications-card";
 
 // Task list skeleton component
 const TaskListSkeleton = () => (
@@ -48,7 +60,6 @@ const TaskListSkeleton = () => (
     </Card>
   </>
 );
-import { RecentNotificationsCard } from "@/components/dashboard/recent-notifications-card";
 
 interface PartnerDashboardData {
   stats: {
@@ -98,6 +109,7 @@ interface PartnerDashboardData {
 }
 
 function PartnerDashboardContent() {
+  const { data: session } = useSession();
   const [dashboardData, setDashboardData] =
     useState<PartnerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,6 +142,10 @@ function PartnerDashboardContent() {
     fetchDashboardData();
   }, []);
 
+  // Check if the partner has billing approval permissions
+  const canApproveBilling = session?.user?.role === "PARTNER" && session.user.canApproveBilling;
+  console.log("Can approve billing:", canApproveBilling);
+
   // Default empty data if still loading
   const stats = dashboardData?.stats || {
     totalStaff: 0,
@@ -156,7 +172,6 @@ function PartnerDashboardContent() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="team">Team</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
@@ -174,48 +189,74 @@ function PartnerDashboardContent() {
                 <Card className="col-span-2 lg:col-span-4">
                   <CardHeader>
                     <CardTitle>Quick Actions</CardTitle>
-                    <CardDescription>Frequently used operations</CardDescription>
+                    <CardDescription>
+                      Frequently used operations
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Button asChild variant="outline" className="h-20 justify-start p-4">
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="h-20 justify-start p-4"
+                    >
                       <Link href="/dashboard/partner/users/create">
                         <div className="flex flex-col items-start">
                           <span className="font-medium">Add New Staff</span>
-                          <span className="text-xs text-muted-foreground">Create a new team member account</span>
+                          <span className="text-xs text-muted-foreground">
+                            Create a new team member account
+                          </span>
                         </div>
                         <Plus className="ml-auto h-5 w-5 text-primary" />
                       </Link>
                     </Button>
-                    <Button asChild variant="outline" className="h-20 justify-start p-4">
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="h-20 justify-start p-4"
+                    >
                       <Link href="/dashboard/tasks/create">
                         <div className="flex flex-col items-start">
                           <span className="font-medium">Create Task</span>
-                          <span className="text-xs text-muted-foreground">Assign a new task to the team</span>
+                          <span className="text-xs text-muted-foreground">
+                            Assign a new task to the team
+                          </span>
                         </div>
                         <ListTodo className="ml-auto h-5 w-5 text-primary" />
                       </Link>
                     </Button>
-                    <Button asChild variant="outline" className="h-20 justify-start p-4">
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="h-20 justify-start p-4"
+                    >
                       <Link href="/dashboard/clients">
                         <div className="flex flex-col items-start">
                           <span className="font-medium">Client Directory</span>
-                          <span className="text-xs text-muted-foreground">Access all client information</span>
+                          <span className="text-xs text-muted-foreground">
+                            Access all client information
+                          </span>
                         </div>
                         <Briefcase className="ml-auto h-5 w-5 text-primary" />
                       </Link>
                     </Button>
-                    <Button asChild variant="outline" className="h-20 justify-start p-4">
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="h-20 justify-start p-4"
+                    >
                       <Link href="/dashboard/partner/users">
                         <div className="flex flex-col items-start">
                           <span className="font-medium">View Team</span>
-                          <span className="text-xs text-muted-foreground">Manage your team members</span>
+                          <span className="text-xs text-muted-foreground">
+                            Manage your team members
+                          </span>
                         </div>
                         <Users className="ml-auto h-5 w-5 text-primary" />
                       </Link>
                     </Button>
                   </CardContent>
                 </Card>
-                
+
                 <div className="col-span-2 lg:col-span-3 h-full">
                   <RecentNotificationsCard className="h-full" />
                 </div>
@@ -226,7 +267,9 @@ function PartnerDashboardContent() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Priority Tasks</CardTitle>
-                    <CardDescription>Tasks requiring immediate attention</CardDescription>
+                    <CardDescription>
+                      Tasks requiring immediate attention
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {loading ? (
@@ -242,8 +285,9 @@ function PartnerDashboardContent() {
                         <AlertTriangle className="h-10 w-10 text-muted-foreground mb-2 opacity-20" />
                         <p className="text-sm text-muted-foreground">{error}</p>
                       </div>
-                    ) : dashboardData?.tasks?.filter((t) => t.priority === "high")
-                      .length === 0 ? (
+                    ) : dashboardData?.tasks?.filter(
+                        (t) => t.priority === "high"
+                      ).length === 0 ? (
                       <div className="flex flex-col items-center justify-center p-6 text-center">
                         <CheckCircle className="h-10 w-10 text-green-500 mb-2 opacity-50" />
                         <p className="text-sm text-muted-foreground">
@@ -270,21 +314,23 @@ function PartnerDashboardContent() {
                                   </p>
                                 </div>
                                 <div
-                                  className={`px-2 py-1 rounded-full text-xs ${task.status === "completed"
+                                  className={`px-2 py-1 rounded-full text-xs ${
+                                    task.status === "completed"
                                       ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
                                       : task.status === "in-progress"
-                                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                                        : task.status === "review"
-                                          ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
-                                          : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
-                                    }`}
+                                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                      : task.status === "review"
+                                      ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                                      : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
+                                  }`}
                                 >
                                   {task.status}
                                 </div>
                               </div>
                               {task.dueDate && (
                                 <div className="text-xs text-muted-foreground mt-2">
-                                  Due {new Date(task.dueDate).toLocaleDateString()}
+                                  Due{" "}
+                                  {new Date(task.dueDate).toLocaleDateString()}
                                 </div>
                               )}
                             </div>
@@ -292,7 +338,10 @@ function PartnerDashboardContent() {
                         ))
                     )}
                     <Link href="/dashboard/tasks?priority=high">
-                      <Button variant="outline" className="w-full justify-between">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between"
+                      >
                         View All High Priority Tasks
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
@@ -302,7 +351,9 @@ function PartnerDashboardContent() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Upcoming Deadlines</CardTitle>
-                    <CardDescription>Tasks due within the next 7 days</CardDescription>
+                    <CardDescription>
+                      Tasks due within the next 7 days
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {loading ? (
@@ -327,7 +378,11 @@ function PartnerDashboardContent() {
                             const today = new Date();
                             const weekFromNow = new Date();
                             weekFromNow.setDate(today.getDate() + 7);
-                            return dueDate > today && dueDate <= weekFromNow && t.status !== "completed";
+                            return (
+                              dueDate > today &&
+                              dueDate <= weekFromNow &&
+                              t.status !== "completed"
+                            );
                           })
                           .slice(0, 3)
                           .map((task) => (
@@ -346,12 +401,13 @@ function PartnerDashboardContent() {
                                     </p>
                                   </div>
                                   <div
-                                    className={`px-2 py-1 rounded-full text-xs ${task.priority === "high"
+                                    className={`px-2 py-1 rounded-full text-xs ${
+                                      task.priority === "high"
                                         ? "bg-red-200 text-red-800 dark:bg-red-900/50 dark:text-red-300"
                                         : task.priority === "medium"
-                                          ? "bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300"
-                                          : "bg-green-200 text-green-800 dark:bg-green-900/50 dark:text-green-300"
-                                      }`}
+                                        ? "bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300"
+                                        : "bg-green-200 text-green-800 dark:bg-green-900/50 dark:text-green-300"
+                                    }`}
                                   >
                                     {task.priority}
                                   </div>
@@ -359,7 +415,10 @@ function PartnerDashboardContent() {
                                 {task.dueDate && (
                                   <div className="text-xs text-blue-700 dark:text-blue-400 mt-2 flex items-center">
                                     <Calendar className="h-3 w-3 mr-1" />
-                                    Due {new Date(task.dueDate).toLocaleDateString()}
+                                    Due{" "}
+                                    {new Date(
+                                      task.dueDate
+                                    ).toLocaleDateString()}
                                   </div>
                                 )}
                               </div>
@@ -371,17 +430,24 @@ function PartnerDashboardContent() {
                           const today = new Date();
                           const weekFromNow = new Date();
                           weekFromNow.setDate(today.getDate() + 7);
-                          return dueDate > today && dueDate <= weekFromNow && t.status !== "completed";
+                          return (
+                            dueDate > today &&
+                            dueDate <= weekFromNow &&
+                            t.status !== "completed"
+                          );
                         }).length === 0 && (
-                            <div className="flex flex-col items-center justify-center p-6 text-center">
-                              <Calendar className="h-10 w-10 text-blue-500 mb-2 opacity-50" />
-                              <p className="text-sm text-muted-foreground">
-                                No upcoming deadlines for the next 7 days
-                              </p>
-                            </div>
-                          )}
+                          <div className="flex flex-col items-center justify-center p-6 text-center">
+                            <Calendar className="h-10 w-10 text-blue-500 mb-2 opacity-50" />
+                            <p className="text-sm text-muted-foreground">
+                              No upcoming deadlines for the next 7 days
+                            </p>
+                          </div>
+                        )}
                         <Link href="/dashboard/tasks?filter=upcoming">
-                          <Button variant="outline" className="w-full justify-between">
+                          <Button
+                            variant="outline"
+                            className="w-full justify-between"
+                          >
                             View All Upcoming Deadlines
                             <ArrowRight className="h-4 w-4 ml-2" />
                           </Button>
@@ -400,41 +466,89 @@ function PartnerDashboardContent() {
                       <div className="space-y-4">
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">Staff with Tasks</span>
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                              {dashboardData.staff.filter(s => s.activeTasks > 0).length}/{dashboardData.staff.length}
+                            <span className="text-sm font-medium">
+                              Staff with Tasks
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                            >
+                              {
+                                dashboardData.staff.filter(
+                                  (s) => s.activeTasks > 0
+                                ).length
+                              }
+                              /{dashboardData.staff.length}
                             </Badge>
                           </div>
-                          <Progress value={(dashboardData.staff.filter(s => s.activeTasks > 0).length / dashboardData.staff.length) * 100} className="h-2" />
+                          <Progress
+                            value={
+                              (dashboardData.staff.filter(
+                                (s) => s.activeTasks > 0
+                              ).length /
+                                dashboardData.staff.length) *
+                              100
+                            }
+                            className="h-2"
+                          />
                         </div>
 
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">Staff without Tasks</span>
-                            <Badge variant="outline" className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                              {dashboardData.staff.filter(s => s.activeTasks === 0).length}/{dashboardData.staff.length}
+                            <span className="text-sm font-medium">
+                              Staff without Tasks
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                            >
+                              {
+                                dashboardData.staff.filter(
+                                  (s) => s.activeTasks === 0
+                                ).length
+                              }
+                              /{dashboardData.staff.length}
                             </Badge>
                           </div>
                           <div className="max-h-[180px] overflow-y-auto pr-2 space-y-2 mt-2">
-                            {dashboardData.staff.filter(s => s.activeTasks === 0).map((staff) => (
-                              <Link
-                                key={staff.id}
-                                href={`/dashboard/partner/users/${staff.id}`}
-                                className="flex items-center justify-between p-2 rounded-md hover:bg-muted"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-7 w-7">
-                                    <AvatarImage src={staff.image || `https://api.dicebear.com/7.x/initials/svg?seed=${staff.name}`} />
-                                    <AvatarFallback>{staff.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                  </Avatar>
-                                  <span className="text-sm font-medium">{staff.name}</span>
-                                </div>
-                                <Button variant="ghost" size="icon" className="h-7 w-7">
-                                  <UserPlus className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                              </Link>
-                            ))}
-                            {dashboardData.staff.filter(s => s.activeTasks === 0).length === 0 && (
+                            {dashboardData.staff
+                              .filter((s) => s.activeTasks === 0)
+                              .map((staff) => (
+                                <Link
+                                  key={staff.id}
+                                  href={`/dashboard/partner/users/${staff.id}`}
+                                  className="flex items-center justify-between p-2 rounded-md hover:bg-muted"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-7 w-7">
+                                      <AvatarImage
+                                        src={
+                                          staff.image ||
+                                          `https://api.dicebear.com/7.x/initials/svg?seed=${staff.name}`
+                                        }
+                                      />
+                                      <AvatarFallback>
+                                        {staff.name
+                                          .substring(0, 2)
+                                          .toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-sm font-medium">
+                                      {staff.name}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                  >
+                                    <UserPlus className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                </Link>
+                              ))}
+                            {dashboardData.staff.filter(
+                              (s) => s.activeTasks === 0
+                            ).length === 0 && (
                               <div className="text-center py-4 text-muted-foreground text-sm">
                                 All staff members have tasks assigned
                               </div>
@@ -445,68 +559,14 @@ function PartnerDashboardContent() {
                     )}
                   </CardContent>
                 </Card>
-
               </div>
+
+              {canApproveBilling && (
+                <div className="grid gap-4 md:grid-cols-1">
+                  <PendingBillingTasks />
+                </div>
+              )}
             </>
-          )}
-        </TabsContent>
-
-        {/* TEAM TAB */}
-        <TabsContent value="team" className="space-y-4">
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {loading ? (
-              <>
-                {Array(6).fill(0).map((_, i) => (
-                  <UserCardSkeleton key={i} />
-                ))}
-              </>
-            ) : error ? (
-              <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
-                <AlertTriangle className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
-                <p className="text-muted-foreground">{error}</p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => window.location.reload()}
-                >
-                  Retry
-                </Button>
-              </div>
-            ) : dashboardData?.staff && dashboardData.staff.length > 0 ? (
-              dashboardData.staff.map((staff) => (
-                <StaffCard
-                  key={staff.id}
-                  id={staff.id}
-                  name={staff.name}
-                  email={staff.email}
-                  role={staff.role}
-                  imageSrc={staff.image}
-                  activeTasks={staff.activeTasks}
-                  completedTasks={staff.completedTasks}
-                  status={staff.status}
-                />
-              ))
-            ) : (
-              <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
-                <Users className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
-                <p className="text-muted-foreground">No staff members found</p>
-                <Button className="mt-4" asChild>
-                  <Link href="/dashboard/partner/users/create">
-                    <Plus className="mr-2 h-4 w-4" /> Add Staff Member
-                  </Link>
-                </Button>
-              </div>
-            )}
-          </div>
-          {dashboardData?.staff && dashboardData.staff.length > 0 && (
-            <div className="flex justify-end">
-              <Button asChild variant="outline">
-                <Link href="/dashboard/partner/users">
-                  View All Staff Members
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
           )}
         </TabsContent>
 
@@ -515,7 +575,9 @@ function PartnerDashboardContent() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-xl font-semibold">Task Management</h2>
-              <p className="text-sm text-muted-foreground">Overview and management of all team tasks</p>
+              <p className="text-sm text-muted-foreground">
+                Overview and management of all team tasks
+              </p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -546,35 +608,53 @@ function PartnerDashboardContent() {
                 <TaskSummary
                   title="High Priority"
                   description="Tasks requiring immediate attention"
-                  tasks={(dashboardData?.tasks?.filter(t => t.priority === 'high') || []).map(task => ({
+                  tasks={(
+                    dashboardData?.tasks?.filter(
+                      (t) => t.priority === "high"
+                    ) || []
+                  ).map((task) => ({
                     ...task,
-                    dueDate: task.dueDate || null
+                    dueDate: task.dueDate || null,
                   }))}
                   limit={5}
                   showAssignee={true}
-                  onTaskClick={(taskId) => router.push(`/dashboard/tasks/${taskId}`)}
+                  onTaskClick={(taskId) =>
+                    router.push(`/dashboard/tasks/${taskId}`)
+                  }
                 />
                 <TaskSummary
                   title="In Progress"
                   description="Tasks currently being worked on"
-                  tasks={(dashboardData?.tasks?.filter(t => t.status === 'in-progress') || []).map(task => ({
+                  tasks={(
+                    dashboardData?.tasks?.filter(
+                      (t) => t.status === "in-progress"
+                    ) || []
+                  ).map((task) => ({
                     ...task,
-                    dueDate: task.dueDate || null
+                    dueDate: task.dueDate || null,
                   }))}
                   limit={5}
                   showAssignee={true}
-                  onTaskClick={(taskId) => router.push(`/dashboard/tasks/${taskId}`)}
+                  onTaskClick={(taskId) =>
+                    router.push(`/dashboard/tasks/${taskId}`)
+                  }
                 />
                 <TaskSummary
                   title="Recently Completed"
                   description="Tasks completed in the last 7 days"
-                  tasks={(dashboardData?.tasks?.filter(t => t.status === 'completed') || []).map(task => ({
+                  tasks={(
+                    dashboardData?.tasks?.filter(
+                      (t) => t.status === "completed"
+                    ) || []
+                  ).map((task) => ({
                     ...task,
-                    dueDate: task.dueDate || null
+                    dueDate: task.dueDate || null,
                   }))}
                   limit={5}
                   showAssignee={true}
-                  onTaskClick={(taskId) => router.push(`/dashboard/tasks/${taskId}`)}
+                  onTaskClick={(taskId) =>
+                    router.push(`/dashboard/tasks/${taskId}`)
+                  }
                 />
               </>
             )}
@@ -617,7 +697,9 @@ function PartnerDashboardContent() {
                   title="Tasks Completed"
                   value={loading ? "..." : stats.completedTasks.toString()}
                   description="Overall completion rate"
-                  icon={<CheckCircle className="h-4 w-4 text-muted-foreground" />}
+                  icon={
+                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                  }
                 />
                 <StatsCard
                   title="Completion Rate"
@@ -632,7 +714,9 @@ function PartnerDashboardContent() {
                 <Card className="lg:col-span-1">
                   <CardHeader>
                     <CardTitle>Task Distribution</CardTitle>
-                    <CardDescription>Overview of task allocation and progress</CardDescription>
+                    <CardDescription>
+                      Overview of task allocation and progress
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {loading ? (
@@ -649,9 +733,21 @@ function PartnerDashboardContent() {
                       <div className="space-y-6">
                         <TaskProgress
                           items={[
-                            { label: "Completed", value: stats.completedTasks, color: "bg-green-500" },
-                            { label: "In Progress", value: stats.activeTasks - stats.pendingTasks, color: "bg-blue-500" },
-                            { label: "Pending", value: stats.pendingTasks, color: "bg-amber-500" }
+                            {
+                              label: "Completed",
+                              value: stats.completedTasks,
+                              color: "bg-green-500",
+                            },
+                            {
+                              label: "In Progress",
+                              value: stats.activeTasks - stats.pendingTasks,
+                              color: "bg-blue-500",
+                            },
+                            {
+                              label: "Pending",
+                              value: stats.pendingTasks,
+                              color: "bg-amber-500",
+                            },
                           ]}
                           size="lg"
                           showLabels={true}
@@ -660,7 +756,9 @@ function PartnerDashboardContent() {
 
                         <div className="grid grid-cols-2 gap-4 pt-2">
                           <Button
-                            onClick={() => router.push("/dashboard/tasks/create")}
+                            onClick={() =>
+                              router.push("/dashboard/tasks/create")
+                            }
                             className="w-full"
                           >
                             <Plus className="h-4 w-4 mr-2" />
@@ -668,7 +766,9 @@ function PartnerDashboardContent() {
                           </Button>
                           <Button
                             variant="outline"
-                            onClick={() => router.push("/dashboard/tasks/assign")}
+                            onClick={() =>
+                              router.push("/dashboard/tasks/assign")
+                            }
                             className="w-full"
                           >
                             Assign Tasks
@@ -683,40 +783,73 @@ function PartnerDashboardContent() {
                 <Card className="lg:col-span-2">
                   <CardHeader>
                     <CardTitle>Team Performance</CardTitle>
-                    <CardDescription>Staff productivity metrics</CardDescription>
+                    <CardDescription>
+                      Staff productivity metrics
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {!loading && !error && dashboardData?.staff && (
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">Staff with tasks</p>
+                            <p className="text-sm text-muted-foreground">
+                              Staff with tasks
+                            </p>
                             <p className="text-2xl font-bold">
-                              {dashboardData.staff.filter(s => s.activeTasks > 0).length}/{dashboardData.staff.length}
+                              {
+                                dashboardData.staff.filter(
+                                  (s) => s.activeTasks > 0
+                                ).length
+                              }
+                              /{dashboardData.staff.length}
                             </p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">Average completion</p>
-                            <p className="text-2xl font-bold">{stats.taskCompletionRate}%</p>
+                            <p className="text-sm text-muted-foreground">
+                              Average completion
+                            </p>
+                            <p className="text-2xl font-bold">
+                              {stats.taskCompletionRate}%
+                            </p>
                           </div>
                         </div>
 
                         <div>
-                          <h3 className="text-sm font-medium mb-2">Top Performers</h3>
+                          <h3 className="text-sm font-medium mb-2">
+                            Top Performers
+                          </h3>
                           <div className="space-y-2">
                             {dashboardData.staff
-                              .sort((a, b) => b.completedTasks - a.completedTasks)
+                              .sort(
+                                (a, b) => b.completedTasks - a.completedTasks
+                              )
                               .slice(0, 3)
                               .map((staff) => (
-                                <div key={staff.id} className="flex items-center justify-between">
+                                <div
+                                  key={staff.id}
+                                  className="flex items-center justify-between"
+                                >
                                   <div className="flex items-center gap-2">
                                     <Avatar className="h-7 w-7">
-                                      <AvatarImage src={staff.image || `https://api.dicebear.com/7.x/initials/svg?seed=${staff.name}`} />
-                                      <AvatarFallback>{staff.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                      <AvatarImage
+                                        src={
+                                          staff.image ||
+                                          `https://api.dicebear.com/7.x/initials/svg?seed=${staff.name}`
+                                        }
+                                      />
+                                      <AvatarFallback>
+                                        {staff.name
+                                          .substring(0, 2)
+                                          .toUpperCase()}
+                                      </AvatarFallback>
                                     </Avatar>
-                                    <span className="font-medium">{staff.name}</span>
+                                    <span className="font-medium">
+                                      {staff.name}
+                                    </span>
                                   </div>
-                                  <span className="text-sm">{staff.completedTasks} completed</span>
+                                  <span className="text-sm">
+                                    {staff.completedTasks} completed
+                                  </span>
                                 </div>
                               ))}
                           </div>
@@ -731,12 +864,15 @@ function PartnerDashboardContent() {
               <Card>
                 <CardHeader>
                   <CardTitle>Staff Productivity</CardTitle>
-                  <CardDescription>Task completion metrics across team members</CardDescription>
+                  <CardDescription>
+                    Task completion metrics across team members
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {loading ? (
                     <div className="h-64 w-full bg-muted animate-pulse rounded-md"></div>
-                  ) : !dashboardData?.staff || dashboardData.staff.length === 0 ? (
+                  ) : !dashboardData?.staff ||
+                    dashboardData.staff.length === 0 ? (
                     <div className="h-64 flex items-center justify-center text-muted-foreground">
                       No staff data available
                     </div>
@@ -744,19 +880,30 @@ function PartnerDashboardContent() {
                     <div className="h-64">
                       <div className="flex flex-col space-y-2">
                         {dashboardData.staff
-                          .sort((a, b) => (b.completedTasks + b.activeTasks) - (a.completedTasks + a.activeTasks))
+                          .sort(
+                            (a, b) =>
+                              b.completedTasks +
+                              b.activeTasks -
+                              (a.completedTasks + a.activeTasks)
+                          )
                           .slice(0, 8)
                           .map((staff) => {
-                            const totalTasks = staff.completedTasks + staff.activeTasks;
-                            const completedPercentage = totalTasks > 0
-                              ? (staff.completedTasks / totalTasks) * 100
-                              : 0;
+                            const totalTasks =
+                              staff.completedTasks + staff.activeTasks;
+                            const completedPercentage =
+                              totalTasks > 0
+                                ? (staff.completedTasks / totalTasks) * 100
+                                : 0;
 
                             return (
                               <div key={staff.id} className="space-y-1">
                                 <div className="flex justify-between text-sm">
-                                  <span className="font-medium">{staff.name}</span>
-                                  <span className="text-muted-foreground">{staff.completedTasks}/{totalTasks} tasks</span>
+                                  <span className="font-medium">
+                                    {staff.name}
+                                  </span>
+                                  <span className="text-muted-foreground">
+                                    {staff.completedTasks}/{totalTasks} tasks
+                                  </span>
                                 </div>
                                 <div className="h-2.5 w-full bg-gray-200 rounded-full dark:bg-gray-700">
                                   <div
@@ -766,8 +913,7 @@ function PartnerDashboardContent() {
                                 </div>
                               </div>
                             );
-                          })
-                        }
+                          })}
                       </div>
                     </div>
                   )}
@@ -783,25 +929,27 @@ function PartnerDashboardContent() {
 
 export default function PartnerDashboard() {
   return (
-    <Suspense fallback={
-      <div className="flex flex-col gap-5">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-9 w-64 mb-2" />
-          <Skeleton className="h-10 w-32" />
-        </div>
+    <Suspense
+      fallback={
+        <div className="flex flex-col gap-5">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-10 w-32" />
+          </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map(i => (
-            <Card key={i} className="p-6">
-              <Skeleton className="h-8 w-24 mb-2" />
-              <Skeleton className="h-4 w-full" />
-            </Card>
-          ))}
-        </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="p-6">
+                <Skeleton className="h-8 w-24 mb-2" />
+                <Skeleton className="h-4 w-full" />
+              </Card>
+            ))}
+          </div>
 
-        <Skeleton className="h-64 w-full rounded-md" />
-      </div>
-    }>
+          <Skeleton className="h-64 w-full rounded-md" />
+        </div>
+      }
+    >
       <PartnerDashboardContent />
     </Suspense>
   );

@@ -13,10 +13,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const partners = await prisma.user.findMany({
+      where: { role: "PARTNER" },
+      select: { 
+        id: true, 
+        name: true, 
+        avatar: true,
+        canApproveBilling: true 
+      },
+    });
+
     // Fetch staff without tasks
     const staffWithoutTasks = await prisma.user.findMany({
       where: {
         isActive: true,
+        role: { not: "ADMIN" },
         assignedTasks: { none: {} }, // No assigned tasks
       },
       select: {
@@ -53,7 +64,8 @@ export async function GET(request: NextRequest) {
           priority: task.priority,
           dueDate: task.dueDate?.toISOString() || null,
           assignedTo: task.assignedTo
-        }))
+        })),
+        partners,
       });
     }
 
@@ -113,6 +125,7 @@ export async function GET(request: NextRequest) {
           overdueTasksCount: overdueTasks,
           newUsersThisMonth
         },
+        partners,
         staffWithoutTasks,
       });
     }
@@ -233,6 +246,7 @@ export async function GET(request: NextRequest) {
         assignedTo: task.assignedTo
       })),
       recentActivities: transformedActivities,
+      partners,
       staffWithoutTasks,
     });
   } catch (error) {
@@ -241,5 +255,42 @@ export async function GET(request: NextRequest) {
       { error: "Failed to fetch dashboard data" },
       { status: 500 }
     );
+  }
+}
+
+// Update billing approval status for partners
+export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { updates } = await request.json(); // Array of { id, canApproveBilling }
+
+  try {
+    const updatePromises = updates.map(async (update) => {
+      const updatedUser = await prisma.user.update({
+        where: { id: update.id },
+        data: { canApproveBilling: update.canApproveBilling },
+      });
+
+      // Send notification if canApproveBilling is marked true
+      if (update.canApproveBilling) {
+        await prisma.notification.create({
+          data: {
+            title: "Permission Granted",
+            content: "You have been granted permission to approve billing requests.",
+            sentById: session.user.id, // Admin who made the change
+            sentToId: updatedUser.id, // Partner receiving the notification
+          },
+        });
+      }
+    });
+    await Promise.all(updatePromises);
+    return NextResponse.json({ message: "Permissions updated successfully" });
+  } catch (error) {
+    console.error("Failed to update permissions:", error);
+    return NextResponse.json({ error: "Failed to update permissions" }, { status: 500 });
   }
 }
