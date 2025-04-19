@@ -20,6 +20,7 @@ interface DataTableProps<T> {
   isLoading?: boolean;
   skeletonRows?: number;
   keyExtractor: (item: T) => string;
+  onRowClick?: (item: T) => void;
 }
 
 export function DataTable<T>({
@@ -28,6 +29,7 @@ export function DataTable<T>({
   isLoading = false,
   skeletonRows = 5,
   keyExtractor,
+  onRowClick,
 }: DataTableProps<T>) {
   return (
     <div className="rounded-md border">
@@ -55,7 +57,10 @@ export function DataTable<T>({
                   </TableRow>
                 ))
             : data.map((item) => (
-                <TableRow key={keyExtractor(item)}>
+                <TableRow 
+                  key={keyExtractor(item)}
+                  onClick={() => onRowClick && onRowClick(item)}
+                >
                   {columns.map((column) => (
                     <TableCell 
                       key={`${keyExtractor(item)}-${column.accessorKey}`}

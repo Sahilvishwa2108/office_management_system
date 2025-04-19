@@ -109,7 +109,7 @@ const ClientCard = ({
   
   return (
     <Card 
-      className="overflow-hidden cursor-pointer hover:shadow-md transition-all border-solid border-gray-200 hover:border-primary/20 flex flex-col h-full group"
+      className="overflow-hidden cursor-pointer hover:shadow-md transition-all border-solid border-gray-600 hover:border-primary/20 flex flex-col h-full group"
       onClick={handleCardClick}
     >
       <CardHeader className="pb-2 bg-muted/30">
@@ -212,7 +212,7 @@ const ClientCard = ({
 
 export default function ClientsPage() {
   console.log("ClientsPage rendering");
-  const router = useRouter();
+  const router = useRouter(); // Make sure you use this everywhere
   const { data: session } = useSession();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -333,37 +333,35 @@ export default function ClientsPage() {
     },
     {
       header: "Actions",
-      accessorKey: "actions", // Added accessorKey to fix type error
+      accessorKey: "actions",
       cell: (client: Client) => (
-        <div className="flex justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <span className="sr-only">Open menu</span>
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem asChild>
-                <Link href={`/dashboard/clients/${client.id}`}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Details
-                </Link>
-              </DropdownMenuItem>
-              {hasWriteAccess && (
+        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+          {hasWriteAccess ? (
+            // Show dropdown menu with all actions for users with write access
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                >
+                  <span className="sr-only">Open menu</span>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href={`/dashboard/clients/${client.id}`}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Details
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href={`/dashboard/clients/${client.id}/edit`}>
                     <Edit className="mr-2 h-4 w-4" />
                     Edit Client
                   </Link>
                 </DropdownMenuItem>
-              )}
-              {hasWriteAccess && (
                 <DropdownMenuItem
                   className="text-red-600 focus:text-red-600"
                   onClick={() => confirmDelete(client.id)}
@@ -371,9 +369,21 @@ export default function ClientsPage() {
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete Client
                 </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            // Show just a View button for users without write access
+            <Button 
+              variant="ghost" 
+              size="sm"
+              asChild
+            >
+              <Link href={`/dashboard/clients/${client.id}`}>
+                <Eye className="mr-1 h-4 w-4" />
+                View
+              </Link>
+            </Button>
+          )}
         </div>
       ),
       className: "text-right"
@@ -793,6 +803,7 @@ export default function ClientsPage() {
                 columns={columns}
                 isLoading={loading}
                 keyExtractor={(client) => client.id}
+                onRowClick={(client) => router.push(`/dashboard/clients/${client.id}`)}
               />
             ) : (
               // CARD VIEW
