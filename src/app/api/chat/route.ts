@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redis, pubRedis } from "@/lib/redis";
 import { v4 as uuidv4 } from "uuid";
+import { PrismaClient } from "@prisma/client";
+import { createNotification } from "@/lib/notifications"; // Adjust the path as needed
+
+const prisma = new PrismaClient();
 
 // Update the Message type to include attachments
 type Message = {
@@ -51,6 +55,37 @@ export async function POST(req: NextRequest) {
 
     // Publish message for real-time updates
     await pubRedis.publish("chat_messages", JSON.stringify(newMessage));
+
+    // Fetch the sender's user details
+    const sender = await prisma.user.findFirst({ where: { name } });
+    if (!sender) {
+      console.error(`Sender with name "${name}" not found.`);
+      return NextResponse.json({ error: "Sender not found" }, { status: 404 });
+    }
+
+    // Fetch all users except the sender
+    const users = await prisma.user.findMany({
+      where: {
+        id: {
+          not: sender.id, // Exclude the sender
+        },
+      },
+    });
+
+    //Send in-app notifications to all users except the sender
+    for (const user of users) {
+      try {
+        await createNotification({
+          title: "New Team Chat Message",
+          content: `${name} sends a new message in team-chat`,
+          sentById: sender.id, // Use the message sender's ID
+          sentToId: user.id,
+          sendEmail: false,
+        });
+      } catch (error) {
+        console.error(`Failed to send notification to user ${user.id}:`, error);
+      }
+    }
 
     return NextResponse.json({ success: true, message: newMessage }, { status: 201 });
   } catch (error) {

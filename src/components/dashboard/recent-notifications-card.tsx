@@ -41,6 +41,7 @@ export function RecentNotificationsCard({ className = "" }: RecentNotificationsC
 
   // Update visible notifications when actual notifications change
   useEffect(() => {
+    console.log("fetched notifications", notifications);
     setVisibleNotifications(notifications);
   }, [notifications]);
 
@@ -58,11 +59,9 @@ export function RecentNotificationsCard({ className = "" }: RecentNotificationsC
     }
   };
 
-  const handleNotificationClick = (id: string, taskId?: string) => {
-    markAsRead(id);
-    if (taskId) {
-      router.push(`/dashboard/tasks/${taskId}`);
-    }
+  const handleNotificationClick = (notification: { id: string;}) => {
+    router.push("/dashboard/chat");
+      markAsRead(notification.id);
   };
 
   // Clear notifications from view only (not from database)
@@ -129,7 +128,7 @@ export function RecentNotificationsCard({ className = "" }: RecentNotificationsC
                     className={`p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors ${
                       !notification.isRead ? "bg-muted/30" : ""
                     }`}
-                    onClick={() => handleNotificationClick(notification.id, notification.taskId)}
+                    onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start gap-2">
                       <div className="mt-0.5">

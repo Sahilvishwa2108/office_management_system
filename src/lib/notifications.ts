@@ -63,7 +63,7 @@ export async function createNotification({
   sendWhatsApp = false,
 }: NotificationOptions) {
   try {
-    // Create in-app notification
+    
     const notification = await prisma.notification.create({
       data: {
         title,
@@ -159,7 +159,7 @@ export async function sendTaskAssignedNotification(
   assignerUserId: string,
   assigneeUserId: string,
   note?: string,
-  dueDate?: Date
+  dueDate?: Date,
 ) {
   try {
     // Get user details
