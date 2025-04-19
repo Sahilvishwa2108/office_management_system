@@ -226,8 +226,9 @@ model ClientHistory {
 
 model Credential {
   id        String   @id @default(uuid())
-  key       String
-  value     String
+  title     String
+  username  String
+  password  String
   clientId  String
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

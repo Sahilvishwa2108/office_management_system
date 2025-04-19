@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     
     // Get all messages
     const messages = await redis.lrange(CHAT_HISTORY_KEY, 0, -1);
-    const updatedMessages = [];
+    const updatedMessages: string[] = [];
     let messageFound = false;
     
     for (const messageStr of messages) {
