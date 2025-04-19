@@ -5,6 +5,7 @@ import { Session } from "next-auth";
 import { authOptions } from "@/lib/auth"; 
 
 export async function GET(
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const resolvedParams = params instanceof Promise ? await params : params;
@@ -30,6 +31,11 @@ export async function GET(
     return NextResponse.json({ credentials });
   } catch (error) {
     console.error("Error fetching credentials:", error);
+    // If using a custom error object
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
     return NextResponse.json({ error: "Failed to fetch credentials" }, { status: 500 });
   }
 }
