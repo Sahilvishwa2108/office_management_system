@@ -69,12 +69,12 @@ function NotificationsContent() {
     loadPreferences();
   }, []);
 
-  // Load recent notifications
+  // Load recent notifications - limit to 20 in the API call
   useEffect(() => {
     const loadNotifications = async () => {
       try {
         setNotificationsLoading(true);
-        const response = await axios.get("/api/notifications?limit=10");
+        const response = await axios.get("/api/notifications?limit=20");
         setRecentNotifications(response.data.data);
       } catch (error: unknown) {
         console.error("Failed to load notifications:", error);
@@ -235,18 +235,9 @@ function NotificationsContent() {
           <div>
             <CardTitle>Recent Notifications</CardTitle>
             <CardDescription>
-              Your most recent notifications (max 20)
+              Your most recent notifications (maximum 20)
             </CardDescription>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleClearAllNotifications}
-            disabled={recentNotifications.length === 0}
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Clear All
-          </Button>
         </CardHeader>
         <CardContent>
           {notificationsLoading ? (
@@ -262,7 +253,7 @@ function NotificationsContent() {
               ))}
             </div>
           ) : recentNotifications.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto max-h-[40vh] pr-2">
               {recentNotifications.map((notification) => (
                 <div 
                   key={notification.id}

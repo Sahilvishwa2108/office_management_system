@@ -19,6 +19,39 @@ interface NotificationOptions {
   sendWhatsApp?: boolean;
 }
 
+// Add this helper function
+async function cleanupOldNotifications(userId: string, maxNotifications: number = 20) {
+  try {
+    // Get all notifications for the user, ordered by creation date
+    const allUserNotifications = await prisma.notification.findMany({
+      where: { sentToId: userId },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    });
+
+    // If we have more than the max, delete the oldest ones
+    if (allUserNotifications.length > maxNotifications) {
+      // Get IDs of notifications to delete (everything beyond the max)
+      const notificationsToDelete = allUserNotifications
+        .slice(maxNotifications)
+        .map(n => n.id);
+
+      // Delete the old notifications
+      if (notificationsToDelete.length > 0) {
+        await prisma.notification.deleteMany({
+          where: {
+            id: { in: notificationsToDelete }
+          }
+        });
+        
+        console.log(`Cleaned up ${notificationsToDelete.length} old notifications for user ${userId}`);
+      }
+    }
+  } catch (error) {
+    console.error("Error cleaning up old notifications:", error);
+  }
+}
+
 export async function createNotification({
   title,
   content,
@@ -42,6 +75,9 @@ export async function createNotification({
         sentTo: true,
       },
     });
+
+    // Clean up old notifications to keep only the most recent 20
+    await cleanupOldNotifications(sentToId, 20);
 
     // Send email if requested
     if (sendEmail && notification.sentTo.email) {

@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNotifications } from "@/components/notifications/notification-system";
-import { Bell, Info, CheckCircle, AlertTriangle } from "lucide-react";
+import { Bell, Info, CheckCircle, AlertTriangle, X, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface RecentNotificationsCardProps {
   className?: string;
@@ -19,6 +20,7 @@ interface RecentNotificationsCardProps {
 export function RecentNotificationsCard({ className = "" }: RecentNotificationsCardProps) {
   const { notifications, markAsRead, refreshNotifications, loading } = useNotifications();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [visibleNotifications, setVisibleNotifications] = useState<typeof notifications>([]);
   const router = useRouter();
   const initialLoadRef = useRef(true);
 
@@ -36,6 +38,11 @@ export function RecentNotificationsCard({ className = "" }: RecentNotificationsC
       loadData();
     }
   }, []); // Empty dependency array - only run on mount
+
+  // Update visible notifications when actual notifications change
+  useEffect(() => {
+    setVisibleNotifications(notifications);
+  }, [notifications]);
 
   // Get icon based on notification type
   const getNotificationIcon = (type?: string) => {
@@ -58,15 +65,45 @@ export function RecentNotificationsCard({ className = "" }: RecentNotificationsC
     }
   };
 
+  // Clear notifications from view only (not from database)
+  const clearVisibleNotifications = () => {
+    setVisibleNotifications([]);
+    toast.success("Notifications cleared from view");
+  };
+
   return (
-    <Card className={`h-full flex flex-col ${className}`}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2 flex-shrink-0">
-        <CardTitle className="text-xl">Recent Notifications</CardTitle>
-        <Bell className="h-5 w-5 text-muted-foreground" />
+    <Card className={`h-full flex flex-col py-0 ${className}`}>
+      <CardHeader className="flex flex-row items-center justify-between pt-4 pb-0 px-4 flex-shrink-0">
+        <CardTitle className="text-md">Recent Notifications</CardTitle>
+        <div className="flex items-center space-x-2">
+          <Link href="/dashboard/settings/notifications">
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              className="h-7 text-xs flex items-center bg-blue-50 hover:bg-blue-100 text-blue-600"
+            >
+              <span>View all</span>
+              <ExternalLink className="ml-1 h-3 w-3" />
+            </Button>
+          </Link>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="h-7 w-7 border-red-100 hover:bg-red-50 hover:text-red-500 transition-colors" 
+            onClick={clearVisibleNotifications}
+            disabled={visibleNotifications.length === 0}
+            title="Clear from view"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <div className="bg-amber-50 p-1.5 rounded-full">
+            <Bell className="h-5 w-5 text-amber-500" />
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col overflow-hidden p-0 pt-2">
+      <CardContent className="flex-1 flex flex-col overflow-hidden p-0 pt-1">
         {loading && isInitialLoad ? (
-          <div className="space-y-3 px-6">
+          <div className="space-y-3 px-4">
             {Array(3).fill(0).map((_, i) => (
               <div key={i} className="flex items-start gap-3">
                 <Skeleton className="h-8 w-8 rounded-full" />
@@ -77,19 +114,19 @@ export function RecentNotificationsCard({ className = "" }: RecentNotificationsC
               </div>
             ))}
           </div>
-        ) : notifications.length === 0 ? (
-          <div className="text-center py-6 flex-1 flex flex-col items-center justify-center px-6">
+        ) : visibleNotifications.length === 0 ? (
+          <div className="text-center py-6 flex-1 flex flex-col items-center justify-center px-4">
             <Bell className="mx-auto h-8 w-8 text-muted-foreground opacity-50 mb-2" />
             <p className="text-sm text-muted-foreground">No notifications yet</p>
           </div>
         ) : (
           <>
-            <ScrollArea className="flex-1 max-h-[calc(100%-48px)]"> {/* Modified this line */}
-              <div className="space-y-3 px-6 py-2"> {/* Added py-2 for better spacing */}
-                {notifications.slice(0, notifications.length > 2 ? notifications.length : 2).map(notification => (
+            <ScrollArea className="flex-1 max-h-[calc(100%-36px)]">
+              <div className="space-y-2 px-4 py-1">
+                {visibleNotifications.slice(0, 5).map(notification => (
                   <div
                     key={notification.id}
-                    className={`p-3 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors ${
+                    className={`p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors ${
                       !notification.isRead ? "bg-muted/30" : ""
                     }`}
                     onClick={() => handleNotificationClick(notification.id, notification.taskId)}
@@ -117,13 +154,6 @@ export function RecentNotificationsCard({ className = "" }: RecentNotificationsC
                 ))}
               </div>
             </ScrollArea>
-            <div className="pt-3 mt-auto border-t flex-shrink-0 px-6">
-              <Link href="/dashboard/settings/notifications">
-                <Button variant="outline" size="sm" className="w-full">
-                  View All
-                </Button>
-              </Link>
-            </div>
           </>
         )}
       </CardContent>

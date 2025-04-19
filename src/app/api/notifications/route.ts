@@ -3,6 +3,39 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+// Helper function to clean up old notifications
+async function cleanupOldNotifications(userId: string, maxNotifications: number = 20) {
+  try {
+    // Get all notifications for the user, ordered by creation date
+    const allUserNotifications = await prisma.notification.findMany({
+      where: { sentToId: userId },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    });
+
+    // If we have more than the max, delete the oldest ones
+    if (allUserNotifications.length > maxNotifications) {
+      // Get IDs of notifications to delete (everything beyond the max)
+      const notificationsToDelete = allUserNotifications
+        .slice(maxNotifications)
+        .map(n => n.id);
+
+      // Delete the old notifications
+      if (notificationsToDelete.length > 0) {
+        await prisma.notification.deleteMany({
+          where: {
+            id: { in: notificationsToDelete }
+          }
+        });
+        
+        console.log(`Cleaned up ${notificationsToDelete.length} old notifications for user ${userId}`);
+      }
+    }
+  } catch (error) {
+    console.error("Error cleaning up old notifications:", error);
+  }
+}
+
 // Get notifications with pagination and filters
 export async function GET(request: NextRequest) {
   try {
@@ -32,9 +65,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Clean up old notifications - keep only 20 most recent
+    await cleanupOldNotifications(currentUser.id, 20);
+
     // Parse query parameters
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "10");
+    let limit = parseInt(searchParams.get("limit") || "10");
+    
+    // Always cap the limit to 20
+    if (limit > 20) limit = 20;
+    
     const page = parseInt(searchParams.get("page") || "1");
     const skip = (page - 1) * limit;
     const unreadOnly = searchParams.get("unreadOnly") === "true";
