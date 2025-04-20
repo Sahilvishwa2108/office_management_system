@@ -27,7 +27,6 @@ import {
   BarChart,
   UserPlus,
 } from "lucide-react";
-import { StaffCard } from "@/components/dashboard/staff-card";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { TaskProgress } from "@/components/dashboard/task-progress";
 import { TaskSummary } from "@/components/dashboard/task-summary";
@@ -36,7 +35,6 @@ import {
   DashboardStatsSkeleton,
   DashboardContentSkeleton,
 } from "@/components/loading/dashboard-skeleton";
-import { UserCardSkeleton } from "@/components/loading/user-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { PendingBillingTasks } from "@/components/admin/pending-billing-tasks";
@@ -180,80 +178,84 @@ function PartnerDashboardContent() {
         <TabsContent value="overview" className="space-y-4">
           {loading ? (
             <>
-              <DashboardStatsSkeleton />
               <DashboardContentSkeleton />
             </>
           ) : (
             <>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-2 lg:col-span-4">
-                  <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                    <CardDescription>
-                      Frequently used operations
-                    </CardDescription>
+                <Card className="col-span-2 lg:col-span-4 h-[350px] overflow-hidden border-gradient-to-r from-gray-100 via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center">
+                      <Plus className="h-5 w-5 mr-2 text-primary" />
+                      Quick Actions
+                    </CardTitle>
+                    <CardDescription>Frequently used operations</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="h-20 justify-start p-4"
-                    >
-                      <Link href="/dashboard/partner/users/create">
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-auto max-h-[270px] custom-scrollbar">
+                    <Link href="/dashboard/partner/users/create" className="block">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-blue-50/50 dark:from-transparent dark:to-blue-950/20"
+                      >
                         <div className="flex flex-col items-start">
-                          <span className="font-medium">Add New Staff</span>
+                          <span className="font-medium text-blue-700 dark:text-blue-400">Add New Staff</span>
                           <span className="text-xs text-muted-foreground">
                             Create a new team member account
                           </span>
                         </div>
-                        <Plus className="ml-auto h-5 w-5 text-primary" />
-                      </Link>
-                    </Button>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="h-20 justify-start p-4"
-                    >
-                      <Link href="/dashboard/tasks/create">
+                        <div className="bg-blue-100 dark:bg-blue-900/30 rounded-full p-2 transition-transform group-hover:scale-110 group-hover:rotate-3">
+                          <UserPlus className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+                        </div>
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard/tasks/create" className="block">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-green-50/50 dark:from-transparent dark:to-green-950/20"
+                      >
                         <div className="flex flex-col items-start">
-                          <span className="font-medium">Create Task</span>
+                          <span className="font-medium text-green-700 dark:text-green-400">Create Task</span>
                           <span className="text-xs text-muted-foreground">
                             Assign a new task to the team
                           </span>
                         </div>
-                        <ListTodo className="ml-auto h-5 w-5 text-primary" />
-                      </Link>
-                    </Button>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="h-20 justify-start p-4"
-                    >
-                      <Link href="/dashboard/clients">
+                        <div className="bg-green-100 dark:bg-green-900/30 rounded-full p-2 transition-transform group-hover:scale-110 group-hover:rotate-3">
+                          <ListTodo className="h-5 w-5 text-green-500 dark:text-green-400" />
+                        </div>
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard/clients" className="block">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-purple-50/50 dark:from-transparent dark:to-purple-950/20"
+                      >
                         <div className="flex flex-col items-start">
-                          <span className="font-medium">Client Directory</span>
+                          <span className="font-medium text-purple-700 dark:text-purple-400">Client Directory</span>
                           <span className="text-xs text-muted-foreground">
                             Access all client information
                           </span>
                         </div>
-                        <Briefcase className="ml-auto h-5 w-5 text-primary" />
-                      </Link>
-                    </Button>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="h-20 justify-start p-4"
-                    >
-                      <Link href="/dashboard/partner/users">
+                        <div className="bg-purple-100 dark:bg-purple-900/30 rounded-full p-2 transition-transform group-hover:scale-110 group-hover:rotate-3">
+                          <Briefcase className="h-5 w-5 text-purple-500 dark:text-purple-400" />
+                        </div>
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard/partner/users" className="block">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-amber-50/50 dark:from-transparent dark:to-amber-950/20"
+                      >
                         <div className="flex flex-col items-start">
-                          <span className="font-medium">View Team</span>
+                          <span className="font-medium text-amber-700 dark:text-amber-400">View Team</span>
                           <span className="text-xs text-muted-foreground">
                             Manage your team members
                           </span>
                         </div>
-                        <Users className="ml-auto h-5 w-5 text-primary" />
-                      </Link>
-                    </Button>
+                        <div className="bg-amber-100 dark:bg-amber-900/30 rounded-full p-2 transition-transform group-hover:scale-110 group-hover:rotate-3">
+                          <Users className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+                        </div>
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
 
@@ -456,105 +458,88 @@ function PartnerDashboardContent() {
                     )}
                   </CardContent>
                 </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Staff Distribution</CardTitle>
-                    <CardDescription>Task assignments</CardDescription>
+                <Card className="h-[350px] flex flex-col">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center">
+                      <Users className="h-5 w-5 mr-2 text-amber-600 dark:text-amber-400" />
+                      Staff Distribution
+                    </CardTitle>
+                    <CardDescription>
+                      Available staff for task assignment
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    {!loading && !error && dashboardData?.staff && (
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">
-                              Staff with Tasks
-                            </span>
-                            <Badge
-                              variant="outline"
-                              className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                            >
-                              {
-                                dashboardData.staff.filter(
-                                  (s) => s.activeTasks > 0
-                                ).length
-                              }
-                              /{dashboardData.staff.length}
+                  <CardContent className="flex-1 pt-4 overflow-hidden flex flex-col">
+                    {!loading && !error && dashboardData?.staff ? (
+                      <div className="space-y-2 flex-1 flex flex-col">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-medium">Available Staff</h3>
+                          {dashboardData.staff.filter(s => s.activeTasks === 0).length > 0 && (
+                            <Badge variant="outline">
+                              {dashboardData.staff.filter(s => s.activeTasks === 0).length} available
                             </Badge>
-                          </div>
-                          <Progress
-                            value={
-                              (dashboardData.staff.filter(
-                                (s) => s.activeTasks > 0
-                              ).length /
-                                dashboardData.staff.length) *
-                              100
-                            }
-                            className="h-2"
-                          />
+                          )}
                         </div>
-
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">
-                              Staff without Tasks
-                            </span>
-                            <Badge
-                              variant="outline"
-                              className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                            >
-                              {
-                                dashboardData.staff.filter(
-                                  (s) => s.activeTasks === 0
-                                ).length
-                              }
-                              /{dashboardData.staff.length}
-                            </Badge>
-                          </div>
-                          <div className="max-h-[180px] overflow-y-auto pr-2 space-y-2 mt-2">
-                            {dashboardData.staff
-                              .filter((s) => s.activeTasks === 0)
-                              .map((staff) => (
-                                <Link
-                                  key={staff.id}
-                                  href={`/dashboard/partner/users/${staff.id}`}
-                                  className="flex items-center justify-between p-2 rounded-md hover:bg-muted"
+                        <div className="flex-1 overflow-hidden">
+                          {/* Scrollable container */}
+                          <div className="h-full max-h-[230px] overflow-y-auto pr-1 space-y-2 custom-scrollbar">
+                            {dashboardData.staff.filter(s => s.activeTasks === 0).length > 0 ? (
+                              dashboardData.staff.filter(s => s.activeTasks === 0).map((user) => (
+                                <div
+                                  key={user.id}
+                                  className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-all group"
                                 >
                                   <div className="flex items-center gap-2">
-                                    <Avatar className="h-7 w-7">
+                                    <Avatar className="h-8 w-8">
                                       <AvatarImage
                                         src={
-                                          staff.image ||
-                                          `https://api.dicebear.com/7.x/initials/svg?seed=${staff.name}`
+                                          user.image ||
+                                          `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`
                                         }
                                       />
                                       <AvatarFallback>
-                                        {staff.name
-                                          .substring(0, 2)
-                                          .toUpperCase()}
+                                        {user.name.substring(0, 2).toUpperCase()}
                                       </AvatarFallback>
                                     </Avatar>
-                                    <span className="text-sm font-medium">
-                                      {staff.name}
-                                    </span>
+                                    <div>
+                                      <span className="text-sm font-medium">
+                                        {user.name}
+                                      </span>
+                                      <p className="text-xs text-muted-foreground">
+                                        {user.role.charAt(0).toUpperCase() +
+                                          user.role.slice(1).toLowerCase().replace(/_/g, " ")}
+                                      </p>
+                                    </div>
                                   </div>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7"
+                                    className="h-8 w-8 opacity-70 group-hover:opacity-100"
+                                    asChild
                                   >
-                                    <UserPlus className="h-4 w-4 text-muted-foreground" />
+                                    <Link href={`/dashboard/tasks/create?assignedTo=${user.id}`}>
+                                      <UserPlus className="h-4 w-4" />
+                                    </Link>
                                   </Button>
-                                </Link>
-                              ))}
-                            {dashboardData.staff.filter(
-                              (s) => s.activeTasks === 0
-                            ).length === 0 && (
-                              <div className="text-center py-4 text-muted-foreground text-sm">
-                                All staff members have tasks assigned
+                                </div>
+                              ))
+                            ) : (
+                              <div className="flex flex-col items-center justify-center py-8 px-4 text-center h-full">
+                                <Users className="h-10 w-10 text-muted-foreground mb-2 opacity-50" />
+                                <p className="text-sm font-medium">
+                                  All staff members are assigned
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Everyone on the team currently has active tasks
+                                </p>
                               </div>
                             )}
                           </div>
                         </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 flex-1">
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-[230px] w-full" />
                       </div>
                     )}
                   </CardContent>

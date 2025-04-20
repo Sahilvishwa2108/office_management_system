@@ -105,6 +105,20 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [loadingOverview, setLoadingOverview] = useState(true);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+
+  useEffect(() => {
+    if (activeTab === "overview") {
+      setLoadingOverview(true);
+      // Fetch data for the Overview tab
+      fetchOverviewData().then(() => setLoadingOverview(false));
+    } else if (activeTab === "analytics") {
+      setLoadingAnalytics(true);
+      // Fetch data for the Analytics tab
+      fetchAnalyticsData().then(() => setLoadingAnalytics(false));
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -178,7 +192,6 @@ export default function AdminDashboard() {
             <TabsTrigger value="activities">Activities</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="space-y-4">
-            <DashboardStatsSkeleton />
             <DashboardContentSkeleton />
           </TabsContent>
         </Tabs>
@@ -219,113 +232,120 @@ export default function AdminDashboard() {
           ) : (
             <>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-2 lg:col-span-4">
-                  <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
+                <Card className="col-span-2 lg:col-span-4 h-[350px] overflow-hidden border-gradient-to-r from-gray-100 via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center">
+                      <Plus className="h-5 w-5 mr-2 text-primary" />
+                      Quick Actions
+                    </CardTitle>
+                    <CardDescription>Frequently used administrative operations</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Link href="/dashboard/admin/users/create">
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-auto max-h-[270px] custom-scrollbar">
+                    <Link href="/dashboard/admin/users/create" className="block">
                       <Button
                         variant="outline"
-                        className="w-full justify-between h-20 p-4"
+                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-blue-50/50 dark:from-transparent dark:to-blue-950/20"
                       >
                         <div className="flex flex-col items-start">
-                          <span className="font-medium">Create User</span>
+                          <span className="font-medium text-blue-700 dark:text-blue-400">Create User</span>
                           <span className="text-xs text-muted-foreground">
                             Add new team members
                           </span>
                         </div>
-                        <UserPlus className="h-4 w-4 ml-2" />
+                        <div className="bg-blue-100 dark:bg-blue-900/30 rounded-full p-2 transition-transform group-hover:scale-110 group-hover:rotate-3">
+                          <UserPlus className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+                        </div>
                       </Button>
                     </Link>
-                    <Link href="/dashboard/admin/clients/create">
+                    <Link href="/dashboard/admin/clients/create" className="block">
                       <Button
                         variant="outline"
-                        className="w-full justify-between h-20 p-4"
+                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-purple-50/50 dark:from-transparent dark:to-purple-950/20"
                       >
                         <div className="flex flex-col items-start">
-                          <span className="font-medium">Create Client</span>
+                          <span className="font-medium text-purple-700 dark:text-purple-400">Create Client</span>
                           <span className="text-xs text-muted-foreground">
                             Add new client accounts
                           </span>
                         </div>
-                        <Briefcase className="h-4 w-4 ml-2" />
+                        <div className="bg-purple-100 dark:bg-purple-900/30 rounded-full p-2 transition-transform group-hover:scale-110 group-hover:rotate-3">
+                          <Briefcase className="h-5 w-5 text-purple-500 dark:text-purple-400" />
+                        </div>
                       </Button>
                     </Link>
-                    <Link href="/dashboard/tasks/create">
+                    <Link href="/dashboard/tasks/create" className="block">
                       <Button
                         variant="outline"
-                        className="w-full justify-between h-20 p-4"
+                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-green-50/50 dark:from-transparent dark:to-green-950/20"
                       >
                         <div className="flex flex-col items-start">
-                          <span className="font-medium">Create Task</span>
+                          <span className="font-medium text-green-700 dark:text-green-400">Create Task</span>
                           <span className="text-xs text-muted-foreground">
                             Assign new work items
                           </span>
                         </div>
-                        <Plus className="h-4 w-4 ml-2" />
+                        <div className="bg-green-100 dark:bg-green-900/30 rounded-full p-2 transition-transform group-hover:scale-110 group-hover:rotate-3">
+                          <Plus className="h-5 w-5 text-green-500 dark:text-green-400" />
+                        </div>
                       </Button>
                     </Link>
-                    <Link href="/dashboard/admin/clients/guest/create">
+                    <Link href="/dashboard/admin/clients/guest/create" className="block">
                       <Button
                         variant="outline"
-                        className="w-full justify-between h-20 p-4"
+                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-amber-50/50 dark:from-transparent dark:to-amber-950/20"
                       >
                         <div className="flex flex-col items-start">
-                          <span className="font-medium">
-                            Create Guest Client
-                          </span>
+                          <span className="font-medium text-amber-700 dark:text-amber-400">Create Guest</span>
                           <span className="text-xs text-muted-foreground">
                             Add temporary accounts
                           </span>
                         </div>
-                        <Plus className="h-4 w-4 ml-2" />
+                        <div className="bg-amber-100 dark:bg-amber-900/30 rounded-full p-2 transition-transform group-hover:scale-110 group-hover:rotate-3">
+                          <UserPlus className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+                        </div>
                       </Button>
                     </Link>
                   </CardContent>
                 </Card>
-                <div className="col-span-2 lg:col-span-3 h-full max-h-[350px]">
+                <div className="col-span-2 lg:col-span-3 h-[350px]">
                   <RecentNotificationsCard className="h-full" />
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
                 {/* Staff Utilization */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Staff Distribution</CardTitle>
+                <Card className="h-[350px] flex flex-col">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center">
+                      <Users className="h-5 w-5 mr-2 text-amber-600 dark:text-amber-400" />
+                      Staff Distribution
+                    </CardTitle>
                     <CardDescription>
                       Available staff for task assignment
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="flex-1 pt-4 overflow-hidden flex flex-col">
                     {!loading && !error && dashboardData?.staffWithoutTasks ? (
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">
-                              Staff without Tasks
-                            </span>
-                            <Badge
-                              variant="outline"
-                              className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                            >
-                              {dashboardData.staffWithoutTasks.length}/
-                              {dashboardData.stats.totalUsers}
+                      <div className="space-y-2 flex-1 flex flex-col">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-medium">Available Staff</h3>
+                          {dashboardData.staffWithoutTasks.length > 0 && (
+                            <Badge variant="outline">
+                              {dashboardData.staffWithoutTasks.length} available
                             </Badge>
-                          </div>
-
-                          {/* Scrollable container for staff list */}
-                          {/* Scrollable container for staff list */}
-                          <div className="max-h-[180px] overflow-y-auto space-y-2 mt-2 border rounded-md p-1">
+                          )}
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                          {/* Scrollable container */}
+                          <div className="h-full max-h-[230px] overflow-y-auto pr-1 space-y-2 custom-scrollbar">
                             {dashboardData.staffWithoutTasks.length > 0 ? (
                               dashboardData.staffWithoutTasks.map((user) => (
                                 <div
                                   key={user.id}
-                                  className="flex items-center justify-between p-2 rounded-md hover:bg-muted"
+                                  className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-all group"
                                 >
                                   <div className="flex items-center gap-2">
-                                    <Avatar className="h-7 w-7">
+                                    <Avatar className="h-8 w-8">
                                       <AvatarImage
                                         src={
                                           user.avatar ||
@@ -333,9 +353,7 @@ export default function AdminDashboard() {
                                         }
                                       />
                                       <AvatarFallback>
-                                        {user.name
-                                          .substring(0, 2)
-                                          .toUpperCase()}
+                                        {user.name.substring(0, 2).toUpperCase()}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div>
@@ -344,80 +362,69 @@ export default function AdminDashboard() {
                                       </span>
                                       <p className="text-xs text-muted-foreground">
                                         {user.role.charAt(0).toUpperCase() +
-                                          user.role
-                                            .slice(1)
-                                            .toLowerCase()
-                                            .replace(/_/g, " ")}
+                                          user.role.slice(1).toLowerCase().replace(/_/g, " ")}
                                       </p>
                                     </div>
                                   </div>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7"
+                                    className="h-8 w-8 opacity-70 group-hover:opacity-100"
                                     asChild
                                   >
-                                    <Link
-                                      href={`/dashboard/tasks/create?assignedTo=${user.id}`}
-                                    >
-                                      <UserPlus className="h-4 w-4 text-muted-foreground" />
+                                    <Link href={`/dashboard/tasks/create?assignedTo=${user.id}`}>
+                                      <UserPlus className="h-4 w-4" />
                                     </Link>
                                   </Button>
                                 </div>
                               ))
                             ) : (
-                              <div className="text-center py-4 text-muted-foreground text-sm">
-                                All staff members are currently assigned tasks
+                              <div className="flex flex-col items-center justify-center py-8 px-4 text-center h-full">
+                                <Users className="h-10 w-10 text-muted-foreground mb-2 opacity-50" />
+                                <p className="text-sm font-medium">
+                                  All staff members are assigned
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Everyone on the team currently has active tasks
+                                </p>
                               </div>
                             )}
                           </div>
                         </div>
-
-                        <div className="mt-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            asChild
-                          >
-                            <Link href="/dashboard/tasks/create">
-                              <Plus className="h-4 w-4 mr-2" /> Create New Task
-                            </Link>
-                          </Button>
-                        </div>
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-3 flex-1">
                         <Skeleton className="h-5 w-full" />
-                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-[230px] w-full" />
                       </div>
                     )}
                   </CardContent>
                 </Card>
                 {/* Upcoming Deadlines */}
-                <Card className="col-span-1">
-                  <CardHeader>
-                    <CardTitle>Upcoming Deadlines</CardTitle>
+                <Card className="h-[350px] flex flex-col">
+                  <CardHeader className=" pb-2">
+                    <CardTitle className="flex items-center">
+                      <Calendar className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                      Upcoming Deadlines
+                    </CardTitle>
                     <CardDescription>
                       Tasks due within the next 7 days
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="flex-1 overflow-hidden flex flex-col">
                     {loading ? (
-                      <div className="space-y-3">
+                      <div className="space-y-3 flex-1">
                         {[...Array(3)].map((_, i) => (
-                          <div key={i} className="animate-pulse">
-                            <div className="h-12 bg-muted rounded-md"></div>
-                          </div>
+                          <Skeleton key={i} className="h-[70px] w-full" />
                         ))}
                       </div>
                     ) : error ? (
-                      <div className="flex flex-col items-center justify-center p-6 text-center">
+                      <div className="flex flex-col items-center justify-center p-6 text-center h-full">
                         <AlertTriangle className="h-10 w-10 text-muted-foreground mb-2 opacity-20" />
                         <p className="text-sm text-muted-foreground">{error}</p>
                       </div>
                     ) : (
-                      <>
+                      <div className="h-full max-h-[230px] overflow-y-auto pr-1 space-y-3 custom-scrollbar">
                         {(dashboardData?.tasks || [])
                           .filter((t) => {
                             if (!t.dueDate) return false;
@@ -431,38 +438,36 @@ export default function AdminDashboard() {
                               t.status !== "completed"
                             );
                           })
-                          .slice(0, 3)
                           .map((task) => (
                             <Link
                               key={task.id}
                               href={`/dashboard/tasks/${task.id}`}
                               className="block"
                             >
-                              <div className="border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-900/50 border rounded-md p-3 hover:bg-blue-100/80 dark:hover:bg-blue-900/30 transition-colors">
+                              <div className="border rounded-md p-3 hover:bg-muted/50 transition-colors">
                                 <div className="flex justify-between items-center">
-                                  <p className="font-medium truncate">
-                                    {task.title}
-                                  </p>
+                                  <p className="font-medium truncate">{task.title}</p>
                                   <Badge
                                     className={
                                       task.priority === "high"
                                         ? "bg-red-500 text-white"
                                         : task.priority === "medium"
-                                        ? "bg-yellow-500 text-white"
-                                        : "bg-green-500 text-white"
+                                          ? "bg-yellow-500 text-white"
+                                          : "bg-green-500 text-white"
                                     }
                                   >
-                                    {task.priority.charAt(0).toUpperCase() +
-                                      task.priority.slice(1)}
+                                    {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                                   </Badge>
                                 </div>
                                 {task.dueDate && (
                                   <div className="text-xs text-blue-700 dark:text-blue-400 mt-2 flex items-center">
                                     <Calendar className="h-3 w-3 mr-1" />
-                                    Due{" "}
-                                    {new Date(
-                                      task.dueDate
-                                    ).toLocaleDateString()}
+                                    Due {new Date(task.dueDate).toLocaleDateString()}
+                                  </div>
+                                )}
+                                {task.assignedTo && (
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    Assigned to {task.assignedTo.name}
                                   </div>
                                 )}
                               </div>
@@ -480,23 +485,14 @@ export default function AdminDashboard() {
                             t.status !== "completed"
                           );
                         }).length === 0 && (
-                          <div className="flex flex-col items-center justify-center p-6 text-center">
+                          <div className="flex flex-col items-center justify-center py-8 px-4 text-center h-full">
                             <Calendar className="h-10 w-10 text-blue-500 mb-2 opacity-50" />
                             <p className="text-sm text-muted-foreground">
                               No upcoming deadlines for the next 7 days
                             </p>
                           </div>
                         )}
-                        <Link href="/dashboard/tasks?filter=upcoming">
-                          <Button
-                            variant="outline"
-                            className="w-full justify-between"
-                          >
-                            View All Upcoming Deadlines
-                            <ArrowRight className="h-4 w-4 ml-2" />
-                          </Button>
-                        </Link>
-                      </>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -698,8 +694,8 @@ export default function AdminDashboard() {
                       <p className="text-sm text-muted-foreground">{error}</p>
                     </div>
                   ) : !dashboardData?.tasks?.some(
-                      (t) => t.priority === "high"
-                    ) ? (
+                    (t) => t.priority === "high"
+                  ) ? (
                     <div className="flex flex-col items-center justify-center p-6 text-center">
                       <CheckCircle className="h-10 w-10 text-green-500 mb-2 opacity-50" />
                       <p className="text-sm text-muted-foreground">
@@ -752,8 +748,23 @@ export default function AdminDashboard() {
 
         {/* ACTIVITIES TAB */}
         <TabsContent value="activities" className="space-y-4">
-          <Card className="w-full overflow-hidden">
-            <CardHeader>
+          {loading ? (
+            <Card className="w-full overflow-hidden">
+              <CardHeader>
+                <Skeleton className="h-6 w-48 mb-2" />
+                <Skeleton className="h-4 w-64" />
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="space-y-4 p-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="w-full overflow-hidden">
+              <CardHeader>
               <CardTitle>System Activity Feed</CardTitle>
               <CardDescription>
                 Recent actions and events across the system
@@ -771,9 +782,20 @@ export default function AdminDashboard() {
                 />
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>
   );
 }
+async function fetchOverviewData(): Promise<void> {
+  // TODO: Implement the actual functionality here
+  return Promise.resolve();
+}
+
+async function fetchAnalyticsData(): Promise<void> {
+  // TODO: Implement the actual functionality here
+  return Promise.resolve();
+}
+

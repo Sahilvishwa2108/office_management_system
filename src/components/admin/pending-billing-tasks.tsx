@@ -167,7 +167,6 @@ export function PendingBillingTasks() {
               <div className="flex gap-2">
                 <BillingApprovalButton
                   taskId={task.id}
-                  taskTitle={task.title}
                   onApproved={() => {
                     refreshData();
                     toast.success(`Billing approved for task "${task.title}"`);
