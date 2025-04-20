@@ -11,6 +11,7 @@ type Message = {
   id: string;
   name: string;
   role: string;
+  avatar: string;
   message: string;
   sentAt: string;
   attachments?: Array<{
@@ -23,13 +24,13 @@ type Message = {
 };
 
 const CHAT_HISTORY_KEY = "group_chat";
-const MAX_CHAT_HISTORY = 500;
+const MAX_CHAT_HISTORY = 500; // Adjust as needed
 
 // ✅ Handle POST request to send a message
 export async function POST(req: NextRequest) {
   try {
     // Update this to destructure attachments as well
-    const { name, role, message, attachments, id } = await req.json();
+    const { name, role, message, attachments, id, avatar } = await req.json();
 
     if (!name || !role) {
       return NextResponse.json({ error: "Name and role are required" }, { status: 400 });
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
       id: id || uuidv4(),
       name,
       role,
+      avatar,
       message,
       sentAt: new Date().toISOString(),
       attachments // Include attachments in the stored message

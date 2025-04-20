@@ -4,7 +4,6 @@ import {
   Send,
   Paperclip,
   FileText,
-  AtSign,
   X,
   SmilePlus,
   Loader2,
@@ -238,7 +237,7 @@ const MessageItem = memo(({
           <div className="mt-1 pb-2 relative">
             <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
               <AvatarImage
-                src={`https://api.dicebear.com/7.x/initials/svg?seed=${message.name}`}
+                src={message.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${message.name}`}
                 alt={message.name}
               />
               <AvatarFallback className="bg-primary/10 text-primary font-medium">
@@ -405,9 +404,6 @@ function ChatPageContent() {
   const [input, setInput] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [mentionUsers, setMentionUsers] = useState<User[]>([]);
-  const [showMentions, setShowMentions] = useState(false);
-  const [mentionQuery, setMentionQuery] = useState("");
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [userSearch, setUserSearch] = useState("");
@@ -434,7 +430,6 @@ function ChatPageContent() {
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const mentionStartPosition = useRef<number>(-1);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const shouldScrollToBottom = useRef(true);
   const emojiRef = useRef<HTMLDivElement>(null);
@@ -719,8 +714,6 @@ function ChatPageContent() {
               return user;
             })
           );
-
-          setMentionUsers(users);
         }
       } catch (error) {
         console.error("Failed to fetch online users:", error);
@@ -907,58 +900,11 @@ function ChatPageContent() {
     };
   }, [isScrolling, session?.user?.id, session?.user?.name]);
 
-  // Handle mentions
-  useEffect(() => {
-    if (mentionQuery && mentionQuery.length > 0) {
-      setShowMentions(true);
-    } else {
-      setShowMentions(false);
-    }
-  }, [mentionQuery]);
-
-  // Handle input changes (for mentions)
+  // Handle input changes (for mentions)//mention is now deleted
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const text = e.target.value;
     setInput(text);
-
-    // Check for @ symbol to trigger mention
-    const lastAtIndex = text.lastIndexOf("@");
-    if (
-      lastAtIndex !== -1 &&
-      (lastAtIndex === 0 || text[lastAtIndex - 1] === " ")
-    ) {
-      mentionStartPosition.current = lastAtIndex;
-      const query = text.substring(lastAtIndex + 1);
-      setMentionQuery(query);
-
-      // Filter users based on the query
-      const filteredUsers = onlineUsers.filter((user) =>
-        user.name.toLowerCase().includes(query.toLowerCase())
-      );
-      setMentionUsers(filteredUsers);
-      setShowMentions(true);
-    } else {
-      setShowMentions(false);
-      mentionStartPosition.current = -1;
-    }
-  }, [onlineUsers]);
-
-  // Select a user to mention
-  const selectMention = useCallback((user: User) => {
-    if (mentionStartPosition.current !== -1) {
-      const beforeMention = input.substring(0, mentionStartPosition.current);
-      const afterMention = input.substring(
-        mentionStartPosition.current + mentionQuery.length + 1
-      );
-
-      const newText = `${beforeMention}@${user.name} ${afterMention}`;
-      setInput(newText);
-
-      setShowMentions(false);
-      mentionStartPosition.current = -1;
-      setMentionQuery("");
-    }
-  }, [input, mentionQuery]);
+  }, []);
 
   // Compress image before upload
   const compressImageIfNeeded = useCallback(async (file: File): Promise<File> => {
@@ -1060,6 +1006,7 @@ function ChatPageContent() {
       role: session?.user?.role || "GUEST",
       message: input,
       sentAt: new Date().toISOString(),
+      avatar: session?.user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name || "Guest"}`,
     };
 
     if (attachments.length === 0) {
@@ -1068,8 +1015,6 @@ function ChatPageContent() {
 
     // Clear input immediately for better UX
     setInput("");
-    setMentionQuery(""); // Reset mention query
-    setShowMentions(false); // Hide mention suggestions
 
     // Handle file uploads if any
     if (attachments.length > 0) {
@@ -1138,32 +1083,10 @@ function ChatPageContent() {
     }
   }, [input, attachments, session?.user]);
 
-  // Format message text with mentions highlighted
+  // Replace the existing formatMessageWithMentions function with this:
   const formatMessageWithMentions = useCallback((text: string) => {
-    // Split by potential @mentions
-    const parts = text.split(/(@\w+)/g);
-
-    return parts.map((part, index) => {
-      if (part.startsWith("@")) {
-        const username = part.substring(1);
-        const mentionedUser = onlineUsers.find(
-          (user) => user.name.toLowerCase() === username.toLowerCase()
-        );
-
-        if (mentionedUser) {
-          return (
-            <span
-              key={index}
-              className="bg-primary/10 text-primary rounded px-1 font-medium"
-            >
-              {part}
-            </span>
-          );
-        }
-      }
-      return <span key={index}>{part}</span>;
-    });
-  }, [onlineUsers]);
+    return <span>{text}</span>;
+  }, []);
 
   // Handle message edit
   const startEditingMessage = useCallback((message: Message) => {
@@ -1270,6 +1193,7 @@ function ChatPageContent() {
       <div
         className={cn(
           "border-r bg-card flex flex-col transition-all duration-300 relative",
+          "hidden md:flex", // Hide on mobile, show on md screens and up
           sidebarCollapsed ? "w-20" : "w-72"
         )}
       >
@@ -1720,44 +1644,7 @@ function ChatPageContent() {
                     }
                   }}
                 />
-                {/* Mention suggestions dropdown */}
-                {showMentions && (
-                  <div className="absolute left-0 bottom-full mb-2 bg-card border rounded-md shadow-md w-64 max-h-[200px] overflow-y-auto z-50">
-                    {mentionUsers.length > 0 ? (
-                      mentionUsers.map((user) => (
-                        <div
-                          key={user.id}
-                          className="flex items-center gap-2 p-2 hover:bg-muted cursor-pointer"
-                          onClick={() => selectMention(user)}
-                        >
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage
-                              src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
-                              alt={user.name}
-                            />
-                            <AvatarFallback>
-                              {user.name.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-medium">{user.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {user.role.replace(/_/g, " ")}
-                            </p>
-                          </div>
-                          <div className="ml-auto">
-                            <div className={`h-2 w-2 rounded-full ${user.isOnline ? "bg-green-500" : "bg-gray-400"
-                              }`}></div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-2 text-center text-sm text-muted-foreground">
-                        No matching users found
-                      </div>
-                    )}
-                  </div>
-                )}
+                
                 <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-background/50 backdrop-blur-sm px-1 py-1 rounded-full">
                   {/* Emoji button */}
                   <div className="relative" ref={emojiRef}>
@@ -1827,22 +1714,6 @@ function ChatPageContent() {
                     onChange={handleFileSelect}
                     accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                   />
-
-                  {/* Mention button */}
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-primary hover:text-primary/80"
-                    onClick={() => {
-                      setInput((prev) => prev + "@");
-                      mentionStartPosition.current = input.length;
-                      setMentionQuery("");
-                      setShowMentions(true);
-                    }}
-                    title="Mention someone"
-                  >
-                    <AtSign className="h-5 w-5" />
-                  </Button>
 
                   {/* Send button with more visibility */}
                   <Button

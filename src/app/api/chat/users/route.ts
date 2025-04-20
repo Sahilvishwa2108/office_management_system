@@ -21,7 +21,8 @@ export async function GET() {
       select: {
         id: true,
         name: true,
-        role: true
+        role: true,
+        avatar: true,
       }
     });
     
@@ -43,7 +44,7 @@ export async function GET() {
         id: user.id,
         name: user.name,
         role: user.role,
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`,
+        avatar: user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`,
         isOnline,
         lastSeen: status.lastSeen
       };

@@ -33,9 +33,9 @@ export async function POST(req: NextRequest) {
 
     // Get all messages
     const messages = await redis.lrange(CHAT_HISTORY_KEY, 0, -1);
-    const remainingMessages = [];
+    const remainingMessages: string[] = [];
     let messageFound = false;
-    let deletedMessage = null;
+    let deletedMessage: { id: string; name: string; attachments?: { publicId: string }[] } | null = null;
 
     for (const messageStr of messages) {
       const message = JSON.parse(messageStr);
