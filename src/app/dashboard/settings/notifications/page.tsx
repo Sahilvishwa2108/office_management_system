@@ -12,13 +12,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Bell, Info, Trash2 } from "lucide-react";
 
-interface NotificationPreferences {
-  taskUpdates: boolean;
-  commentMentions: boolean;
-  systemAnnouncements: boolean;
-  emailNotifications: boolean;
-}
-
 interface Notification {
   id: string;
   title: string;
@@ -30,44 +23,8 @@ interface Notification {
 
 function NotificationsContent() {
   useSession();
-  const [preferences, setPreferences] = useState<NotificationPreferences>({
-    taskUpdates: true,
-    commentMentions: true,
-    systemAnnouncements: true,
-    emailNotifications: true,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [recentNotifications, setRecentNotifications] = useState<Notification[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
-
-  // Load notification preferences
-  useEffect(() => {
-    const loadPreferences = async () => {
-      try {
-        // Replace with actual API endpoint when available
-        // const response = await axios.get("/api/users/notification-preferences");
-        // setPreferences(response.data);
-        
-        // Simulated data loading
-        setTimeout(() => {
-          setPreferences({
-            taskUpdates: true,
-            commentMentions: true,
-            systemAnnouncements: true,
-            emailNotifications: true,
-          });
-          setIsLoading(false);
-        }, 1000);
-      } catch (error: unknown) {
-        console.error("Failed to load notification preferences:", error);
-        toast.error("Failed to load notification preferences");
-        setIsLoading(false);
-      }
-    };
-
-    loadPreferences();
-  }, []);
 
   // Load recent notifications - limit to 20 in the API call
   useEffect(() => {
@@ -87,34 +44,6 @@ function NotificationsContent() {
     loadNotifications();
   }, []);
 
-  const handleSavePreferences = async () => {
-    setIsSaving(true);
-    try {
-      // Replace with actual API endpoint when available
-      // await axios.post("/api/users/notification-preferences", preferences);
-      
-      // Simulated API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success("Notification preferences saved");
-    } catch (error: unknown) {
-      console.error("Failed to save notification preferences:", error);
-      toast.error("Failed to save notification preferences");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleClearAllNotifications = async () => {
-    try {
-      await axios.delete("/api/notifications");
-      setRecentNotifications([]);
-      toast.success("All notifications cleared");
-    } catch (error: unknown) {
-      console.error("Failed to clear notifications:", error);
-      toast.error("Failed to clear notifications");
-    }
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
@@ -125,110 +54,19 @@ function NotificationsContent() {
     }).format(date);
   };
 
-  return (
-    <div className="grid gap-6 grid-cols-1 lg:grid-cols-5">
-      {/* Notification Preferences */}
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Notification Preferences</CardTitle>
-          <CardDescription>
-            Choose which notifications you&apos;d like to receive
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="flex items-center justify-between">
-                  <Skeleton className="h-5 w-40" />
-                  <Skeleton className="h-6 w-11" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="task-updates">Task Updates</Label>
-                  <p className="text-[0.8rem] text-muted-foreground">
-                    Receive notifications about your tasks
-                  </p>
-                </div>
-                <Switch
-                  id="task-updates"
-                  checked={preferences.taskUpdates}
-                  onCheckedChange={(checked) =>
-                    setPreferences({ ...preferences, taskUpdates: checked })
-                  }
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="comment-mentions">Comment Mentions</Label>
-                  <p className="text-[0.8rem] text-muted-foreground">
-                    Get notified when someone mentions you
-                  </p>
-                </div>
-                <Switch
-                  id="comment-mentions"
-                  checked={preferences.commentMentions}
-                  onCheckedChange={(checked) =>
-                    setPreferences({ ...preferences, commentMentions: checked })
-                  }
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="system-announcements">System Announcements</Label>
-                  <p className="text-[0.8rem] text-muted-foreground">
-                    Important system-wide updates and notices
-                  </p>
-                </div>
-                <Switch
-                  id="system-announcements"
-                  checked={preferences.systemAnnouncements}
-                  onCheckedChange={(checked) =>
-                    setPreferences({
-                      ...preferences,
-                      systemAnnouncements: checked,
-                    })
-                  }
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="email-notifications">Email Notifications</Label>
-                  <p className="text-[0.8rem] text-muted-foreground">
-                    Also send notifications to your email
-                  </p>
-                </div>
-                <Switch
-                  id="email-notifications"
-                  checked={preferences.emailNotifications}
-                  onCheckedChange={(checked) =>
-                    setPreferences({
-                      ...preferences,
-                      emailNotifications: checked,
-                    })
-                  }
-                />
-              </div>
-              
-              <Button 
-                className="w-full mt-4" 
-                onClick={handleSavePreferences}
-                disabled={isSaving}
-              >
-                {isSaving ? "Saving..." : "Save Preferences"}
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
+  // Add this function to strip taskIds from content
+  const stripTaskIdFromContent = (content: string): string => {
+    // Replace all taskId patterns with empty string
+    return content
+      .replace(/\[taskId:\s*[a-f0-9-]+\]/g, "")
+      .replace(/taskId:\s*[a-f0-9-]+/g, "")
+      .replace(/\(taskId:\s*[a-f0-9-]+\)/g, "")
+      .replace(/Task ID:\s*[a-f0-9-]+/gi, "")
+      .trim();
+  };
 
+  return (
+    <div className="grid gap-6">
       {/* Recent Notifications */}
       <Card className="lg:col-span-3">
         <CardHeader className="flex flex-row items-center justify-between">
@@ -269,7 +107,13 @@ function NotificationsContent() {
                         <Badge variant="default" className="h-1.5 w-1.5 rounded-full p-0" />
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">{notification.content}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {notification.title === "New Task Assigned" ||
+                       notification.title === "Task Status Updated" ||
+                       notification.title === "New Comment on Task"
+                        ? stripTaskIdFromContent(notification.content)
+                        : notification.content}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {formatDate(notification.createdAt)}
                       {notification.sentByName && ` · From: ${notification.sentByName}`}
@@ -293,19 +137,8 @@ function NotificationsContent() {
 export default function NotificationsPage() {
   return (
     <Suspense fallback={
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-5">
-        <Card className="lg:col-span-2">
-          <Skeleton className="h-6 w-48 m-6" />
-          <div className="p-6 space-y-4">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="flex items-center justify-between">
-                <Skeleton className="h-5 w-40" />
-                <Skeleton className="h-6 w-11" />
-              </div>
-            ))}
-          </div>
-        </Card>
-        <Card className="lg:col-span-3">
+      <div className="grid gap-6">
+        <Card>
           <Skeleton className="h-6 w-48 m-6" />
           <div className="p-6 space-y-4">
             {[1, 2, 3].map(i => (
