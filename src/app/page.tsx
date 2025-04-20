@@ -27,7 +27,7 @@ export default function Home() {
               <path d="M9 13h.01" />
               <path d="M9 17h.01" />
             </svg>
-            <span className="font-bold text-xl">Office Manager</span>
+            <span className="font-bold text-xl">Office Pilot</span>
           </div>
           <div className="flex items-center gap-4">
             <Link href="/login">

@@ -46,6 +46,7 @@ import { RoleFilter } from "@/components/ui/role-filter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 
 interface User {
   id: string;
@@ -434,69 +435,71 @@ export default function PartnerUsersPage() {
             </div>
           ) : viewMode === "table" ? (
             <div className="border rounded-md overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Assigned Tasks</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow
-                      key={user.id}
-                      className="cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => router.push(`/dashboard/partner/users/${user.id}`)}
-                      tabIndex={0}
-                      aria-label={`View details for ${user.name}`}
-                    >
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{formatRole(user.role)}</Badge>
-                      </TableCell>
-                      <TableCell>{user.assignedTasksCount}</TableCell>
-                      <TableCell>
-                        {user.isActive !== false ? (
-                          <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>
-                        ) : (
-                          <Badge variant="destructive">Blocked</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>{format(new Date(user.createdAt), "MMM d, yyyy")}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              tabIndex={-1}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                              <span className="sr-only">Open menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/dashboard/partner/users/${user.id}`}>
-                                <Eye className="w-4 h-4 mr-2" />
-                                View Details
-                              </Link>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+              <ResponsiveTable>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Assigned Tasks</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow
+                        key={user.id}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => router.push(`/dashboard/partner/users/${user.id}`)}
+                        tabIndex={0}
+                        aria-label={`View details for ${user.name}`}
+                      >
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{formatRole(user.role)}</Badge>
+                        </TableCell>
+                        <TableCell>{user.assignedTasksCount}</TableCell>
+                        <TableCell>
+                          {user.isActive !== false ? (
+                            <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>
+                          ) : (
+                            <Badge variant="destructive">Blocked</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>{format(new Date(user.createdAt), "MMM d, yyyy")}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                tabIndex={-1}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                                <span className="sr-only">Open menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/dashboard/partner/users/${user.id}`}>
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  View Details
+                                </Link>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ResponsiveTable>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">

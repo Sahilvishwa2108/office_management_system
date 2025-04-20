@@ -9,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useSession } from "next-auth/react";
 import axios from "axios";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 
 export default function PermissionsPage() {
   const { data: session } = useSession();
@@ -97,34 +98,36 @@ export default function PermissionsPage() {
           ) : (
             <div className="space-y-4">
               {partners.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Avatar</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead className="text-center">Can Approve Billing</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {partners.map((partner) => (
-                      <TableRow key={partner.id}>
-                        <TableCell>
-                          <Avatar>
-                            <AvatarImage src={partner.avatar || ""} alt={partner.name} />
-                            <AvatarFallback>{partner.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                        </TableCell>
-                        <TableCell>{partner.name}</TableCell>
-                        <TableCell className="text-center">
-                          <Switch
-                            checked={partner.canApproveBilling}
-                            onCheckedChange={() => handleToggle(partner.id)}
-                          />
-                        </TableCell>
+                <ResponsiveTable>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Avatar</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead className="text-center">Can Approve Billing</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {partners.map((partner) => (
+                        <TableRow key={partner.id}>
+                          <TableCell>
+                            <Avatar>
+                              <AvatarImage src={partner.avatar || ""} alt={partner.name} />
+                              <AvatarFallback>{partner.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                          </TableCell>
+                          <TableCell>{partner.name}</TableCell>
+                          <TableCell className="text-center">
+                            <Switch
+                              checked={partner.canApproveBilling}
+                              onCheckedChange={() => handleToggle(partner.id)}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ResponsiveTable>
               ) : (
                 <p>No partners found.</p>
               )}

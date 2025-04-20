@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDebounce } from "@/hooks/use-debounce";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 
 interface Client {
   id: string;
@@ -701,30 +702,32 @@ export default function ClientsPage() {
             {/* Client list - table view */}
             {!dataError && filteredClients.length > 0 && viewMode === "table" && (
               <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Tasks</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredClients.map((client) => (
-                      <ClientTableRow 
-                        key={client.id} 
-                        client={client} 
-                        confirmDelete={confirmDelete}
-                        canDelete={canDeleteClients}
-                        getDisplayName={getDisplayName}
-                        isClientExpired={isClientExpired}
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
+                <ResponsiveTable>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Company</TableHead>
+                        <TableHead>Contact</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Tasks</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredClients.map((client) => (
+                        <ClientTableRow 
+                          key={client.id} 
+                          client={client} 
+                          confirmDelete={confirmDelete}
+                          canDelete={canDeleteClients}
+                          getDisplayName={getDisplayName}
+                          isClientExpired={isClientExpired}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ResponsiveTable>
               </div>
             )}
 

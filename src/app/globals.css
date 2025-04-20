@@ -291,3 +291,64 @@ div:has(> .animate-spin)::before {
   border-radius: 20px;
   border: transparent;
 }
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .break-word {
+    word-break: break-word;
+  }
+  
+  .text-xs-mobile {
+    @apply text-[0.65rem] sm:text-xs;
+  }
+  
+  .text-sm-mobile {
+    @apply text-xs sm:text-sm;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .mobile-height {
+    min-height: -webkit-fill-available;
+  }
+  
+  /* Override default iOS styling */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  
+  /* Better tap targets on mobile */
+  .mobile-tap-target {
+    @apply p-2;
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Responsive table overrides */
+@media (max-width: 640px) {
+  .responsive-table th,
+  .responsive-table td {
+    @apply px-2 py-2 text-xs;
+  }
+}

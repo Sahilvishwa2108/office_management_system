@@ -1,29 +1,59 @@
-import { useState, useEffect } from 'react';
+"use client";
 
-export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
-  
+import { useState, useEffect } from "react";
+
+type MediaQueryProps = {
+  sm: boolean;
+  md: boolean;
+  lg: boolean;
+  xl: boolean;
+  xxl: boolean;
+};
+
+export function useMediaQuery(): MediaQueryProps {
+  const [matches, setMatches] = useState<MediaQueryProps>({
+    sm: false,
+    md: false,
+    lg: false,
+    xl: false,
+    xxl: false,
+  });
+
   useEffect(() => {
-    // Check if window exists (for SSR compatibility)
-    if (typeof window !== 'undefined') {
-      const media = window.matchMedia(query);
-      
-      // Initial check
-      setMatches(media.matches);
-      
-      // Set up listener for changes
-      const listener = (e: MediaQueryListEvent) => {
-        setMatches(e.matches);
-      };
-      
-      // Modern browsers
-      media.addEventListener('change', listener);
-      
-      return () => {
-        media.removeEventListener('change', listener);
-      };
-    }
-  }, [query]);
-  
+    if (typeof window === "undefined") return;
+
+    const smallQuery = window.matchMedia("(min-width: 640px)");
+    const mediumQuery = window.matchMedia("(min-width: 768px)");
+    const largeQuery = window.matchMedia("(min-width: 1024px)");
+    const xlQuery = window.matchMedia("(min-width: 1280px)");
+    const xxlQuery = window.matchMedia("(min-width: 1536px)");
+
+    const updateMatches = () => {
+      setMatches({
+        sm: smallQuery.matches,
+        md: mediumQuery.matches,
+        lg: largeQuery.matches,
+        xl: xlQuery.matches,
+        xxl: xxlQuery.matches,
+      });
+    };
+
+    updateMatches();
+
+    smallQuery.addEventListener("change", updateMatches);
+    mediumQuery.addEventListener("change", updateMatches);
+    largeQuery.addEventListener("change", updateMatches);
+    xlQuery.addEventListener("change", updateMatches);
+    xxlQuery.addEventListener("change", updateMatches);
+
+    return () => {
+      smallQuery.removeEventListener("change", updateMatches);
+      mediumQuery.removeEventListener("change", updateMatches);
+      largeQuery.removeEventListener("change", updateMatches);
+      xlQuery.removeEventListener("change", updateMatches);
+      xxlQuery.removeEventListener("change", updateMatches);
+    };
+  }, []);
+
   return matches;
 }

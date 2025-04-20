@@ -345,10 +345,11 @@ export default function ClientCreatePage() {
                 
                 <Separator className="my-4" />
                 
-                <div className="flex justify-end space-x-2">
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-6">
                   <Button 
                     type="button" 
                     variant="outline"
+                    className="w-full sm:w-auto"
                     onClick={() => router.push("/dashboard/clients")}
                   >
                     Cancel
@@ -356,6 +357,7 @@ export default function ClientCreatePage() {
                   <Button 
                     type="submit" 
                     disabled={isSubmitting || !!successMessage}
+                    className="w-full sm:w-auto"
                   >
                     {isSubmitting ? (
                       <>

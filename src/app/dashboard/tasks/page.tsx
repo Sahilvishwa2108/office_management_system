@@ -54,14 +54,14 @@ import {
   Trash2,
   Loader2,
   ClipboardList,
-  LayoutGrid,
-  LayoutList,
   RefreshCw,
-} from "lucide-react";
+  Grid,
+  List} from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { canDeleteTask } from "@/lib/permissions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TaskAssignees } from "@/components/tasks/task-assignees";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 
 const getInitials = (name: string): string => {
   return name
@@ -99,7 +99,7 @@ interface Task {
   [key: string]: unknown; // Add index signature to satisfy canDeleteTask requirements
 }
 
-// Task Card Component - Improved styling for grid layout
+// Task Card Component - Improved styling for mobile
 const TaskListItem = ({ 
   task, 
   confirmDelete,
@@ -142,18 +142,18 @@ const TaskListItem = ({
   return (
     <div 
       onClick={handleRowClick}
-      className="h-full border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors shadow-sm hover:shadow-md p-4 flex flex-col"
+      className="h-full border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors shadow-sm hover:shadow-md p-3 sm:p-4 flex flex-col"
     >
-      <div className="flex items-center justify-between mb-2">
-        <Badge className={getStatusColor(task.status)}>
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+        <Badge className={`${getStatusColor(task.status)} whitespace-nowrap`}>
           {task.status}
         </Badge>
-        <Badge variant="outline" className={getPriorityColor(task.priority)}>
+        <Badge variant="outline" className={`${getPriorityColor(task.priority)} whitespace-nowrap`}>
           {task.priority} priority
         </Badge>
       </div>
       
-      <h3 className="font-medium text-lg mb-2 line-clamp-2">{task.title}</h3>
+      <h3 className="font-medium text-base sm:text-lg mb-2 line-clamp-2">{task.title}</h3>
       
       <div className="text-sm text-muted-foreground mt-auto">
         Due: {task.dueDate ? format(new Date(task.dueDate), 'MMM dd, yyyy') : 'No due date'}
@@ -188,7 +188,7 @@ const TaskListItem = ({
           variant="outline"
           size="sm"
           asChild
-          className="h-8"
+          className="h-9 flex-1 sm:flex-none"
         >
           <Link href={`/dashboard/tasks/${task.id}`}>
             <Eye className="h-3.5 w-3.5 mr-1" />
@@ -200,7 +200,7 @@ const TaskListItem = ({
           variant="outline"
           size="sm"
           asChild
-          className="h-8"
+          className="h-9 flex-1 sm:flex-none"
         >
           <Link href={`/dashboard/tasks/${task.id}/edit`}>
             <Edit className="h-3.5 w-3.5 mr-1" />
@@ -212,7 +212,7 @@ const TaskListItem = ({
           <Button
             variant="destructive"
             size="sm"
-            className="h-8"
+            className="h-9 flex-1 sm:flex-none"
             onClick={() => confirmDelete(task.id)}
           >
             <Trash2 className="h-3.5 w-3.5 mr-1" />
@@ -343,7 +343,7 @@ export default function TasksPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [searchInputValue, setSearchInputValue] = useState<string>("");
-  const [viewMode, setViewMode] = useState<"table" | "card">("card");
+  const [viewMode, setViewMode] = useState<"card" | "table">("card");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -509,7 +509,7 @@ export default function TasksPage() {
   }, [allTasks, debouncedSearchTerm, searchMode]);
 
   // Handle view mode toggle
-  const handleViewModeChange = useCallback((mode: "table" | "card") => {
+  const handleViewModeChange = useCallback((mode: "card" | "table") => {
     setViewMode(mode);
   }, []);
 
@@ -589,14 +589,17 @@ export default function TasksPage() {
   return (
     <div className="space-y-6">
       {/* Title and action buttons */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Task Management</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Task Management</h1>
           <p className="text-muted-foreground">Manage projects and track task progress</p>
         </div>
 
         {canManageTasks && (
-          <Button onClick={() => router.push("/dashboard/tasks/create")}>
+          <Button 
+            onClick={() => router.push("/dashboard/tasks/create")} 
+            className="w-full sm:w-auto mt-2 sm:mt-0"
+          >
             <Plus className="mr-2 h-4 w-4" />
             Create Task
           </Button>
@@ -607,109 +610,100 @@ export default function TasksPage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div>
+            <div className="mb-2 sm:mb-0">
               <CardTitle>Tasks</CardTitle>
               <CardDescription>View and manage all task assignments</CardDescription>
             </div>
             
             {/* View mode toggle */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground mr-1 hidden sm:inline">View as:</span>
-              <div className="border rounded-md flex shadow-sm">
-                <button 
-                  onClick={() => handleViewModeChange("table")}
-                  className={`flex items-center gap-1 px-3 py-1.5 text-sm transition-colors ${
-                    viewMode === "table" 
-                      ? "bg-primary text-primary-foreground" 
-                      : "hover:bg-muted"
-                  }`}
-                  aria-pressed={viewMode === "table"}
-                  aria-label="Table view"
-                >
-                  <LayoutList className="h-4 w-4" />
-                  <span className="hidden sm:inline">Table</span>
-                </button>
-                <button 
-                  onClick={() => handleViewModeChange("card")}
-                  className={`flex items-center gap-1 px-3 py-1.5 text-sm transition-colors ${
-                    viewMode === "card" 
-                      ? "bg-primary text-primary-foreground" 
-                      : "hover:bg-muted"
-                  }`}
-                  aria-pressed={viewMode === "card"}
-                  aria-label="Card view"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                  <span className="hidden sm:inline">Cards</span>
-                </button>
-              </div>
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <Button
+                variant={viewMode === "card" ? "default" : "outline"}
+                size="sm"
+                className="h-9 w-9 p-0"
+                onClick={() => setViewMode("card")}
+                aria-label="Card view"
+              >
+                <Grid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "table" ? "default" : "outline"}
+                size="sm"
+                className="h-9 w-9 p-0"
+                onClick={() => setViewMode("table")}
+                aria-label="Table view"
+              >
+                <List className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col gap-3">
               {/* Task status filter */}
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                <div className="flex space-x-1 rounded-md overflow-hidden border w-full sm:w-auto">
-                  <Button 
-                    variant={statusFilter === "all" ? "default" : "ghost"} 
-                    size="sm"
-                    onClick={() => setStatusFilter("all")}
-                    className="flex-1 sm:flex-none rounded-none"
-                  >
-                    All Tasks
-                  </Button>
-                  <Button 
-                    variant={statusFilter === "pending" ? "default" : "ghost"} 
-                    size="sm"
-                    onClick={() => setStatusFilter("pending")}
-                    className="flex-1 sm:flex-none rounded-none"
-                  >
-                    Pending
-                  </Button>
-                  <Button 
-                    variant={statusFilter === "in_progress" ? "default" : "ghost"} 
-                    size="sm"
-                    onClick={() => setStatusFilter("in_progress")}
-                    className="flex-1 sm:flex-none rounded-none"
-                  >
-                    In Progress
-                  </Button>
-                  <Button 
-                    variant={statusFilter === "completed" ? "default" : "ghost"} 
-                    size="sm"
-                    onClick={() => setStatusFilter("completed")}
-                    className="flex-1 sm:flex-none rounded-none"
-                  >
-                    Completed
-                  </Button>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto overflow-x-auto">
+                  <div className="flex rounded-md overflow-hidden border w-full sm:w-auto">
+                    <Button 
+                      variant={statusFilter === "all" ? "default" : "ghost"} 
+                      size="sm"
+                      onClick={() => setStatusFilter("all")}
+                      className="flex-1 sm:flex-none rounded-none min-w-[80px] px-2 sm:px-3"
+                    >
+                      All Tasks
+                    </Button>
+                    <Button 
+                      variant={statusFilter === "pending" ? "default" : "ghost"} 
+                      size="sm"
+                      onClick={() => setStatusFilter("pending")}
+                      className="flex-1 sm:flex-none rounded-none min-w-[80px] px-2 sm:px-3"
+                    >
+                      Pending
+                    </Button>
+                    <Button 
+                      variant={statusFilter === "in_progress" ? "default" : "ghost"} 
+                      size="sm"
+                      onClick={() => setStatusFilter("in_progress")}
+                      className="flex-1 sm:flex-none rounded-none min-w-[80px] px-2 sm:px-3"
+                    >
+                      In Progress
+                    </Button>
+                    <Button 
+                      variant={statusFilter === "completed" ? "default" : "ghost"} 
+                      size="sm"
+                      onClick={() => setStatusFilter("completed")}
+                      className="flex-1 sm:flex-none rounded-none min-w-[80px] px-2 sm:px-3"
+                    >
+                      Completed
+                    </Button>
+                  </div>
                 </div>
-              </div>
-
-              {/* Search box - improved for smoother experience */}
-              <div className="relative w-full sm:max-w-sm">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search tasks..."
-                  className="pl-8 pr-10"
-                  value={searchInputValue}
-                  onChange={handleSearchChange}
-                />
-                {refreshing ? (
-                  <RefreshCw className="animate-spin absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                ) : searchInputValue && (
-                  <button 
-                    onClick={clearSearch}
-                    className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
-                    aria-label="Clear search"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  </button>
-                )}
+                
+                {/* Search box - improved for smoother experience */}
+                <div className="relative w-full">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search tasks..."
+                    className="pl-8 pr-10 h-9"
+                    value={searchInputValue}
+                    onChange={handleSearchChange}
+                  />
+                  {refreshing ? (
+                    <RefreshCw className="animate-spin absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  ) : searchInputValue && (
+                    <button 
+                      onClick={clearSearch}
+                      className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                      aria-label="Clear search"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -757,33 +751,35 @@ export default function TasksPage() {
             {/* Task list - table view */}
             {!dataError && filteredTasks.length > 0 && viewMode === "table" && (
               <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Task</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Due Date</TableHead>
-                      <TableHead>Assigned To</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTasks.map((task) => (
-                      <TaskTableRow 
-                        key={task.id} 
-                        task={task}
-                        confirmDelete={confirmDelete}
-                        canDelete={canDeleteForTask(task)} // Apply permission check
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
+                <ResponsiveTable>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Task</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Due Date</TableHead>
+                        <TableHead>Assigned To</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTasks.map((task) => (
+                        <TaskTableRow 
+                          key={task.id} 
+                          task={task}
+                          confirmDelete={confirmDelete}
+                          canDelete={canDeleteForTask(task)} // Apply permission check
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ResponsiveTable>
               </div>
             )}
 
             {/* Task list - card view - now uses grid layout */}
             {!dataError && filteredTasks.length > 0 && viewMode === "card" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {filteredTasks.map((task) => (
                   <TaskListItem 
                     key={task.id} 

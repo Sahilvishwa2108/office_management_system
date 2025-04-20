@@ -274,7 +274,7 @@ const MessageItem = memo(({
                   className={cn(
                     "rounded-lg border",
                     isUserMessage ? "border-primary-foreground/20" : "border-border",
-                    message.attachments.length > 1 ? "grid grid-cols-2 gap-1" : ""
+                    message.attachments.length > 1 ? "grid grid-cols-1 sm:grid-cols-2 gap-1" : ""
                   )}
                 >
                   {message.attachments.map((attachment) => (
@@ -1265,7 +1265,7 @@ function ChatPageContent() {
   }, []);
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] rounded-md overflow-hidden">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-8rem)] overflow-hidden">
       {/* Users sidebar */}
       <div
         className={cn(
@@ -1277,7 +1277,7 @@ function ChatPageContent() {
           <Button
             variant="secondary"
             size="icon"
-            className="h-10 w-6 rounded-md border shadow-md"
+            className="h-10 w-6 rounded-md border shadow-md hidden md:flex"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           >
             {sidebarCollapsed ? (

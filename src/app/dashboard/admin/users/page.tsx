@@ -43,6 +43,7 @@ import { UserCount } from "@/components/dashboard/user-count";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RoleFilter } from "@/components/ui/role-filter";
 import React from "react";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 
 interface User {
   id: string;
@@ -357,50 +358,52 @@ export default function UsersPage() {
           </CardHeader>
           <CardContent>
             <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Array(5)
-                    .fill(0)
-                    .map((_, i) => (
-                      <TableRow key={`skeleton-${i}`}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Skeleton className="h-8 w-8 rounded-full" />
-                            <div>
-                              <Skeleton className="h-4 w-32 mb-1" />
-                              <Skeleton className="h-3 w-24" />
+              <ResponsiveTable>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Array(5)
+                      .fill(0)
+                      .map((_, i) => (
+                        <TableRow key={`skeleton-${i}`}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Skeleton className="h-8 w-8 rounded-full" />
+                              <div>
+                                <Skeleton className="h-4 w-32 mb-1" />
+                                <Skeleton className="h-3 w-24" />
+                              </div>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-4 w-36" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-5 w-24" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-5 w-16" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-4 w-20" />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Skeleton className="h-8 w-20 ml-auto" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-36" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-5 w-24" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-5 w-16" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-20" />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Skeleton className="h-8 w-20 ml-auto" />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </ResponsiveTable>
             </div>
           </CardContent>
         </Card>
@@ -487,130 +490,132 @@ export default function UsersPage() {
         <CardContent>
           {viewMode === "table" ? (
             <div className="border rounded-md overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Assigned Tasks</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="w-[80px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
-                      <TableRow
-                        key={user.id}
-                        className="cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => router.push(`/dashboard/admin/users/${user.id}`)}
-                        tabIndex={0}
-                        aria-label={`View details for ${user.name}`}
-                      >
-                        <TableCell className="font-medium">{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{formatRole(user.role)}</TableCell>
-                        <TableCell>{user.assignedTasksCount}</TableCell>
-                        <TableCell>
-                          {user.isActive !== false ? (
-                            <Badge
-                              variant="outline"
-                              className="bg-green-100 text-green-800"
-                            >
-                              Active
-                            </Badge>
-                          ) : (
-                            <Badge variant="destructive">Blocked</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(user.createdAt), "PPP")}
-                        </TableCell>
-                        <TableCell
-                          onClick={(e) => e.stopPropagation()}
-                          className="!pr-0"
+              <ResponsiveTable>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Assigned Tasks</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="w-[80px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.length > 0 ? (
+                      filteredUsers.map((user) => (
+                        <TableRow
+                          key={user.id}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => router.push(`/dashboard/admin/users/${user.id}`)}
+                          tabIndex={0}
+                          aria-label={`View details for ${user.name}`}
                         >
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="data-[state=open]:bg-muted"
-                                tabIndex={-1}
-                                aria-label="Open user actions"
+                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>{formatRole(user.role)}</TableCell>
+                          <TableCell>{user.assignedTasksCount}</TableCell>
+                          <TableCell>
+                            {user.isActive !== false ? (
+                              <Badge
+                                variant="outline"
+                                className="bg-green-100 text-green-800"
                               >
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                              align="end"
-                              className="w-[160px]"
-                            >
-                              <DropdownMenuItem asChild>
-                                <Link
-                                  href={`/dashboard/admin/users/${user.id}`}
+                                Active
+                              </Badge>
+                            ) : (
+                              <Badge variant="destructive">Blocked</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(user.createdAt), "PPP")}
+                          </TableCell>
+                          <TableCell
+                            onClick={(e) => e.stopPropagation()}
+                            className="!pr-0"
+                          >
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="data-[state=open]:bg-muted"
+                                  tabIndex={-1}
+                                  aria-label="Open user actions"
                                 >
-                                  <Eye className="w-4 h-4 mr-2" />
-                                  View Details
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <Link
-                                  href={`/dashboard/admin/users/${user.id}/edit`}
-                                >
-                                  <Edit className="w-4 h-4 mr-2" />
-                                  Edit User
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleToggleStatus(
-                                    user.id,
-                                    user.isActive !== false
-                                  )
-                                }
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Toggle menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-[160px]"
                               >
-                                {user.isActive !== false ? (
-                                  <>
-                                    <Ban className="w-4 h-4 mr-2" />
-                                    Block User
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle className="w-4 h-4 mr-2" />
-                                    Activate User
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem asChild>
-                                <Link
-                                  href={`/dashboard/admin/users/${user.id}/reset-password`}
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`/dashboard/admin/users/${user.id}`}
+                                  >
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    View Details
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`/dashboard/admin/users/${user.id}/edit`}
+                                  >
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Edit User
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleToggleStatus(
+                                      user.id,
+                                      user.isActive !== false
+                                    )
+                                  }
                                 >
-                                  <KeyIcon className="w-4 h-4 mr-2" />
-                                  Reset Password
-                                </Link>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                                  {user.isActive !== false ? (
+                                    <>
+                                      <Ban className="w-4 h-4 mr-2" />
+                                      Block User
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCircle className="w-4 h-4 mr-2" />
+                                      Activate User
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`/dashboard/admin/users/${user.id}/reset-password`}
+                                  >
+                                    <KeyIcon className="w-4 h-4 mr-2" />
+                                    Reset Password
+                                  </Link>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="text-center py-6 text-muted-foreground"
+                        >
+                          No users found
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="text-center py-6 text-muted-foreground"
-                      >
-                        No users found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                    )}
+                  </TableBody>
+                </Table>
+              </ResponsiveTable>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">

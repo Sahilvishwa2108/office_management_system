@@ -252,11 +252,26 @@ export default function DashboardLayout({
             {/* Fixed Sidebar */}
             <div
               className={cn(
-                "hidden fixed top-0 bottom-0 flex-col border-r bg-card transition-all duration-300 lg:flex",
+                "hidden fixed top-0 bottom-0 flex-col border-r bg-card transition-all duration-300 z-40 lg:flex",
                 sidebarCollapsed ? "w-20" : "w-64"
               )}
             >
-              {/* Toggle collapse button - repositioned to top */}
+{/* Toggle collapse button - repositioned to top */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-4 z-20 h-6 w-6 -mr-3 rounded-full border bg-background shadow-sm"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              >
+                {sidebarCollapsed ? (
+                  <ChevronRight className="h-4 w-4" />
+                ) : (
+                  <ChevronLeft className="h-4 w-4" />
+                )}
+                <span className="sr-only">Toggle Sidebar</span>
+              </Button>
+
+{/* Toggle collapse button - repositioned to top */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -362,8 +377,8 @@ export default function DashboardLayout({
               )}
             >
               {/* Mobile header */}
-              <header className="sticky top-0 z-30 flex h-14 items-center border-b bg-background lg:hidden">
-                <div className="flex items-center gap-2 px-4">
+              <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background px-4 lg:hidden">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -378,7 +393,7 @@ export default function DashboardLayout({
                     className="flex items-center gap-1 font-semibold"
                   >
                     <Building2 className="h-6 w-6" />
-                    Office
+                    <span className="font-semibold">Office Manager</span>
                   </Link>
                 </div>
               </header>
@@ -389,7 +404,7 @@ export default function DashboardLayout({
               </Suspense>
 
               {/* Main content */}
-              <main className="flex-1 p-4 md:p-6">{children}</main>
+              <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-x-hidden">{children}</main>
             </div>
 
             {/* Mobile navigation overlay */}
@@ -398,8 +413,12 @@ export default function DashboardLayout({
                 "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden",
                 isMobileNavOpen ? "block" : "hidden"
               )}
+              onClick={() => setIsMobileNavOpen(false)}
             >
-              <div className="fixed left-0 top-0 h-full w-72 bg-card p-4 shadow-lg">
+              <div 
+                className="fixed left-0 top-0 h-full w-72 bg-card p-4 shadow-lg"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <Link
                     href="/"

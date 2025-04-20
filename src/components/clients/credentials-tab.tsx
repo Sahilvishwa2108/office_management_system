@@ -50,6 +50,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 
 interface Credential {
   id: string;
@@ -180,28 +181,30 @@ export function CredentialsTab({ clientId, isAdmin }: CredentialsTabProps) {
         <CardContent>
           <div className="space-y-4">
             <Skeleton className="h-8 w-full" />
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead><Skeleton className="h-5 w-20" /></TableHead>
-                  <TableHead><Skeleton className="h-5 w-20" /></TableHead>
-                  <TableHead><Skeleton className="h-5 w-20" /></TableHead>
-                  <TableHead><Skeleton className="h-5 w-20" /></TableHead>
-                  <TableHead><Skeleton className="h-5 w-20" /></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[1, 2, 3].map((i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+            <ResponsiveTable>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead><Skeleton className="h-5 w-20" /></TableHead>
+                    <TableHead><Skeleton className="h-5 w-20" /></TableHead>
+                    <TableHead><Skeleton className="h-5 w-20" /></TableHead>
+                    <TableHead><Skeleton className="h-5 w-20" /></TableHead>
+                    <TableHead><Skeleton className="h-5 w-20" /></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {[1, 2, 3].map((i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ResponsiveTable>
           </div>
         </CardContent>
       </Card>
@@ -317,92 +320,94 @@ export function CredentialsTab({ clientId, isAdmin }: CredentialsTabProps) {
           </div>
         ) : (
           <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Password</TableHead>
-                  <TableHead>Added</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {credentials.map((credential) => (
-                  <TableRow key={credential.id}>
-                    <TableCell className="font-medium">
-                      {credential.title}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <span className="truncate max-w-[140px]">{credential.username}</span>
-                        {credential.username && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 w-6 p-0" 
-                            onClick={() => copyToClipboard(credential.username, "Username")}
+            <ResponsiveTable>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Password</TableHead>
+                    <TableHead>Added</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {credentials.map((credential) => (
+                    <TableRow key={credential.id}>
+                      <TableCell className="font-medium">
+                        {credential.title}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <span className="truncate max-w-[140px]">{credential.username}</span>
+                          {credential.username && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0" 
+                              onClick={() => copyToClipboard(credential.username, "Username")}
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                              <span className="sr-only">Copy username</span>
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-mono text-xs rounded bg-muted px-2 py-1">
+                            {visiblePasswords.includes(credential.id) 
+                              ? credential.password 
+                              : '•'.repeat(Math.min(10, credential.password.length))}
+                          </span>
+                          <div className="flex space-x-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0" 
+                              onClick={() => togglePasswordVisibility(credential.id)}
+                            >
+                              {visiblePasswords.includes(credential.id) 
+                                ? <EyeOff className="h-3.5 w-3.5" /> 
+                                : <Eye className="h-3.5 w-3.5" />}
+                              <span className="sr-only">
+                                {visiblePasswords.includes(credential.id) ? "Hide" : "Show"} password
+                              </span>
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0" 
+                              onClick={() => copyToClipboard(credential.password, "Password")}
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                              <span className="sr-only">Copy password</span>
+                            </Button>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {format(new Date(credential.createdAt), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {/* Only admin can delete credentials */}
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            onClick={() => confirmDelete(credential.id)}
                           >
-                            <Copy className="h-3.5 w-3.5" />
-                            <span className="sr-only">Copy username</span>
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
                           </Button>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-mono text-xs rounded bg-muted px-2 py-1">
-                          {visiblePasswords.includes(credential.id) 
-                            ? credential.password 
-                            : '•'.repeat(Math.min(10, credential.password.length))}
-                        </span>
-                        <div className="flex space-x-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 w-6 p-0" 
-                            onClick={() => togglePasswordVisibility(credential.id)}
-                          >
-                            {visiblePasswords.includes(credential.id) 
-                              ? <EyeOff className="h-3.5 w-3.5" /> 
-                              : <Eye className="h-3.5 w-3.5" />}
-                            <span className="sr-only">
-                              {visiblePasswords.includes(credential.id) ? "Hide" : "Show"} password
-                            </span>
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 w-6 p-0" 
-                            onClick={() => copyToClipboard(credential.password, "Password")}
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                            <span className="sr-only">Copy password</span>
-                          </Button>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {format(new Date(credential.createdAt), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {/* Only admin can delete credentials */}
-                      {isAdmin && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          onClick={() => confirmDelete(credential.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete</span>
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ResponsiveTable>
           </div>
         )}
         
