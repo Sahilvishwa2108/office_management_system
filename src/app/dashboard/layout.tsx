@@ -34,6 +34,7 @@ import {
 import { NotificationProvider } from "@/components/notifications/notification-system";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 interface NavItem {
   title: string;
@@ -256,22 +257,7 @@ export default function DashboardLayout({
                 sidebarCollapsed ? "w-20" : "w-64"
               )}
             >
-{/* Toggle collapse button - repositioned to top */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-4 z-20 h-6 w-6 -mr-3 rounded-full border bg-background shadow-sm"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              >
-                {sidebarCollapsed ? (
-                  <ChevronRight className="h-4 w-4" />
-                ) : (
-                  <ChevronLeft className="h-4 w-4" />
-                )}
-                <span className="sr-only">Toggle Sidebar</span>
-              </Button>
-
-{/* Toggle collapse button - repositioned to top */}
+              {/* Toggle collapse button - repositioned to top */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -316,7 +302,7 @@ export default function DashboardLayout({
                 >
                   <Avatar className="h-9 w-9">
                     <AvatarImage
-                      src={session?.user?.avatar ||`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
+                      src={session?.user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
                       alt={session?.user?.name}
                     />
                     <AvatarFallback>
@@ -396,6 +382,18 @@ export default function DashboardLayout({
                     <span className="font-semibold">Office Manager</span>
                   </Link>
                 </div>
+
+                {/* Add theme switcher to mobile header - you'll need to import your ThemeToggle component */}
+                <div className="flex items-center gap-2">
+                  <ThemeToggle />
+                  <Avatar className="h-8 w-8" onClick={() => setIsMobileNavOpen(true)}>
+                    <AvatarImage
+                      src={session?.user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
+                      alt={session?.user?.name}
+                    />
+                    <AvatarFallback>{getInitials(session?.user?.name)}</AvatarFallback>
+                  </Avatar>
+                </div>
               </header>
 
               {/* Dashboard header */}
@@ -410,22 +408,25 @@ export default function DashboardLayout({
             {/* Mobile navigation overlay */}
             <div
               className={cn(
-                "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden",
-                isMobileNavOpen ? "block" : "hidden"
+                "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm transition-all duration-200 lg:hidden",
+                isMobileNavOpen ? "opacity-100" : "opacity-0 pointer-events-none"
               )}
               onClick={() => setIsMobileNavOpen(false)}
             >
-              <div 
-                className="fixed left-0 top-0 h-full w-72 bg-card p-4 shadow-lg"
+              <div
+                className={cn(
+                  "fixed left-0 top-0 h-full w-[85%] max-w-xs bg-card shadow-xl transition-transform duration-300",
+                  isMobileNavOpen ? "translate-x-0" : "-translate-x-full"
+                )}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between px-4 py-3 border-b">
                   <Link
                     href="/"
                     className="flex items-center gap-2 font-semibold"
                   >
                     <Building2 className="h-6 w-6" />
-                    <span>Office Manager</span>
+                    <span>Office Pilot</span>
                   </Link>
                   <Button
                     variant="ghost"
@@ -435,25 +436,26 @@ export default function DashboardLayout({
                     <X className="h-5 w-5" />
                   </Button>
                 </div>
-                <ScrollArea className="h-[calc(100%-64px)]">
+
+                {/* Rest of the ScrollArea content */}
+                <ScrollArea className="h-[calc(100%-64px)] px-4 py-2">
                   <nav className="grid gap-1">
                     {getVisibleNavItems().map((item) => (
                       <Link
                         key={item.href}
                         href={item.href}
                         className={cn(
-                          "flex items-center gap-3 rounded-md px-3 py-2 text-base transition-colors",
-                          item.href.split("/").length === 3
-                            ? pathname === item.href
-                            : pathname === item.href ||
-                              pathname.startsWith(`${item.href}/`)
+                          "flex items-center gap-3 rounded-md px-3 py-2.5 text-base transition-colors",
+                          isActiveNavItem(item.href)
                             ? "bg-primary/10 text-primary"
                             : "text-muted-foreground hover:bg-muted"
                         )}
                         onClick={() => setIsMobileNavOpen(false)}
                       >
-                        {item.icon}
-                        {item.title}
+                        <div className="flex items-center justify-center rounded-md w-9 h-9 bg-muted/50">
+                          {item.icon}
+                        </div>
+                        <span>{item.title}</span>
                       </Link>
                     ))}
                   </nav>
@@ -461,7 +463,7 @@ export default function DashboardLayout({
                     <div className="flex items-center gap-3 rounded-md p-2">
                       <Avatar className="h-9 w-9">
                         <AvatarImage
-                          src={session?.user?.avatar ||`https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
+                          src={session?.user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
                           alt={session?.user?.name}
                         />
                         <AvatarFallback>
@@ -477,18 +479,9 @@ export default function DashboardLayout({
                         </span>
                       </div>
                     </div>
-                    <Link href="/dashboard/upcoming/admin/documents">
-                      <Button
-                        variant="outline"
-                        className="w-full justify-between"
-                      >
-                        Document Repository
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    </Link>
                     <Button
                       variant="outline"
-                      className="mt-2 w-full justify-start gap-2"
+                      className="mt-4 w-full justify-start gap-2"
                       onClick={() => {
                         setIsMobileNavOpen(false);
                         signOut({ redirect: true, callbackUrl: "/login" });
