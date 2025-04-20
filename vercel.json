@@ -3,5 +3,15 @@
     "src/app/api/**/*": {
       "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/expired-clients",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/scheduled-task-deletions",
+      "schedule": "5 * * * *"
+    }
+  ]
 }
