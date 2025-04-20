@@ -152,6 +152,25 @@ export async function GET() {
       timestamp: activity.createdAt.toISOString(),
     }));
 
+    // Calculate high priority active tasks
+    const highPriorityTasks = tasks.filter(
+      task => task.priority.toLowerCase() === 'high' && task.status.toLowerCase() !== 'completed'
+    );
+
+    // Calculate tasks due today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const tasksDueToday = tasks.filter(
+      task => 
+        task.dueDate && 
+        task.status.toLowerCase() !== 'completed' &&
+        new Date(task.dueDate) >= today && 
+        new Date(task.dueDate) < tomorrow
+    );
+
     // Calculate dashboard stats
     const stats = {
       activeTasks: activeTasks.length,
@@ -164,6 +183,8 @@ export async function GET() {
       completedThisMonth: completedTasks.filter(
         task => task.updatedAt >= thirtyDaysAgo
       ).length,
+      highPriorityTasks: highPriorityTasks.length,
+      tasksDueToday: tasksDueToday.length,
       // Add more metrics as needed
     };
 
