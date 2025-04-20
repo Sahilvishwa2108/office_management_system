@@ -104,7 +104,9 @@ export const DashboardContentSkeleton = () => {
           <CardHeader className="pb-2">
             <Skeleton className="h-6 w-40" />
           </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-auto max-h-[270px]">
+          {/* Changed from overflow-auto to overflow-hidden */}
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-hidden max-h-[270px]">
+            {/* Limit to fewer items to avoid needing scroll */}
             {[...Array(4)].map((_, i) => (
               <Skeleton key={i} className="h-20 w-full" />
             ))}
@@ -116,7 +118,8 @@ export const DashboardContentSkeleton = () => {
             <Skeleton className="h-4 w-36" />
           </CardHeader>
           <CardContent className="flex-1 pt-4 overflow-hidden flex flex-col">
-            <div className="space-y-3 h-[270px] overflow-auto">
+            {/* Changed from overflow-auto to overflow-hidden */}
+            <div className="space-y-3 h-[270px] overflow-hidden">
               {[...Array(3)].map((_, i) => (
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
@@ -139,8 +142,9 @@ export const DashboardContentSkeleton = () => {
                 <Skeleton className="h-5 w-24" />
               </div>
               <div className="flex-1 overflow-hidden">
-                <div className="h-full max-h-[230px] overflow-y-auto pr-1 space-y-2">
-                  {[...Array(4)].map((_, i) => (
+                {/* Changed from overflow-y-auto to overflow-hidden */}
+                <div className="h-full max-h-[230px] overflow-hidden pr-1 space-y-2">
+                  {[...Array(3)].map((_, i) => (
                     <Skeleton key={i} className="h-16 w-full" />
                   ))}
                 </div>
@@ -154,7 +158,8 @@ export const DashboardContentSkeleton = () => {
             <Skeleton className="h-4 w-60" />
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden flex flex-col">
-            <div className="h-full max-h-[230px] overflow-y-auto pr-1 space-y-3">
+            {/* Changed from overflow-y-auto to overflow-hidden */}
+            <div className="h-full max-h-[230px] overflow-hidden pr-1 space-y-3">
               {[...Array(3)].map((_, i) => (
                 <Skeleton key={i} className="h-[70px] w-full" />
               ))}
@@ -171,6 +176,7 @@ export const DashboardContentSkeleton = () => {
             <Skeleton className="h-4 w-64" />
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Limit to fewer items to avoid needing scroll */}
             {[...Array(2)].map((_, i) => (
               <Skeleton key={i} className="h-20 w-full" />
             ))}

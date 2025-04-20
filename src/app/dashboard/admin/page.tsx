@@ -24,6 +24,8 @@ import {
   Calendar,
   UserPlus,
   Briefcase,
+  CalendarClock,
+  ExternalLink,
 } from "lucide-react";
 import { RecentNotificationsCard } from "@/components/dashboard/recent-notifications-card";
 import { OverviewStats } from "@/components/dashboard/overview-stats";
@@ -35,6 +37,7 @@ import {
 } from "@/components/loading/dashboard-skeleton";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
 
 interface Task {
   id: string;
@@ -94,6 +97,23 @@ interface DashboardData {
     timestamp: string;
   }>;
   tasks: Task[];
+}
+
+// Helper function to check if a date is within the next N days
+function isWithinNextDays(date: Date, days: number): boolean {
+  const now = new Date();
+  const futureDate = new Date(now);
+  futureDate.setDate(now.getDate() + days);
+  return date >= now && date <= futureDate;
+}
+
+// Helper function to calculate days remaining
+function getDaysRemaining(date: Date): number {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+  const diffTime = date.getTime() - now.getTime();
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
 // Main dashboard component
@@ -401,97 +421,129 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
                 {/* Upcoming Deadlines */}
-                <Card className="h-[350px] flex flex-col">
-                  <CardHeader className=" pb-2">
-                    <CardTitle className="flex items-center">
-                      <Calendar className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                <Card className="h-[350px] flex flex-col overflow-hidden">
+                  <CardHeader className="pb-2 border-b border-slate-100 dark:border-slate-800/50">
+                    <CardTitle className="flex items-center text-slate-800 dark:text-slate-200">
+                      <CalendarClock className="h-5 w-5 mr-2 text-rose-600 dark:text-rose-400" />
                       Upcoming Deadlines
                     </CardTitle>
-                    <CardDescription>
-                      Tasks due within the next 7 days
+                    <CardDescription className="text-slate-500 dark:text-slate-400">
+                      Tasks due in the next 7 days
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="flex-1 overflow-hidden flex flex-col">
-                    {loading ? (
-                      <div className="space-y-3 flex-1">
-                        {[...Array(3)].map((_, i) => (
-                          <Skeleton key={i} className="h-[70px] w-full" />
-                        ))}
-                      </div>
-                    ) : error ? (
-                      <div className="flex flex-col items-center justify-center p-6 text-center h-full">
-                        <AlertTriangle className="h-10 w-10 text-muted-foreground mb-2 opacity-20" />
-                        <p className="text-sm text-muted-foreground">{error}</p>
-                      </div>
-                    ) : (
-                      <div className="h-full max-h-[230px] overflow-y-auto pr-1 space-y-3 custom-scrollbar">
-                        {(dashboardData?.tasks || [])
-                          .filter((t) => {
-                            if (!t.dueDate) return false;
-                            const dueDate = new Date(t.dueDate);
-                            const today = new Date();
-                            const weekFromNow = new Date();
-                            weekFromNow.setDate(today.getDate() + 7);
-                            return (
-                              dueDate > today &&
-                              dueDate <= weekFromNow &&
-                              t.status !== "completed"
-                            );
-                          })
-                          .map((task) => (
-                            <Link
-                              key={task.id}
-                              href={`/dashboard/tasks/${task.id}`}
-                              className="block"
-                            >
-                              <div className="border rounded-md p-3 hover:bg-muted/50 transition-colors">
-                                <div className="flex justify-between items-center">
-                                  <p className="font-medium truncate">{task.title}</p>
-                                  <Badge
-                                    className={
-                                      task.priority === "high"
-                                        ? "bg-red-500 text-white"
-                                        : task.priority === "medium"
-                                          ? "bg-yellow-500 text-white"
-                                          : "bg-green-500 text-white"
-                                    }
-                                  >
-                                    {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                                  </Badge>
+                  <CardContent className="flex-1 pt-4 overflow-hidden flex flex-col">
+                    {!loading && !error && dashboardData?.tasks ? (
+                      <div className="h-full max-h-[260px] overflow-y-auto pr-1 space-y-3 custom-scrollbar">
+                        {dashboardData.tasks.filter(task =>
+                          task.dueDate && isWithinNextDays(new Date(task.dueDate), 7) &&
+                          task.status !== 'COMPLETED'
+                        ).length > 0 ? (
+                          dashboardData.tasks
+                            .filter(task =>
+                              task.dueDate && isWithinNextDays(new Date(task.dueDate), 7) &&
+                              task.status !== 'COMPLETED'
+                            )
+                            .sort((a, b) => new Date(a.dueDate || '').getTime() - new Date(b.dueDate || '').getTime())
+                            .map((task) => {
+                              // Determine priority styling
+                              const priorityStyles = {
+                                'HIGH': 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800/50',
+                                'MEDIUM': 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800/50',
+                                'LOW': 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800/50',
+                              };
+
+                              // Calculate days remaining
+                              const daysRemaining = task.dueDate
+                                ? getDaysRemaining(new Date(task.dueDate))
+                                : null;
+
+                              return (
+                                <div
+                                  key={task.id}
+                                  className="p-3 rounded-md bg-white dark:bg-gray-950/50 border border-transparent hover:border-rose-100 dark:hover:border-rose-950/70 hover:shadow-sm transition-all group"
+                                >
+                                  <div className="flex justify-between items-start mb-2">
+                                    <span className="font-medium text-sm text-slate-800 dark:text-slate-200 line-clamp-1">
+                                      {task.title}
+                                    </span>
+                                    <Badge variant="outline" className={priorityStyles[task.priority as keyof typeof priorityStyles]}>
+                                      {task.priority}
+                                    </Badge>
+                                  </div>
+
+                                  <div className="flex justify-between items-center mt-3">
+                                    <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                                      <Calendar className="h-3.5 w-3.5" />
+                                      <span>
+                                        {task.dueDate ? format(new Date(task.dueDate), 'MMM d, yyyy') : 'No due date'}
+                                      </span>
+                                    </div>
+
+                                    {daysRemaining !== null && (
+                                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${daysRemaining <= 1
+                                          ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300'
+                                          : daysRemaining <= 3
+                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                        }`}>
+                                        {daysRemaining === 0
+                                          ? 'Due today'
+                                          : daysRemaining === 1
+                                            ? 'Due tomorrow'
+                                            : `${daysRemaining} days left`}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="mt-3 flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                      {task.assignedTo ? (
+                                        <div className="flex items-center gap-1">
+                                          <Avatar className="h-5 w-5">
+                                            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedTo.name}`} />
+                                            <AvatarFallback className="text-[10px]">{task.assignedTo.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                          </Avatar>
+                                          <span className="text-xs text-slate-600 dark:text-slate-400">{task.assignedTo.name}</span>
+                                        </div>
+                                      ) : (
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">Unassigned</span>
+                                      )}
+                                    </div>
+
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50"
+                                      asChild
+                                    >
+                                      <Link href={`/dashboard/tasks/${task.id}`}>
+                                        <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                                        <span className="text-xs">View</span>
+                                      </Link>
+                                    </Button>
+                                  </div>
                                 </div>
-                                {task.dueDate && (
-                                  <div className="text-xs text-blue-700 dark:text-blue-400 mt-2 flex items-center">
-                                    <Calendar className="h-3 w-3 mr-1" />
-                                    Due {new Date(task.dueDate).toLocaleDateString()}
-                                  </div>
-                                )}
-                                {task.assignedTo && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    Assigned to {task.assignedTo.name}
-                                  </div>
-                                )}
-                              </div>
-                            </Link>
-                          ))}
-                        {(dashboardData?.tasks || []).filter((t) => {
-                          if (!t.dueDate) return false;
-                          const dueDate = new Date(t.dueDate);
-                          const today = new Date();
-                          const weekFromNow = new Date();
-                          weekFromNow.setDate(today.getDate() + 7);
-                          return (
-                            dueDate > today &&
-                            dueDate <= weekFromNow &&
-                            t.status !== "completed"
-                          );
-                        }).length === 0 && (
-                          <div className="flex flex-col items-center justify-center py-8 px-4 text-center h-full">
-                            <Calendar className="h-10 w-10 text-blue-500 mb-2 opacity-50" />
-                            <p className="text-sm text-muted-foreground">
-                              No upcoming deadlines for the next 7 days
+                              );
+                            })
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-8 px-4 text-center h-full bg-slate-50/50 dark:bg-slate-900/20 rounded-lg border border-dashed border-slate-200 dark:border-slate-800/50">
+                            <div className="bg-slate-100 dark:bg-slate-800/50 p-3 rounded-full mb-3">
+                              <CheckCircle className="h-8 w-8 text-slate-400 dark:text-slate-500" />
+                            </div>
+                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                              No upcoming deadlines
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-[220px]">
+                              All tasks are either completed or scheduled beyond the next 7 days
                             </p>
                           </div>
                         )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3 flex-1">
+                        <Skeleton className="h-[70px] w-full" />
+                        <Skeleton className="h-[70px] w-full" />
+                        <Skeleton className="h-[70px] w-full" />
                       </div>
                     )}
                   </CardContent>
@@ -765,23 +817,23 @@ export default function AdminDashboard() {
           ) : (
             <Card className="w-full overflow-hidden">
               <CardHeader>
-              <CardTitle>System Activity Feed</CardTitle>
-              <CardDescription>
-                Recent actions and events across the system
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="h-[600px] px-6 py-4 bg-background">
-                <ActivityFeed
-                  fetchUrl="/api/activities"
-                  loading={loading}
-                  showUserInfo={true}
-                  showRoleInfo={true}
-                  expanded={true}
-                  maxHeight="550px"
-                />
-              </div>
-            </CardContent>
+                <CardTitle>System Activity Feed</CardTitle>
+                <CardDescription>
+                  Recent actions and events across the system
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="h-[600px] px-6 py-4 bg-background">
+                  <ActivityFeed
+                    fetchUrl="/api/activities"
+                    loading={loading}
+                    showUserInfo={true}
+                    showRoleInfo={true}
+                    expanded={true}
+                    maxHeight="550px"
+                  />
+                </div>
+              </CardContent>
             </Card>
           )}
         </TabsContent>
