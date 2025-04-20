@@ -22,6 +22,7 @@ import { Check, ChevronsUpDown } from "lucide-react";
 interface Option {
   value: string;
   label: string;
+  avatar?: string;
 }
 
 interface SearchableSelectProps {
@@ -70,7 +71,7 @@ export function SearchableSelect({
           {selectedOption ? (
             <div className="flex items-center gap-2">
               <Avatar className="h-5 w-5">
-                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${selectedOption.label}`} />
+                <AvatarImage src={selectedOption.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${selectedOption.label}`} />
                 <AvatarFallback className="text-[10px]">{getInitials(selectedOption.label)}</AvatarFallback>
               </Avatar>
               <span>{selectedOption.label}</span>
@@ -109,7 +110,7 @@ export function SearchableSelect({
                 >
                   <div className="flex items-center gap-2">
                     <Avatar className="h-6 w-6 mr-2">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${option.label}`} />
+                      <AvatarImage src={option.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${option.label}`} />
                       <AvatarFallback>{getInitials(option.label)}</AvatarFallback>
                     </Avatar>
                     <span>{option.label}</span>

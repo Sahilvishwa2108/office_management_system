@@ -11,6 +11,7 @@ interface TaskAssignee {
     name: string;
     email: string;
     role?: string;
+    avatar?: string;
   }
 }
 
@@ -21,6 +22,7 @@ interface TaskAssigneesProps {
     name: string;
     email?: string;
     role?: string;
+    avatar?: string;
   } | null;
   limit?: number;
   size?: "sm" | "md" | "lg";
@@ -78,7 +80,7 @@ export function TaskAssignees({
         {allAssignees.map((assignee) => (
           <div key={assignee.userId} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted">
             <Avatar className={avatarSizes[size]}>
-              <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${assignee.user.name}`} />
+              <AvatarImage src={assignee.user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${assignee.user.name}`} />
               <AvatarFallback>{getInitials(assignee.user.name)}</AvatarFallback>
             </Avatar>
             <div>
@@ -103,7 +105,7 @@ export function TaskAssignees({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Avatar className={cn("border-2 border-background", avatarSizes[size])}>
-                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${assignee.user.name}`} />
+                  <AvatarImage src={assignee.user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${assignee.user.name}`} />
                   <AvatarFallback>{getInitials(assignee.user.name)}</AvatarFallback>
                 </Avatar>
               </TooltipTrigger>
@@ -147,7 +149,7 @@ export function TaskAssignees({
     return (
       <div className="flex items-center gap-2">
         <Avatar className={avatarSizes[size]}>
-          <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${legacyAssignedTo.name}`} />
+          <AvatarImage src={legacyAssignedTo.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${legacyAssignedTo.name}`} />
           <AvatarFallback>{getInitials(legacyAssignedTo.name)}</AvatarFallback>
         </Avatar>
         {showDetails && (

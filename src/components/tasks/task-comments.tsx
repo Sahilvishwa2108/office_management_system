@@ -44,6 +44,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  avatar?: string;
 }
 
 interface Attachment {
@@ -72,6 +73,7 @@ interface TaskCommentsProps {
     name: string;
     email: string;
     role: string;
+    avatar?: string;
   };
   maxHeight?: string;
 }
@@ -254,7 +256,7 @@ export function TaskComments({
                 <div key={comment.id} className="flex gap-4 mb-6">
                   <Avatar className="h-10 w-10">
                     <AvatarImage
-                      src={`https://api.dicebear.com/7.x/initials/svg?seed=${comment.user.name}`}
+                      src={comment.user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${comment.user.name}`}
                     />
                     <AvatarFallback>
                       {getInitials(comment.user.name)}
@@ -509,7 +511,7 @@ export function TaskComments({
         <div className="flex gap-4 w-full">
           <Avatar className="h-10 w-10 hidden sm:flex">
             <AvatarImage
-              src={`https://api.dicebear.com/7.x/initials/svg?seed=${currentUser.name}`}
+              src={currentUser.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${currentUser.name}`}
             />
             <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
           </Avatar>

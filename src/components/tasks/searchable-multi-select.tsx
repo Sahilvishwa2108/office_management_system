@@ -26,6 +26,7 @@ interface Option {
   label: string;
   role?: string;
   email?: string;
+  avatar?: string;
 }
 
 interface SearchableMultiSelectProps {
@@ -141,7 +142,7 @@ export function SearchableMultiSelect({
                 className="flex items-center gap-1 pl-1 pr-0.5 py-0"
               >
                 <Avatar className="h-5 w-5">
-                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${option.label}`} />
+                  <AvatarImage src={option.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${option.label}`} />
                   <AvatarFallback className="text-[10px]">{getInitials(option.label)}</AvatarFallback>
                 </Avatar>
                 <span>{option.label}</span>
@@ -232,7 +233,7 @@ export function SearchableMultiSelect({
                       onCheckedChange={() => toggleOption(option.value)}
                     />
                     <Avatar className="h-6 w-6 mr-2">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${option.label}`} />
+                      <AvatarImage src={option.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${option.label}`} />
                       <AvatarFallback>{getInitials(option.label)}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">

@@ -60,6 +60,7 @@ export async function GET(
             name: true,
             email: true,
             role: true,
+            avatar: true,
           },
         },
         assignedTo: {
@@ -68,6 +69,7 @@ export async function GET(
             name: true,
             email: true,
             role: true,
+            avatar: true,
           },
         },
         // Add this inclusion for all assignees
@@ -79,6 +81,7 @@ export async function GET(
                 name: true,
                 email: true,
                 role: true,
+                avatar: true,
               }
             }
           }
@@ -217,6 +220,7 @@ export async function PATCH(
               name: true,
               email: true,
               role: true,
+              avatar: true,
             },
           },
           assignedTo: {
@@ -225,6 +229,7 @@ export async function PATCH(
               name: true,
               email: true,
               role: true,
+              avatar: true,
             },
           },
           client: {

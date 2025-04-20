@@ -111,6 +111,7 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             email: true,
+            avatar: true,
           },
         },
         assignedBy: {
@@ -118,6 +119,7 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             email: true, 
+            avatar: true,
           },
         },
         assignees: {
@@ -128,6 +130,7 @@ export async function GET(request: NextRequest) {
                 name: true,
                 email: true,
                 role: true,
+                avatar: true,
               },
             },
           },

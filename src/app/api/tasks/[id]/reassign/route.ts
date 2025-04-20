@@ -144,6 +144,7 @@ export async function PATCH(
                   name: true,
                   email: true,
                   role: true,
+                  avatar: true,
                 }
               }
             }
@@ -153,6 +154,7 @@ export async function PATCH(
               id: true,
               name: true,
               email: true,
+              avatar: true,
             },
           },
           assignedTo: {
@@ -160,6 +162,7 @@ export async function PATCH(
               id: true,
               name: true,
               email: true,
+              avatar: true,
             },
           },
         },
