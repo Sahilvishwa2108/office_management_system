@@ -91,7 +91,7 @@ interface PartnerDashboardData {
     name: string;
     email: string;
     role: string;
-    image?: string;
+    avatar?: string;
     activeTasks: number;
     completedTasks: number;
     status: "ACTIVE" | "INACTIVE" | "ON_LEAVE";
@@ -106,7 +106,7 @@ interface PartnerDashboardData {
     assignedTo?: {
       id: string;
       name: string;
-      image?: string;
+      avatar?: string;
     };
     progress?: number;
   }>;
@@ -369,7 +369,7 @@ function PartnerDashboardContent() {
                   </CardContent>
                 </Card>
                 {/* Upcoming Deadlines */}
-                <Card className="h-[350px] flex flex-col overflow-hidden bg-gradient-to-br from-white to-rose-50/30 dark:from-gray-900 dark:to-gray-900/70 border border-slate-200/80 dark:border-slate-800/80">
+                <Card className="h-[350px] flex flex-col overflow-hidden">
                   <CardHeader className="pb-2 border-b border-slate-100 dark:border-slate-800/50">
                     <CardTitle className="flex items-center text-slate-800 dark:text-slate-200">
                       <CalendarClock className="h-5 w-5 mr-2 text-rose-600 dark:text-rose-400" />
@@ -454,7 +454,7 @@ function PartnerDashboardContent() {
                                       {task.assignedTo ? (
                                         <div className="flex items-center gap-1">
                                           <Avatar className="h-5 w-5">
-                                            <AvatarImage src={task.assignedTo.image || 
+                                            <AvatarImage src={task.assignedTo.avatar || 
                                                 `https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedTo.name}`} />
                                             <AvatarFallback className="text-[10px]">
                                               {task.assignedTo.name.substring(0, 2).toUpperCase()}
@@ -539,7 +539,7 @@ function PartnerDashboardContent() {
                                     <Avatar className="h-8 w-8">
                                       <AvatarImage
                                         src={
-                                          user.image ||
+                                          user.avatar ||
                                           `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`
                                         }
                                       />
@@ -865,7 +865,7 @@ function PartnerDashboardContent() {
                                     <Avatar className="h-7 w-7">
                                       <AvatarImage
                                         src={
-                                          staff.image ||
+                                          staff.avatar ||
                                           `https://api.dicebear.com/7.x/initials/svg?seed=${staff.name}`
                                         }
                                       />

@@ -28,6 +28,7 @@ const getCachedActivities = unstable_cache(
             id: true,
             name: true,
             role: true,
+            avatar: true,
           },
         },
       },
@@ -110,6 +111,7 @@ export async function GET(request: NextRequest) {
         user: activity.user ? {
           name: activity.user.name,
           role: activity.user.role,
+          avatar: activity.user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${activity.user.name}`
         } : undefined,
         details: activity.details,
       })),

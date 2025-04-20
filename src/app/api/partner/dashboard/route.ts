@@ -40,7 +40,8 @@ export async function GET() {
         id: true,
         name: true,
         email: true,
-        role: true
+        role: true,
+        avatar: true,
         // Other fields you need
       }
     });
@@ -57,7 +58,8 @@ export async function GET() {
         assignedTo: {
           select: {
             id: true,
-            name: true
+            name: true,
+            avatar: true
           }
         }
       }
@@ -117,7 +119,7 @@ export async function GET() {
       assignedTo: task.assignedTo ? {
         id: task.assignedTo.id,
         name: task.assignedTo.name,
-        image: `https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedTo.name}`
+        image: task.assignedTo.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedTo.name}`
       } : undefined,
       progress: calculateTaskProgress(task.status)
     }));
@@ -138,7 +140,8 @@ export async function GET() {
           select: {
             id: true,
             name: true,
-            role: true
+            role: true,
+            avatar: true
           }
         }
       }
@@ -151,7 +154,7 @@ export async function GET() {
       user: {
         name: activity.user.name,
         role: activity.user.role,
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${activity.user.name}`
+        avatar: activity.user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${activity.user.name}`
       },
       action: activity.action,
       target: activity.target,
