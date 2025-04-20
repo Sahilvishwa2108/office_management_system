@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { TaskStatus, BillingStatus } from "@prisma/client";
 import { z } from "zod";
 
 // Validation schema
@@ -62,16 +63,11 @@ export async function PATCH(
     // Critical section: Handle completed status change
     if (status === "completed" && task.status !== "completed") {
       console.log(`🚨 Task ${taskId} being marked as completed - should update billingStatus`);
-
       // Ensure we set billingStatus whether it has a client or not
-      type TaskUpdateData = {
-        status: string;
-        billingStatus?: string;
+      const updateData = {
+        status: status as TaskStatus,
+        billingStatus: BillingStatus.pending_billing
       };
-      const updateData: TaskUpdateData = { status };
-      
-      // Always set billing status to pending_billing when completing a task
-      updateData.billingStatus = "pending_billing";
       
       console.log(`📝 Update data for completed task:`, updateData);
       
@@ -104,7 +100,7 @@ export async function PATCH(
       
       const updatedTask = await prisma.task.update({
         where: { id: taskId },
-        data: { status },
+        data: { status: status as TaskStatus },
       });
       
       console.log(`✅ Task updated:`, {
