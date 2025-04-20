@@ -21,16 +21,37 @@ enum UserRole {
   // Clients are not users of the platform
 }
 
+// Add these enum definitions
+enum TaskStatus {
+  pending
+  in_progress
+  review
+  completed
+  cancelled
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+}
+
+enum BillingStatus {
+  pending_billing
+  billed
+  paid
+}
+
 model User {
-  id                      String         @id @default(uuid())
-  name                    String
-  email                   String         @unique
-  phone                   String?        
-  password                String?        
-  passwordResetToken      String?        
+  id                      String         @id @default(uuid()) @db.Char(36)
+  name                    String         @db.VarChar(50)  // 50 chars is enough for most names
+  email                   String         @unique @db.VarChar(75)  // Most emails are under 75 chars
+  phone                   String?        @db.VarChar(15)  // International format with country code
+  password                String?        @db.VarChar(100) // Keep 100 for secure hashes
+  passwordResetToken      String?        @db.VarChar(100)
   passwordResetTokenExpiry DateTime?     
   role                    UserRole       @default(BUSINESS_EXECUTIVE)
-  avatar                  String?
+  avatar                  String?        @db.VarChar(150) // Reduce from 255
   isActive                Boolean        @default(true)
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
@@ -47,24 +68,27 @@ model User {
   taskComments            TaskComment[]
   clientHistories         ClientHistory[] @relation("CreatedBy")
   canApproveBilling       Boolean        @default(false) // Whether this user can approve billing
+
+  // For frequently accessed active users
+  @@index([isActive], name: "active_users_idx")
 }
 
 model Client {
-  id             String       @id @default(uuid())
-  contactPerson  String       // Name of the primary contact person
-  companyName    String?      // Optional company name
-  email          String?      // Optional email address
-  phone          String?      // Optional phone number
-  address        String?      // Optional address
-  notes          String?      // Optional notes field
-  gstin          String?      // Optional GSTIN (Goods and Services Tax Identification Number)
+  id             String       @id @default(uuid()) @db.Char(36)
+  contactPerson  String       @db.VarChar(50)   // 50 is sufficient for names
+  companyName    String?      @db.VarChar(75)   // Reduced from 150
+  email          String?      @db.VarChar(75)   // Reduced from 255
+  phone          String?      @db.VarChar(15)   // International format
+  address        String?      @db.VarChar(150)  // Reduced from 255
+  notes          String?      @db.Text        // Keep as Text for longer content
+  gstin          String?      @db.VarChar(15) // Standard GSTIN is 15 chars
   isGuest        Boolean      @default(false) // Whether this is a temporary guest client
   accessExpiry   DateTime?    // When guest client access expires
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   
   // Relations
-  managerId      String       // The staff member who manages this client
+  managerId      String       @db.Char(36) // The staff member who manages this client
   manager        User         @relation(fields: [managerId], references: [id])
   tasks          Task[]       // Tasks associated with this client
   attachments    Attachment[] // Attachments related to this client
@@ -73,25 +97,23 @@ model Client {
   
   @@index([managerId])
   @@index([contactPerson]) // Index for searching by contact person name
-  @@index([email])        // Index for searching by email
-  @@index([phone])        // Index for searching by phone
 }
 
 model Task {
-  id             String    @id @default(uuid())
-  title          String
-  description    String?
-  status         String    @default("pending") 
-  priority       String    @default("medium")  
+  id             String    @id @default(uuid()) @db.Char(36)
+  title          String    @db.VarChar(150) // Reduced from 255
+  description    String?   @db.Text        // Keep as Text for longer content
+  status         TaskStatus    @default(pending) // Changed from String
+  priority       TaskPriority  @default(medium)  // Changed from String
   dueDate        DateTime?
-  billingStatus  String?   @default("pending_billing") // "pending_billing", "billed", "paid"
+  billingStatus  BillingStatus? @default(pending_billing) // Changed from String?
   billingDate    DateTime?
   scheduledDeletionDate DateTime? // Add this field
   
   // Keep the original assignment fields (for backward compatibility)
-  assignedById   String
+  assignedById   String    @db.Char(36)
   assignedBy     User      @relation("AssignedByUser", fields: [assignedById], references: [id])
-  assignedToId   String?   // This will remain but become optional
+  assignedToId   String?   @db.Char(36) // This will remain but become optional
   assignedTo     User?     @relation("AssignedToUser", fields: [assignedToId], references: [id])
   
   // Add new many-to-many relation
@@ -99,12 +121,15 @@ model Task {
   
   // Keep other existing relations
   client         Client?   @relation(fields: [clientId], references: [id])
-  clientId       String?
+  clientId       String?   @db.Char(36)
   comments       TaskComment[]
   // Any other existing fields/relations
   
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  // For overdue tasks - frequently queried
+  @@index([status, dueDate(sort: Asc)], name: "overdue_tasks_idx")
 
   @@index([assignedById])
   @@index([assignedToId])
@@ -114,9 +139,9 @@ model Task {
 
 // New join table for many-to-many task assignments
 model TaskAssignee {
-  id          String    @id @default(uuid())
-  taskId      String
-  userId      String
+  id          String    @id @default(uuid()) @db.Char(36)
+  taskId      String    @db.Char(36)
+  userId      String    @db.Char(36)
   assignedAt  DateTime  @default(now())
   
   // Relations
@@ -128,12 +153,12 @@ model TaskAssignee {
 }
 
 model Attachment {
-  id          String   @id @default(uuid())
-  filename    String
-  path        String
-  mimetype    String
+  id          String   @id @default(uuid()) @db.Char(36)
+  filename    String   @db.VarChar(150) // Reduced from 255
+  path        String   @db.VarChar(255) // Reduced from 512
+  mimetype    String   @db.VarChar(50)  // Reduced from 100
   size        Int
-  clientId    String?  // Optional relation to client
+  clientId    String?  @db.Char(36) // Optional relation to client
   client      Client?  @relation(fields: [clientId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -142,9 +167,9 @@ model Attachment {
 }
 
 model Message {
-  id         String   @id @default(uuid())
-  content    String
-  senderId   String
+  id         String   @id @default(uuid()) @db.Char(36)
+  content    String   @db.Text  // Keep as Text for longer content
+  senderId   String   @db.Char(36)
   sender     User     @relation(fields: [senderId], references: [id])
   createdAt  DateTime @default(now())
 
@@ -152,18 +177,18 @@ model Message {
 }
 
 model Notification {
-  id          String   @id @default(uuid())
-  title       String
-  content     String?
+  id          String   @id @default(uuid()) @db.Char(36)
+  title       String   @db.VarChar(75) // Reduced from 100
+  content     String?  @db.Text  // Keep as Text for longer content
   isRead      Boolean  @default(false)
-  taskId      String?  // Optional relation to task
+  taskId      String?  @db.Char(36) // Optional relation to task
   
   // Who sent the notification
-  sentById    String
+  sentById    String   @db.Char(36)
   sentBy      User     @relation("SentBy", fields: [sentById], references: [id])
   
   // Who received the notification
-  sentToId    String
+  sentToId    String   @db.Char(36)
   sentTo      User     @relation("SentTo", fields: [sentToId], references: [id])
   
   createdAt   DateTime @default(now())
@@ -173,12 +198,12 @@ model Notification {
 }
 
 model Activity {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid()) @db.Char(36)
   type      String   // "client", "user", "task", "project", "document"
   action    String   // "created", "updated", "deleted", "assigned", "completed", "role_changed"
   target    String   // What was affected (name of client, user, task, etc.)
   details   Json?    // Additional context as JSON (optional)
-  userId    String   
+  userId    String   @db.Char(36)
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
 
@@ -188,11 +213,11 @@ model Activity {
 }
 
 model TaskComment {
-  id          String    @id @default(uuid())
-  content     String
-  taskId      String
+  id          String    @id @default(uuid()) @db.Char(36)
+  content     String    @db.Text  // Keep as Text for longer content
+  taskId      String    @db.Char(36)
   task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  userId      String
+  userId      String    @db.Char(36)
   user        User      @relation(fields: [userId], references: [id])
   attachments Json?     // Add this field to store attachment metadata
   createdAt   DateTime  @default(now())
@@ -203,21 +228,21 @@ model TaskComment {
 }
 
 model ClientHistory {
-  id                String    @id @default(uuid())
-  clientId          String
+  id                String    @id @default(uuid()) @db.Char(36)
+  clientId          String    @db.Char(36)
   client            Client    @relation(fields: [clientId], references: [id])
-  content           String    // Description/content of the history entry
-  type              String    @default("general")
+  content           String    @db.Text  // Keep as Text for longer content
+  type              String    @default("general") @db.VarChar(50)
   createdAt         DateTime  @default(now())
-  createdById       String
+  createdById       String    @db.Char(36)
   createdBy         User      @relation("CreatedBy", fields: [createdById], references: [id])
   pinned           Boolean   @default(false) // Whether this history entry is pinned for quick access
   
   // Task related fields
-  taskId            String?
-  taskTitle         String?
-  taskDescription   String?
-  taskStatus        String?
+  taskId            String?   @db.Char(36)
+  taskTitle         String?   @db.VarChar(255)
+  taskDescription   String?   @db.Text  // Keep as Text for longer content
+  taskStatus        String?   @db.VarChar(50)
   taskCompletedDate DateTime?
   taskBilledDate    DateTime?
   billingDetails    Json?
@@ -228,11 +253,11 @@ model ClientHistory {
 }
 
 model Credential {
-  id        String   @id @default(uuid())
-  title     String
-  username  String
-  password  String
-  clientId  String
+  id        String   @id @default(uuid()) @db.Char(36)
+  title     String   @db.VarChar(75) // Reduced from 100
+  username  String   @db.VarChar(75) // Reduced from 100
+  password  String   @db.VarChar(100) // Keep 100 for secure hashes
+  clientId  String   @db.Char(36)
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
