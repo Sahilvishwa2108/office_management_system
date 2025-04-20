@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 
 const TASK_STATUSES = [
   { value: "pending", label: "Pending", icon: Clock, color: "text-gray-500" },
-  { value: "in-progress", label: "In Progress", icon: PlayCircle, color: "text-blue-500" },
+  { value: "in_progress", label: "In Progress", icon: PlayCircle, color: "text-blue-500" },
   { value: "review", label: "Under Review", icon: AlertCircle, color: "text-yellow-500" },
   { value: "completed", label: "Completed", icon: CheckCircle, color: "text-green-500" },
   { value: "cancelled", label: "Cancelled", icon: XCircle, color: "text-red-500" },

@@ -185,7 +185,7 @@ function calculateTaskProgress(status: string): number {
   switch (status) {
     case "pending":
       return 0;
-    case "in-progress":
+    case "in_progress":
       return 50;
     case "review":
       return 80;

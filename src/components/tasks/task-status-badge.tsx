@@ -41,7 +41,7 @@ export function TaskStatusBadge({
           <span>Pending</span>
         </Badge>
       );
-    case "in-progress":
+    case "in_progress":
       return (
         <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
           <Clock className="h-3.5 w-3.5" />

@@ -10,7 +10,7 @@ const taskCreateSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
   priority: z.enum(["low", "medium", "high"]),
-  status: z.enum(["pending", "in-progress", "review", "completed", "cancelled"]),
+  status: z.enum(["pending", "in_progress", "review", "completed", "cancelled"]),
   dueDate: z.string().optional().nullable(),
   // Change to accept an array of IDs and allow empty array
   assignedToIds: z.array(z.string()).optional().default([]),

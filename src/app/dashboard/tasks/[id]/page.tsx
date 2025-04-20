@@ -210,7 +210,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending": return "bg-gray-500 hover:bg-gray-600";
-      case "in-progress": return "bg-blue-500 hover:bg-blue-600";
+      case "in_progress": return "bg-blue-500 hover:bg-blue-600";
       case "review": return "bg-yellow-500 hover:bg-yellow-600";
       case "completed": return "bg-green-500 hover:bg-green-600";
       case "cancelled": return "bg-red-500 hover:bg-red-600";
@@ -389,7 +389,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="review">Review</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>

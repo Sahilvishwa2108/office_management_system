@@ -18,7 +18,7 @@ const taskUpdateSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters").optional(),
   description: z.string().optional(),
   priority: z.enum(["low", "medium", "high"]).optional(),
-  status: z.enum(["pending", "in-progress", "review", "completed", "cancelled"]).optional(),
+  status: z.enum(["pending", "in_progress", "review", "completed", "cancelled"]).optional(),
   dueDate: z.string().optional().nullable(),
   // Add support for array of assignees
   assignedToIds: z.array(z.string()).optional(),

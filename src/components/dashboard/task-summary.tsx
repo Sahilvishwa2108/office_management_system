@@ -37,7 +37,7 @@ export function TaskSummary({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending": return "bg-gray-500";
-      case "in-progress": return "bg-blue-500";
+      case "in_progress": return "bg-blue-500";
       case "review": return "bg-yellow-500";
       case "completed": return "bg-green-500";
       case "cancelled": return "bg-red-500";

@@ -395,7 +395,7 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
                               <Badge
                                 variant={
                                   task.status === "completed" ? "outline" :
-                                  task.status === "in-progress" ? "secondary" :
+                                  task.status === "in_progress" ? "secondary" :
                                   task.status === "pending" ? "default" :
                                   "outline"
                                 }

@@ -122,7 +122,7 @@ const TaskListItem = ({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending": return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
-      case "in-progress": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
+      case "in_progress": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
       case "review": return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
       case "completed": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
       case "cancelled": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
@@ -237,7 +237,7 @@ const TaskTableRow = ({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending": return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
-      case "in-progress": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
+      case "in_progress": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
       case "review": return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
       case "completed": return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
       case "cancelled": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
@@ -362,7 +362,7 @@ export default function TasksPage() {
         
         // Get status from URL
         const statusParam = url.searchParams.get('status');
-        if (statusParam && ["pending", "in-progress", "review", "completed", "cancelled", "all"].includes(statusParam)) {
+        if (statusParam && ["pending", "in_progress", "review", "completed", "cancelled", "all"].includes(statusParam)) {
           setStatusFilter(statusParam);
         }
         
@@ -669,9 +669,9 @@ export default function TasksPage() {
                     Pending
                   </Button>
                   <Button 
-                    variant={statusFilter === "in-progress" ? "default" : "ghost"} 
+                    variant={statusFilter === "in_progress" ? "default" : "ghost"} 
                     size="sm"
-                    onClick={() => setStatusFilter("in-progress")}
+                    onClick={() => setStatusFilter("in_progress")}
                     className="flex-1 sm:flex-none rounded-none"
                   >
                     In Progress

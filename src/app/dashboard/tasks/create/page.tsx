@@ -54,7 +54,7 @@ const taskFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
   priority: z.enum(["low", "medium", "high"]),
-  status: z.enum(["pending", "in-progress", "review", "completed", "cancelled"]),
+  status: z.enum(["pending", "in_progress", "review", "completed", "cancelled"]),
   dueDate: z.date().optional().nullable(),
   // Change to array for multiple assignees
   assignedToIds: z.array(z.string()).optional().default([]),
@@ -327,7 +327,7 @@ export default function CreateTaskPage() {
                             <span className="h-2 w-2 rounded-full bg-gray-500"></span>
                             <span>Pending</span>
                           </SelectItem>
-                          <SelectItem value="in-progress" className="flex items-center gap-2">
+                          <SelectItem value="in_progress" className="flex items-center gap-2">
                             <span className="h-2 w-2 rounded-full bg-blue-500"></span>
                             <span>In Progress</span>
                           </SelectItem>

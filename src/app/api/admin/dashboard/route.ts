@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
           where: { status: "pending" }
         }),
         prisma.task.count({
-          where: { status: "in-progress" }
+          where: { status: "in_progress" }
         }),
         prisma.task.count({
           where: {
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
         where: { status: "pending" }
       }),
       prisma.task.count({
-        where: { status: "in-progress" }
+        where: { status: "in_progress" }
       }),
       prisma.task.count({
         where: {

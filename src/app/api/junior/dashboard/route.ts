@@ -57,7 +57,7 @@ export async function GET() {
     const completedTasks = tasks.filter(task => task.status === "completed");
     const activeTasks = tasks.filter(task => task.status !== "completed" && task.status !== "cancelled");
     const pendingTasks = tasks.filter(task => task.status === "pending");
-    const inProgressTasks = tasks.filter(task => task.status === "in-progress");
+    const inProgressTasks = tasks.filter(task => task.status === "in_progress");
     
     // Calculate overdue tasks (not completed and past due date)
     const overdueTasks = tasks.filter(
@@ -122,7 +122,7 @@ export async function GET() {
       let progress = 0;
       switch (task.status) {
         case "pending": progress = 0; break;
-        case "in-progress": progress = 50; break;
+        case "in_progress": progress = 50; break;
         case "review": progress = 75; break;
         case "completed": progress = 100; break;
         default: progress = 0;

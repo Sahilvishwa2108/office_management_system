@@ -1,17 +1,26 @@
 -- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'PARTNER', 'BUSINESS_EXECUTIVE', 'BUSINESS_CONSULTANT');
 
+-- CreateEnum
+CREATE TYPE "TaskStatus" AS ENUM ('pending', 'in_progress', 'review', 'completed', 'cancelled');
+
+-- CreateEnum
+CREATE TYPE "TaskPriority" AS ENUM ('low', 'medium', 'high');
+
+-- CreateEnum
+CREATE TYPE "BillingStatus" AS ENUM ('pending_billing', 'billed', 'paid');
+
 -- CreateTable
 CREATE TABLE "User" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
-    "phone" TEXT,
-    "password" TEXT,
-    "passwordResetToken" TEXT,
+    "id" CHAR(36) NOT NULL,
+    "name" VARCHAR(50) NOT NULL,
+    "email" VARCHAR(75) NOT NULL,
+    "phone" VARCHAR(15),
+    "password" VARCHAR(100),
+    "passwordResetToken" VARCHAR(100),
     "passwordResetTokenExpiry" TIMESTAMP(3),
     "role" "UserRole" NOT NULL DEFAULT 'BUSINESS_EXECUTIVE',
-    "avatar" TEXT,
+    "avatar" VARCHAR(150),
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -23,37 +32,37 @@ CREATE TABLE "User" (
 
 -- CreateTable
 CREATE TABLE "Client" (
-    "id" TEXT NOT NULL,
-    "contactPerson" TEXT NOT NULL,
-    "companyName" TEXT,
-    "email" TEXT,
-    "phone" TEXT,
-    "address" TEXT,
+    "id" CHAR(36) NOT NULL,
+    "contactPerson" VARCHAR(50) NOT NULL,
+    "companyName" VARCHAR(75),
+    "email" VARCHAR(75),
+    "phone" VARCHAR(15),
+    "address" VARCHAR(150),
     "notes" TEXT,
-    "gstin" TEXT,
+    "gstin" VARCHAR(15),
     "isGuest" BOOLEAN NOT NULL DEFAULT false,
     "accessExpiry" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "managerId" TEXT NOT NULL,
+    "managerId" CHAR(36) NOT NULL,
 
     CONSTRAINT "Client_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Task" (
-    "id" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
+    "id" CHAR(36) NOT NULL,
+    "title" VARCHAR(150) NOT NULL,
     "description" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'pending',
-    "priority" TEXT NOT NULL DEFAULT 'medium',
+    "status" "TaskStatus" NOT NULL DEFAULT 'pending',
+    "priority" "TaskPriority" NOT NULL DEFAULT 'medium',
     "dueDate" TIMESTAMP(3),
-    "billingStatus" TEXT DEFAULT 'pending_billing',
+    "billingStatus" "BillingStatus" DEFAULT 'pending_billing',
     "billingDate" TIMESTAMP(3),
     "scheduledDeletionDate" TIMESTAMP(3),
-    "assignedById" TEXT NOT NULL,
-    "assignedToId" TEXT,
-    "clientId" TEXT,
+    "assignedById" CHAR(36) NOT NULL,
+    "assignedToId" CHAR(36),
+    "clientId" CHAR(36),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -62,9 +71,9 @@ CREATE TABLE "Task" (
 
 -- CreateTable
 CREATE TABLE "TaskAssignee" (
-    "id" TEXT NOT NULL,
-    "taskId" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
+    "id" CHAR(36) NOT NULL,
+    "taskId" CHAR(36) NOT NULL,
+    "userId" CHAR(36) NOT NULL,
     "assignedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "TaskAssignee_pkey" PRIMARY KEY ("id")
@@ -72,12 +81,12 @@ CREATE TABLE "TaskAssignee" (
 
 -- CreateTable
 CREATE TABLE "Attachment" (
-    "id" TEXT NOT NULL,
-    "filename" TEXT NOT NULL,
-    "path" TEXT NOT NULL,
-    "mimetype" TEXT NOT NULL,
+    "id" CHAR(36) NOT NULL,
+    "filename" VARCHAR(150) NOT NULL,
+    "path" VARCHAR(255) NOT NULL,
+    "mimetype" VARCHAR(50) NOT NULL,
     "size" INTEGER NOT NULL,
-    "clientId" TEXT,
+    "clientId" CHAR(36),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -86,9 +95,9 @@ CREATE TABLE "Attachment" (
 
 -- CreateTable
 CREATE TABLE "Message" (
-    "id" TEXT NOT NULL,
+    "id" CHAR(36) NOT NULL,
     "content" TEXT NOT NULL,
-    "senderId" TEXT NOT NULL,
+    "senderId" CHAR(36) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Message_pkey" PRIMARY KEY ("id")
@@ -96,13 +105,13 @@ CREATE TABLE "Message" (
 
 -- CreateTable
 CREATE TABLE "Notification" (
-    "id" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
+    "id" CHAR(36) NOT NULL,
+    "title" VARCHAR(75) NOT NULL,
     "content" TEXT,
     "isRead" BOOLEAN NOT NULL DEFAULT false,
-    "taskId" TEXT,
-    "sentById" TEXT NOT NULL,
-    "sentToId" TEXT NOT NULL,
+    "taskId" CHAR(36),
+    "sentById" CHAR(36) NOT NULL,
+    "sentToId" CHAR(36) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
@@ -110,12 +119,12 @@ CREATE TABLE "Notification" (
 
 -- CreateTable
 CREATE TABLE "Activity" (
-    "id" TEXT NOT NULL,
+    "id" CHAR(36) NOT NULL,
     "type" TEXT NOT NULL,
     "action" TEXT NOT NULL,
     "target" TEXT NOT NULL,
     "details" JSONB,
-    "userId" TEXT NOT NULL,
+    "userId" CHAR(36) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Activity_pkey" PRIMARY KEY ("id")
@@ -123,10 +132,10 @@ CREATE TABLE "Activity" (
 
 -- CreateTable
 CREATE TABLE "TaskComment" (
-    "id" TEXT NOT NULL,
+    "id" CHAR(36) NOT NULL,
     "content" TEXT NOT NULL,
-    "taskId" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
+    "taskId" CHAR(36) NOT NULL,
+    "userId" CHAR(36) NOT NULL,
     "attachments" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -136,17 +145,17 @@ CREATE TABLE "TaskComment" (
 
 -- CreateTable
 CREATE TABLE "ClientHistory" (
-    "id" TEXT NOT NULL,
-    "clientId" TEXT NOT NULL,
+    "id" CHAR(36) NOT NULL,
+    "clientId" CHAR(36) NOT NULL,
     "content" TEXT NOT NULL,
-    "type" TEXT NOT NULL DEFAULT 'general',
+    "type" VARCHAR(50) NOT NULL DEFAULT 'general',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "createdById" TEXT NOT NULL,
+    "createdById" CHAR(36) NOT NULL,
     "pinned" BOOLEAN NOT NULL DEFAULT false,
-    "taskId" TEXT,
-    "taskTitle" TEXT,
+    "taskId" CHAR(36),
+    "taskTitle" VARCHAR(255),
     "taskDescription" TEXT,
-    "taskStatus" TEXT,
+    "taskStatus" VARCHAR(50),
     "taskCompletedDate" TIMESTAMP(3),
     "taskBilledDate" TIMESTAMP(3),
     "billingDetails" JSONB,
@@ -156,11 +165,11 @@ CREATE TABLE "ClientHistory" (
 
 -- CreateTable
 CREATE TABLE "Credential" (
-    "id" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "username" TEXT NOT NULL,
-    "password" TEXT NOT NULL,
-    "clientId" TEXT NOT NULL,
+    "id" CHAR(36) NOT NULL,
+    "title" VARCHAR(75) NOT NULL,
+    "username" VARCHAR(75) NOT NULL,
+    "password" VARCHAR(100) NOT NULL,
+    "clientId" CHAR(36) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -171,16 +180,16 @@ CREATE TABLE "Credential" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE INDEX "active_users_idx" ON "User"("isActive");
+
+-- CreateIndex
 CREATE INDEX "Client_managerId_idx" ON "Client"("managerId");
 
 -- CreateIndex
 CREATE INDEX "Client_contactPerson_idx" ON "Client"("contactPerson");
 
 -- CreateIndex
-CREATE INDEX "Client_email_idx" ON "Client"("email");
-
--- CreateIndex
-CREATE INDEX "Client_phone_idx" ON "Client"("phone");
+CREATE INDEX "overdue_tasks_idx" ON "Task"("status", "dueDate" ASC);
 
 -- CreateIndex
 CREATE INDEX "Task_assignedById_idx" ON "Task"("assignedById");
