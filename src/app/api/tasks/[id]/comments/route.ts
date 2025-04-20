@@ -124,7 +124,7 @@ export async function POST(
       await prisma.notification.create({
         data: {
           title: "New Comment on Task",
-          content: `${currentUser.name} commented on task: ${task.title}`,
+          content: `${currentUser.name} commented on task: ${task.title} [taskId: ${task.id}]`,
           sentById: currentUser.id,
           sentToId: task.assignedById,
         },
@@ -136,7 +136,7 @@ export async function POST(
       await prisma.notification.create({
         data: {
           title: "New Comment on Task",
-          content: `${currentUser.name} commented on task: ${task.title}`,
+          content: `${currentUser.name} commented on task: ${task.title} [taskId: ${task.id}]`,
           sentById: currentUser.id,
           sentToId: task.assignedToId,
         },

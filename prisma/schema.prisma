@@ -156,6 +156,7 @@ model Notification {
   title       String
   content     String?
   isRead      Boolean  @default(false)
+  taskId      String?  // Optional relation to task
   
   // Who sent the notification
   sentById    String

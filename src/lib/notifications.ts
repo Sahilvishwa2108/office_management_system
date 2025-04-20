@@ -70,6 +70,7 @@ export async function createNotification({
         content,
         sentById,
         sentToId,
+        taskId,
       },
       include: {
         sentTo: true,
@@ -175,7 +176,7 @@ export async function sendTaskAssignedNotification(
     // Create notification
     const notificationContent = `${assigner.name} assigned you a task: ${taskTitle}${
       note ? ` - Note: ${note}` : ""
-    }`;
+    } [taskId: ${taskId}]`;
 
     const emailHtml = getTaskAssignmentTemplate(
       taskTitle,
@@ -230,8 +231,8 @@ export async function sendTaskReassignedNotification(
     }
 
     await createNotification({
-      title: "Task Assigned",
-      content: `${reassigner.name} reassigned the task "${taskTitle}" to you.`,
+      title: "New Task Assigned",
+      content: `${reassigner.name} reassigned the task "${taskTitle}" to you. [taskId: ${taskId}]`,
       taskId,
       sentById: reassignerUserId,
       sentToId: newAssigneeId,
@@ -306,7 +307,7 @@ export async function sendTaskStatusUpdateNotification(
 
     // Create notification
     const notificationTitle = "Task Status Updated";
-    const notificationContent = `${updater.name} changed task "${taskTitle}" status from ${oldStatus} to ${newStatus}`;
+    const notificationContent = `${updater.name} changed task "${taskTitle}" status from ${oldStatus} to ${newStatus} [taskId: ${taskId}]`;
 
     // Email HTML
     const emailHtml = `
@@ -325,6 +326,7 @@ export async function sendTaskStatusUpdateNotification(
       content: notificationContent,
       sentById: updaterUserId,
       sentToId: creatorUserId,
+      taskId,
       sendEmail: true,
       emailSubject: `Task Status Update: ${taskTitle}`,
       emailHtml,
