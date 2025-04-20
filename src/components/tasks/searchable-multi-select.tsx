@@ -18,6 +18,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ChevronsUpDown, Filter, X } from "lucide-react";
 
@@ -37,6 +43,8 @@ interface SearchableMultiSelectProps {
   disabled?: boolean;
   maxDisplayed?: number;
   className?: string;
+  showSelectedOptions?: boolean;
+  avatarOnly?: boolean; // New prop to control display style
 }
 
 export function SearchableMultiSelect({
@@ -47,6 +55,8 @@ export function SearchableMultiSelect({
   disabled = false,
   maxDisplayed = 3,
   className,
+  showSelectedOptions = false,
+  avatarOnly = true, // Default to avatar-only view for assignees
 }: SearchableMultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
@@ -82,8 +92,13 @@ export function SearchableMultiSelect({
   // Find options matching the selected values
   const selectedOptions = options.filter(option => selected.includes(option.value));
   
-  // Filter options based on role filters
+  // Filter options based on role filters and selection
   const filteredOptions = options.filter(option => {
+    // If showSelectedOptions is false, hide already selected items
+    if (!showSelectedOptions && selected.includes(option.value)) {
+      return false;
+    }
+    
     // Apply role filter if any roles are selected
     if (selectedRoles.length > 0 && option.role) {
       if (!selectedRoles.includes(option.role)) {
@@ -131,11 +146,60 @@ export function SearchableMultiSelect({
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className={cn("w-full justify-between", className)}
+          className={cn("w-full justify-between min-h-10", className)}
         >
-          <div className="flex flex-wrap gap-1 items-center">
-            {selected.length === 0 && <span className="text-muted-foreground">{placeholder}</span>}
-            {selectedOptions.slice(0, maxDisplayed).map(option => (
+          <div className="flex flex-wrap gap-2 items-center py-1">
+            {selected.length === 0 && (
+              <span className="text-muted-foreground">{placeholder}</span>
+            )}
+            
+            {/* Avatar-only view */}
+            {avatarOnly && selectedOptions.length > 0 && (
+              <div className="flex flex-wrap gap-2 items-center">
+                {selectedOptions.map(option => (
+                  <TooltipProvider key={option.value}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="group relative">
+                          <Avatar className="h-8 w-8 border border-muted">
+                            <AvatarImage src={option.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${option.label}`} />
+                            <AvatarFallback>{getInitials(option.label)}</AvatarFallback>
+                          </Avatar>
+                          
+                          {/* Replace button with div for hover delete action */}
+                          <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => removeItem(option.value, e)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  removeItem(option.value, e as any);
+                                }
+                              }}
+                              className="text-destructive h-full w-full flex items-center justify-center cursor-pointer"
+                              aria-label={`Remove ${option.label}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </div>
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{option.label}</p>
+                        {option.role && (
+                          <p className="text-xs text-muted-foreground">{formatRole(option.role)}</p>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ))}
+              </div>
+            )}
+            
+            {/* Badge view (original style) */}
+            {!avatarOnly && selectedOptions.slice(0, maxDisplayed).map(option => (
               <Badge
                 key={option.value}
                 variant="secondary"
@@ -157,7 +221,8 @@ export function SearchableMultiSelect({
                 </span>
               </Badge>
             ))}
-            {selected.length > maxDisplayed && (
+            
+            {!avatarOnly && selected.length > maxDisplayed && (
               <Badge variant="secondary">+{selected.length - maxDisplayed} more</Badge>
             )}
           </div>

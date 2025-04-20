@@ -362,6 +362,7 @@ export default function EditTaskPage() {
                           selected={field.value}
                           onChange={field.onChange}
                           placeholder="Select team members"
+                          showSelectedOptions={false}
                         />
                       </FormControl>
                       <FormMessage />

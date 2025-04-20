@@ -449,6 +449,7 @@ export default function CreateTaskPage() {
                         selected={field.value}
                         onChange={field.onChange}
                         placeholder="Select team members"
+                        showSelectedOptions={false}
                         className="transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                       />
                     </FormControl>
