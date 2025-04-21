@@ -5,19 +5,78 @@ export const canCreateTask = (session: Session | null) => {
   return session?.user.role === "ADMIN" || session?.user.role === "PARTNER";
 };
 
-export const canEditTask = (session: Session | null, task: { assignedById?: string; [key: string]: unknown }) => {
+export const canEditTask = (
+  session: Session | null, 
+  task: { 
+    assignedById?: string;
+    assignees?: Array<{ userId: string }>;
+    // Keep assignedToId for backward compatibility
+    assignedToId?: string;
+    [key: string]: unknown 
+  }
+) => {
+  if (!session?.user) return false;
+  
   // Admin can edit any task
-  if (session?.user.role === "ADMIN") return true;
-  // Partner can only edit tasks they created
-  if (session?.user.role === "PARTNER") return task.assignedById === session.user.id;
+  if (session.user.role === "ADMIN") return true;
+  
+  // Creator can edit their tasks
+  if (task.assignedById === session.user.id) return true;
+  
+  // Check if user is in the assignees list (primary method)
+  if (task.assignees?.some(a => a.userId === session.user.id)) return true;
+  
+  // Fallback to legacy check for backward compatibility only
+  if (task.assignedToId === session.user.id) return true;
+  
   return false;
 };
 
-export const canDeleteTask = (session: Session | null, task: { assignedById?: string; [key: string]: unknown }) => {
+export const canDeleteTask = (
+  session: Session | null, 
+  task: { 
+    assignedById?: string; 
+    assignees?: Array<{ userId: string }>;
+    [key: string]: unknown 
+  }
+) => {
+  if (!session?.user) return false;
+  
   // Admin can delete any task
-  if (session?.user?.role === "ADMIN") return true;
+  if (session.user.role === "ADMIN") return true;
+  
   // Partner can only delete tasks they created
-  if (session?.user?.role === "PARTNER") return task.assignedById === session.user.id;
+  if (session.user.role === "PARTNER") {
+    return task.assignedById === session.user.id;
+  }
+  
+  return false;
+};
+
+export const canViewTask = (
+  session: Session | null,
+  task: {
+    assignedById?: string;
+    assignees?: Array<{ userId: string }>;
+    // Keep assignedToId for backward compatibility
+    assignedToId?: string;
+    [key: string]: unknown
+  }
+) => {
+  if (!session?.user) return false;
+  
+  // Admin can view any task
+  if (session.user.role === "ADMIN") return true;
+  
+  // Creator can view their tasks
+  if (task.assignedById === session.user.id) return true;
+  
+  // Check if user is in the assignees list (primary method)
+  if (task.assignees?.some(a => a.userId === session.user.id)) return true;
+  
+  // Fallback to legacy check for backward compatibility only
+  if (task.assignedToId === session.user.id) return true;
+  
   return false;
 };
 

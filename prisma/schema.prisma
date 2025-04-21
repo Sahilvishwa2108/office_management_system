@@ -57,8 +57,10 @@ model User {
   updatedAt               DateTime       @updatedAt
   updatedById             String?        // ID of the user who last updated this user
   // Relations
+  // DEPRECATED: Legacy assignment field - use taskAssignments instead
   assignedTasks           Task[]         @relation("AssignedToUser")
   createdTasks            Task[]         @relation("AssignedByUser")
+  // PRIMARY: Use this relation for all task assignments
   taskAssignments         TaskAssignee[] @relation("UserTaskAssignments")
   messages                Message[]
   notificationsSent       Notification[] @relation("SentBy")
@@ -110,13 +112,14 @@ model Task {
   billingDate    DateTime?
   scheduledDeletionDate DateTime? // Add this field
   
-  // Keep the original assignment fields (for backward compatibility)
+  // DEPRECATED: Legacy assignment fields - use assignees instead
+  // These fields are kept for backward compatibility but should not be used for new code
   assignedById   String    @db.Char(36)
   assignedBy     User      @relation("AssignedByUser", fields: [assignedById], references: [id])
-  assignedToId   String?   @db.Char(36) // This will remain but become optional
+  assignedToId   String?   @db.Char(36) // DEPRECATED: Use assignees instead
   assignedTo     User?     @relation("AssignedToUser", fields: [assignedToId], references: [id])
   
-  // Add new many-to-many relation
+  // PRIMARY: Use this relation for all task assignments
   assignees      TaskAssignee[]
   
   // Keep other existing relations

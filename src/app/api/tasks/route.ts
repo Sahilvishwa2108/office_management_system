@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { sendTaskAssignedNotification } from "@/lib/notifications";
+import { syncTaskAssignments } from "@/lib/task-assignment";
 
 // Schema for task creation
 const taskCreateSchema = z.object({
@@ -183,7 +184,7 @@ export async function POST(request: NextRequest) {
 
     // Start a transaction to create task and assignees
     const result = await prisma.$transaction(async (tx) => {
-      // Create the task with backwards compatibility for single assignee
+      // Create the task first without any assignee references
       const task = await tx.task.create({
         data: {
           title: validatedData.title,
@@ -192,53 +193,38 @@ export async function POST(request: NextRequest) {
           status: validatedData.status,
           dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
           assignedById: currentUser.id,
-          // Keep assignedToId for backward compatibility
-          assignedToId: validatedData.assignedToId,
           clientId: validatedData.clientId,
+          // Do not set assignedToId at all - it's no longer our primary way of tracking assignments
         },
       });
-
-      // Process multiple assignees if provided
-      if (validatedData.assignedToIds && validatedData.assignedToIds.length > 0) {
-        // Create a set to deduplicate user IDs (in case assignedToId is also in assignedToIds)
-        const uniqueAssigneeIds = new Set<string>(validatedData.assignedToIds);
-        if (validatedData.assignedToId) uniqueAssigneeIds.add(validatedData.assignedToId);
-        
-        // Create TaskAssignee records for each assignee
-        const assigneePromises = Array.from(uniqueAssigneeIds).map(userId => 
-          tx.taskAssignee.create({
-            data: {
-              taskId: task.id,
-              userId: userId,
-            },
-          })
-        );
-        
-        await Promise.all(assigneePromises);
-      } 
-      // Handle the case where only assignedToId is provided (for backward compatibility)
-      else if (validatedData.assignedToId) {
-        await tx.taskAssignee.create({
-          data: {
-            taskId: task.id,
-            userId: validatedData.assignedToId,
-          },
-        });
-      }
-
-      return task;
+      
+      // Determine final list of assignees (from either source)
+      const assigneeIds = validatedData.assignedToIds?.length 
+        ? validatedData.assignedToIds 
+        : (validatedData.assignedToId ? [validatedData.assignedToId] : []);
+      
+      // Use the helper function to handle assignments
+      return syncTaskAssignments(tx, task.id, assigneeIds);
     });
 
     // Create activity log
-    await prisma.activity.create({
-      data: {
-        type: "task",
-        action: "created",
-        target: validatedData.title,
-        details: { taskId: result.id },
-        userId: currentUser.id,
-      },
-    });
+    if (result) {
+      await prisma.activity.create({
+        data: {
+          type: "task",
+          action: "created",
+          target: validatedData.title,
+          details: { taskId: result.id },
+          userId: currentUser.id,
+        },
+      });
+    } else {
+      console.error("Failed to create task: result is null");
+      return NextResponse.json(
+        { error: "Failed to create task" },
+        { status: 500 }
+      );
+    }
 
     // Send notifications to all assignees
     if (validatedData.assignedToIds && validatedData.assignedToIds.length > 0) {

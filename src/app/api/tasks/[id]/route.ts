@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { sendTaskStatusUpdateNotification, sendTaskAssignedNotification } from "@/lib/notifications";
 import { v2 as cloudinary } from "cloudinary";
 import { z } from "zod";
+import { syncTaskAssignments } from "@/lib/task-assignment";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -200,66 +201,30 @@ export async function PATCH(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // Extract assignedToIds from body and remove it to avoid Prisma error
-    const { assignedToIds, ...updateData } = body;
-
     // Use a transaction to update everything atomically
     const updatedTask = await prisma.$transaction(async (tx) => {
-      // Update the task without the assignedToIds field
+      // Extract assignedToIds from body and remove it
+      const { assignedToIds, assignedToId, ...updateData } = body;
+      
+      // Update the task without any assignment fields
       const updated = await tx.task.update({
         where: { id: taskId },
         data: {
           ...updateData,
-          // Ensure we're not changing assignedById through this endpoint
-          assignedById: undefined,
-        },
-        include: {
-          assignedBy: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true,
-              avatar: true,
-            },
-          },
-          assignedTo: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true,
-              avatar: true,
-            },
-          },
-          client: {
-            select: {
-              id: true,
-              contactPerson: true,
-              companyName: true,
-            },
-          },
+          // Don't set any assignment fields here
         },
       });
-
-      // If assignedToIds is provided, update the task assignees
+      
+      // If assignedToIds is provided, update the task assignments
       if (assignedToIds && Array.isArray(assignedToIds)) {
-        // Delete existing assignees
-        await tx.taskAssignee.deleteMany({
-          where: { taskId }
-        });
-
-        // Create new assignee records
-        for (const userId of assignedToIds) {
-          await tx.taskAssignee.create({
-            data: {
-              taskId,
-              userId
-            }
-          });
-        }
+        return syncTaskAssignments(tx, taskId, assignedToIds);
       }
-
+      // For backward compatibility, handle the legacy assignedToId
+      else if (assignedToId) {
+        return syncTaskAssignments(tx, taskId, [assignedToId]);
+      }
+      
+      // If no assignment updates, just return the updated task
       return updated;
     });
 

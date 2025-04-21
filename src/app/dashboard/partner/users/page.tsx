@@ -47,6 +47,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
+import { AssignTaskButton } from "@/components/tasks/assign-task-button";
 
 interface User {
   id: string;
@@ -149,6 +150,13 @@ const UserCard = ({
         <span className="text-xs text-muted-foreground">
           Joined {format(new Date(user.createdAt), "PPP")}
         </span>
+      </div>
+      <div className="mt-4" onClick={(e) => e.stopPropagation()}>
+        <AssignTaskButton 
+          userId={user.id} 
+          userName={user.name} 
+          onAssigned={() => router.refresh()}
+        />
       </div>
     </Card>
   );

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { sendEmail } from "@/lib/email";
+import { syncTaskAssignments } from "@/lib/task-assignment";
 
 // Update the reassignment schema
 const reassignSchema = z.object({
@@ -93,80 +94,8 @@ export async function PATCH(
 
     // Execute reassignment in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Update legacy field (keep for backward compatibility)
-      const primaryAssigneeId = validatedData.assignedToIds.length > 0 ? 
-        validatedData.assignedToIds[0] : null;
-        
-      await tx.task.update({
-        where: { id: taskId },
-        data: {
-          assignedToId: primaryAssigneeId,
-        },
-      });
-      
-      // Get existing assignees
-      const existingAssignees = task.assignees.map(a => a.userId);
-      const newAssignees = validatedData.assignedToIds;
-      
-      // Determine which assignees to add and remove
-      const assigneesToAdd = newAssignees.filter(id => !existingAssignees.includes(id));
-      const assigneesToRemove = existingAssignees.filter(id => !newAssignees.includes(id));
-      
-      // Remove assignees who are no longer assigned
-      if (assigneesToRemove.length > 0) {
-        await tx.taskAssignee.deleteMany({
-          where: {
-            taskId: taskId,
-            userId: { in: assigneesToRemove }
-          }
-        });
-      }
-      
-      // Add new assignees
-      for (const userId of assigneesToAdd) {
-        await tx.taskAssignee.create({
-          data: {
-            taskId: taskId,
-            userId: userId,
-          }
-        });
-      }
-
-      // Return updated task
-      return tx.task.findUnique({
-        where: { id: taskId },
-        include: {
-          assignees: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  role: true,
-                  avatar: true,
-                }
-              }
-            }
-          },
-          assignedBy: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              avatar: true,
-            },
-          },
-          assignedTo: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              avatar: true,
-            },
-          },
-        },
-      });
+      // Use the helper function to handle all assignment logic
+      return syncTaskAssignments(tx, taskId, validatedData.assignedToIds);
     });
 
     // Log activity

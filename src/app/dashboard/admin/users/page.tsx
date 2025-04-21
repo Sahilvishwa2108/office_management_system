@@ -44,6 +44,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RoleFilter } from "@/components/ui/role-filter";
 import React from "react";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
+import { AssignTaskButton } from "@/components/tasks/assign-task-button";
 
 interface User {
   id: string;
@@ -156,6 +157,13 @@ const UserCard = ({
           <Badge variant="secondary" className="text-xs">
             {user.assignedTasksCount} Tasks
           </Badge>
+        </div>
+        <div className="mt-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <AssignTaskButton 
+            userId={user.id} 
+            userName={user.name} 
+            onAssigned={() => router.refresh()}
+          />
         </div>
       </div>
       <div

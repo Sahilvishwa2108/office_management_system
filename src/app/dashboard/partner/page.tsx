@@ -40,6 +40,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { PendingBillingTasks } from "@/components/admin/pending-billing-tasks";
 import { RecentNotificationsCard } from "@/components/dashboard/recent-notifications-card";
+import { AssignTaskButton } from "@/components/tasks/assign-task-button";
 
 // Helper function to check if a date is within the next N days
 function isWithinNextDays(date: Date, days: number): boolean {
@@ -123,6 +124,29 @@ interface PartnerDashboardData {
     timestamp: string;
   }>;
 }
+
+// Add a reference to the function to refresh dashboard data
+const fetchDashboardData = async () => {
+  setLoading(true);
+  setError(null);
+  try {
+    // Fetch dashboard data from API
+    const response = await fetch("/api/admin/dashboard"); // or partner/dashboard
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch dashboard data");
+    }
+
+    const data = await response.json();
+    setDashboardData(data);
+    setStatsLoaded(true);
+  } catch (err) {
+    console.error("Error fetching dashboard data:", err);
+    setError(err instanceof Error ? err.message : "Unknown error occurred");
+  } finally {
+    setLoading(false);
+  }
+};
 
 function PartnerDashboardContent() {
   const { data: session } = useSession();
@@ -557,16 +581,19 @@ function PartnerDashboardContent() {
                                       </p>
                                     </div>
                                   </div>
-                                  <Button
+                                  
+                                  {/* Replace this button with AssignTaskButton */}
+                                  <AssignTaskButton
+                                    userId={user.id}
+                                    userName={user.name}
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8 opacity-70 group-hover:opacity-100"
-                                    asChild
-                                  >
-                                    <Link href={`/dashboard/tasks/create?assignedTo=${user.id}`}>
-                                      <UserPlus className="h-4 w-4" />
-                                    </Link>
-                                  </Button>
+                                    onAssigned={() => {
+                                      // Refresh dashboard data
+                                      fetchDashboardData();
+                                    }}
+                                  />
                                 </div>
                               ))
                             ) : (
@@ -915,7 +942,7 @@ function PartnerDashboardContent() {
                           .sort(
                             (a, b) =>
                               b.completedTasks +
-                              b.activeTasks -
+                              b.activeTasks - 
                               (a.completedTasks + a.activeTasks)
                           )
                           .slice(0, 8)

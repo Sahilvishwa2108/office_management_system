@@ -38,6 +38,7 @@ import {
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { AssignTaskButton } from "@/components/tasks/assign-task-button";
 
 interface Task {
   id: string;
@@ -141,33 +142,34 @@ export default function AdminDashboard() {
   }, [activeTab]);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Fetch dashboard data from API
-        const response = await fetch("/api/admin/dashboard");
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch dashboard data");
-        }
-
-        const data = await response.json();
-        setDashboardData(data);
-        setStatsLoaded(true);
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err);
-        setError(err instanceof Error ? err.message : "Unknown error occurred");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboardData();
   }, [activeTab]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
+  };
+
+  // Add a reference to the function to refresh dashboard data
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch dashboard data from API
+      const response = await fetch("/api/admin/dashboard"); // or partner/dashboard
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch dashboard data");
+      }
+
+      const data = await response.json();
+      setDashboardData(data);
+      setStatsLoaded(true);
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+      setError(err instanceof Error ? err.message : "Unknown error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Default stats data
@@ -386,16 +388,19 @@ export default function AdminDashboard() {
                                       </p>
                                     </div>
                                   </div>
-                                  <Button
+                                  
+                                  {/* Replace this button with AssignTaskButton */}
+                                  <AssignTaskButton
+                                    userId={user.id}
+                                    userName={user.name}
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8 opacity-70 group-hover:opacity-100"
-                                    asChild
-                                  >
-                                    <Link href={`/dashboard/tasks/create?assignedTo=${user.id}`}>
-                                      <UserPlus className="h-4 w-4" />
-                                    </Link>
-                                  </Button>
+                                    onAssigned={() => {
+                                      // Refresh dashboard data
+                                      fetchDashboardData();
+                                    }}
+                                  />
                                 </div>
                               ))
                             ) : (
