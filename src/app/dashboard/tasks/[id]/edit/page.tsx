@@ -69,6 +69,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  avatar?: string;
 }
 
 interface Client {
@@ -357,7 +358,8 @@ export default function EditTaskPage() {
                             value: user.id,
                             label: user.name,
                             role: user.role,
-                            email: user.email
+                            email: user.email,
+                            avatar: user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`
                           }))}
                           selected={field.value}
                           onChange={field.onChange}

@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label"; // Add this import for Label
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // Add this import for Avatar components
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Add this import for Avatar components
 import {
   ArrowLeftIcon,
   PencilIcon as Edit, // Rename to Edit for clarity
@@ -84,6 +84,7 @@ interface Task {
     name: string;
     email: string;
     role: string;
+    avatar?: string; // Add optional avatar property
   };
   assignedTo: {
     id: string;
@@ -328,9 +329,16 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <h3 className="text-sm font-medium mb-1">Assigned By</h3>
                   <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback>{getInitials(task.assignedBy.name)}</AvatarFallback>
-                    </Avatar>
+                  <Avatar className="h-6 w-6">
+  <AvatarImage
+    src={
+      task.assignedBy.avatar || 
+      `https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedBy.name}`
+    }
+    alt={task.assignedBy.name}
+  />
+  <AvatarFallback>{getInitials(task.assignedBy.name)}</AvatarFallback>
+</Avatar>
                     <div className="text-sm">{task.assignedBy.name}</div>
                   </div>
                 </div>

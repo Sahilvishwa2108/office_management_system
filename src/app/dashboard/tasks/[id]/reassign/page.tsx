@@ -27,6 +27,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  avatar?: string;
 }
 
 interface TaskAssignee {
@@ -238,7 +239,7 @@ export default function ReassignTaskPage() {
                   {task.assignees.map(assignee => (
                     <Badge key={assignee.userId} variant="secondary" className="flex items-center gap-1 pl-1 pr-2 py-1">
                       <Avatar className="h-5 w-5">
-                        <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${assignee.user.name}`} />
+                        <AvatarImage src={assignee.user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${assignee.user.name}`} />
                         <AvatarFallback className="text-[10px]">{getInitials(assignee.user.name)}</AvatarFallback>
                       </Avatar>
                       <span>{assignee.user.name}</span>
@@ -253,7 +254,7 @@ export default function ReassignTaskPage() {
               ) : task.assignedTo ? (
                 <div className="flex items-center gap-2">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedTo.name}`} />
+                    <AvatarImage src={task.assignedTo.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedTo.name}`} />
                     <AvatarFallback>{getInitials(task.assignedTo.name)}</AvatarFallback>
                   </Avatar>
                   <div>
@@ -281,7 +282,8 @@ export default function ReassignTaskPage() {
                 value: user.id,
                 label: user.name,
                 role: user.role,
-                email: user.email
+                email: user.email,
+                avatar: user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`
               }))}
               selected={selectedUserIds}
               onChange={setSelectedUserIds}
