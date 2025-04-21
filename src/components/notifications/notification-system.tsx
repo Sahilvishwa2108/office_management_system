@@ -62,6 +62,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastFetched, setLastFetched] = useState<number>(0);
+  const router = useRouter();
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -84,10 +85,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (err) {
       console.error("Failed to load notifications:", err);
       setError("Failed to load notifications");
+
+      // Check if it's a network error (which happens when role changes)
+      if (axios.isAxiosError(err) && !err.response) {
+        // Network error occurred, redirect to login page
+        toast.error("Your session has expired. Please login again.");
+        router.push('/login');
+      }
     } finally {
       setLoading(false);
     }
-  }, [lastFetched]); // Only depends on lastFetched
+  }, [lastFetched, router]); // Only depends on lastFetched
 
   // Mark a notification as read - stabilized with useCallback
   const markAsRead = useCallback(async (id: string) => {

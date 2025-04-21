@@ -83,6 +83,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check if user is blocked based on JWT token
+  if (token.blocked) {
+    return signOutAndRedirect(request);
+  }
+
+  // Check if user is blocked based on JWT token
   if (token.isActive === false) {
     return NextResponse.redirect(new URL("/login?blocked=true", request.url));
   }
@@ -129,6 +134,20 @@ export async function middleware(request: NextRequest) {
   }
 
   return NextResponse.next();
+}
+
+// Helper function to sign out and redirect
+function signOutAndRedirect(request: NextRequest) {
+  const response = NextResponse.redirect(new URL("/login?reason=role-changed", request.url));
+  
+  // Clear auth cookies
+  response.cookies.delete("next-auth.session-token");
+  response.cookies.delete("next-auth.csrf-token");
+  response.cookies.delete("next-auth.callback-url");
+  response.cookies.delete("__Secure-next-auth.callback-url");
+  response.cookies.delete("__Host-next-auth.csrf-token");
+  
+  return response;
 }
 
 export const config = {

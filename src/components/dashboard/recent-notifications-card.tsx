@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   X,
   ExternalLink,
+  ShieldAlert,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
@@ -29,6 +30,12 @@ const getClearedNotificationIds = (): string[] => {
   if (typeof window === 'undefined') return [];
   const stored = localStorage.getItem('clearedNotificationIds');
   return stored ? JSON.parse(stored) : [];
+};
+
+// Add this function to detect role change notifications
+const isRoleChangeNotification = (notification: any): boolean => {
+  if (!notification.content) return false;
+  return notification.content.includes("Role changed from");
 };
 
 export function RecentNotificationsCard({
@@ -74,7 +81,13 @@ export function RecentNotificationsCard({
   }, [notifications, clearedIds]);
 
   // Get icon based on notification type
-  const getNotificationIcon = (type?: string) => {
+  const getNotificationIcon = (notification: any, type?: string) => {
+  
+      if (isRoleChangeNotification(notification)) {
+        return <ShieldAlert className="h-4 w-4 text-red-600" />;
+      }
+
+
     switch (type) {
       case "success":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -93,10 +106,6 @@ export function RecentNotificationsCard({
     content: string;
     taskId?: string;
   }) => {
-    console.log("Notification clicked:", notification); // Debug log
-    console.log("Notification title:", notification.title); // Debug log
-    console.log("Task ID:", notification.taskId); // Debug log
-    console.log("Full content:", notification.content); // Add this to see the exact content format
 
     markAsRead(notification.id); // Mark the notification as read
 
@@ -154,6 +163,9 @@ export function RecentNotificationsCard({
           notification.content
         );
       }
+    } else if (isRoleChangeNotification(notification)) {
+      // For role change notifications, redirect to login
+      router.push("/logout");
     } else {
       console.warn(
         "Unknown notification title or missing taskId:",
@@ -272,7 +284,7 @@ export function RecentNotificationsCard({
                   >
                     <div className="flex items-start gap-2">
                       <div className="mt-0.5">
-                        {getNotificationIcon(notification.title)}
+                        {getNotificationIcon(notification, notification.title)}
                       </div>
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center justify-between">

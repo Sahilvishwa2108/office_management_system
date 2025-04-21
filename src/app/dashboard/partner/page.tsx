@@ -33,6 +33,7 @@ import { StatsCard } from "@/components/dashboard/stats-card";
 import { TaskProgress } from "@/components/dashboard/task-progress";
 import { TaskSummary } from "@/components/dashboard/task-summary";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   DashboardStatsSkeleton,
   DashboardContentSkeleton,
@@ -145,6 +146,13 @@ function PartnerDashboardContent() {
       const response = await fetch("/api/partner/dashboard");
 
       if (!response.ok) {
+        // Special handling for 403 Forbidden errors
+        if (response.status === 403) {
+          console.error("Access forbidden - user may have changed roles or session expired");
+          toast.error("Your session has expired or you no longer have access to this resource. Please login again.");
+          router.push('/login');
+          return;
+        }
         throw new Error(`Error fetching dashboard data: ${response.status}`);
       }
 
@@ -164,7 +172,7 @@ function PartnerDashboardContent() {
   }, []);
 
   // Check if the partner has billing approval permissions
-  const canApproveBilling = session?.user?.role === "PARTNER" && session.user.canApproveBilling;
+  const canApproveBilling = session?.user?.role === "PARTNER" && (session.user as any)?.canApproveBilling;
   console.log("Can approve billing:", canApproveBilling);
 
   // Default empty data if still loading

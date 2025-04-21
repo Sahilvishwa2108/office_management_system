@@ -51,7 +51,8 @@ export const authOptions: NextAuthOptions = {
             avatar: true, 
             isActive: true, 
             password: true,
-            canApproveBilling: true, // Include canApproveBilling for admin checks
+            canApproveBilling: true,
+            roleVersion: true,
           }, // Include avatar, isActive, and password
         });
 
@@ -77,6 +78,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           avatar: user.avatar,
           canApproveBilling: user.canApproveBilling,
+          roleVersion: user.roleVersion,
         };
       },
     }),
@@ -89,14 +91,21 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           role: user.role,
           avatar: user.avatar || null,
-          canApproveBilling: user.canApproveBilling || false, // Include canApproveBilling in the token
+          canApproveBilling: user.canApproveBilling || false,
+          roleVersion: user.roleVersion,
         };
       }
 
       try {
         const user = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { isActive: true, avatar: true, canApproveBilling: true }, // Include canApproveBilling for admin checks
+          select: { 
+            isActive: true, 
+            avatar: true, 
+            canApproveBilling: true,
+            role: true,
+            roleVersion: true,
+          },
         });
 
         if (!user || !user.isActive) {
@@ -106,10 +115,21 @@ export const authOptions: NextAuthOptions = {
           };
         }
 
+        // Check if role or roleVersion changed
+        if (token.role !== user.role || token.roleVersion !== user.roleVersion) {
+          return {
+            ...token,
+            blocked: true,
+            roleChanged: true,
+          };
+        }
+
         return {
           ...token,
           avatar: user.avatar || null,
-          canApproveBilling: user.canApproveBilling || false, // Include canApproveBilling in the token
+          canApproveBilling: user.canApproveBilling || false,
+          role: user.role,
+          roleVersion: user.roleVersion,
         };
       } catch (error) {
         console.error("Database error in JWT callback:", error);
@@ -120,7 +140,7 @@ export const authOptions: NextAuthOptions = {
 
     async session({ session, token }) {
       if (token.blocked) {
-        return { ...session, blocked: true };
+        return { ...session, blocked: true, roleChanged: token.roleChanged };
       }
 
       return {
@@ -130,7 +150,8 @@ export const authOptions: NextAuthOptions = {
           id: token.id as string,
           role: token.role,
           avatar: token.avatar || null,
-          canApproveBilling: token.canApproveBilling || false, // Include canApproveBilling in the session
+          canApproveBilling: token.canApproveBilling || false,
+          roleVersion: token.roleVersion as number,
         },
       };
     },

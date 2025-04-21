@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect} from "react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import { DashboardContentSkeleton } from "@/components/loading/dashboard-skeleto
 import { RecentNotificationsCard } from "@/components/dashboard/recent-notifications-card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import router from "next/router";
 interface JuniorDashboardData {
   stats: {
     activeTasks: number;
@@ -114,6 +115,13 @@ function JuniorDashboardContent() {
         // Fetch dashboard data
         const response = await fetch('/api/junior/dashboard');
         if (!response.ok) {
+          // Special handling for 403 Forbidden errors
+          if (response.status === 403) {
+            console.error("Access forbidden - user may have changed roles or session expired");
+            toast.error("Your session has expired or you no longer have access to this resource. Please login again.");
+            router.push('/login');
+            return;
+          }
           throw new Error(`Error fetching dashboard data: ${response.status}`);
         }
         const data = await response.json();

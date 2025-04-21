@@ -11,7 +11,15 @@ import { createNotification } from "@/lib/notifications";
 const userUpdateSchema = z.object({
   name: z.string().optional(),
   email: z.string().email().optional(),
-  role: z.enum(["ADMIN", "PARTNER", "BUSINESS_EXECUTIVE", "JUNIOR_EXECUTIVE", "ACCOUNTANT"]).optional(),
+  role: z
+    .enum([
+      "ADMIN",
+      "PARTNER",
+      "BUSINESS_EXECUTIVE",
+      "JUNIOR_EXECUTIVE",
+      "ACCOUNTANT",
+    ])
+    .optional(),
   // Other fields...
 });
 
@@ -53,7 +61,6 @@ export async function GET(
         isActive: true,
         createdAt: true,
         updatedAt: true,
-        // Get assigned tasks through the many-to-many relationship
         taskAssignments: {
           include: {
             task: {
@@ -64,24 +71,21 @@ export async function GET(
                 status: true,
                 priority: true,
                 dueDate: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
       },
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Partners can only view junior staff (BUSINESS_EXECUTIVE or BUSINESS_CONSULTANT)
     if (
-      role === "PARTNER" && 
-      user.role !== "BUSINESS_EXECUTIVE" && 
+      role === "PARTNER" &&
+      user.role !== "BUSINESS_EXECUTIVE" &&
       user.role !== "BUSINESS_CONSULTANT"
     ) {
       return NextResponse.json(
@@ -99,15 +103,11 @@ export async function GET(
       avatar: user.avatar,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-      // Transform taskAssignments to provide a flatter structure
-      assignedTasks: user.taskAssignments.map(assignment => assignment.task),
+      assignedTasks: user.taskAssignments.map(assignment => assignment.task), // Include assigned tasks in the response
     });
   } catch (error) {
     console.error("Error getting user:", error);
-    return NextResponse.json(
-      { error: "Failed to get user" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to get user" }, { status: 500 });
   }
 }
 
@@ -118,20 +118,17 @@ export async function PUT(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     // Check if user is authenticated and has appropriate role
     if (!session || !session.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { role } = session.user;
 
     // Fix: Await the params object before accessing id
     const { id: userId } = await Promise.resolve(params);
-    
+
     // Only admins and partners can update users
     if (role !== "ADMIN" && role !== "PARTNER") {
       return NextResponse.json(
@@ -150,16 +147,13 @@ export async function PUT(
     });
 
     if (!userToUpdate) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Partners can only update junior staff and can't change their role to ADMIN or PARTNER
     if (role === "PARTNER") {
       if (
-        userToUpdate.role !== "BUSINESS_EXECUTIVE" && 
+        userToUpdate.role !== "BUSINESS_EXECUTIVE" &&
         userToUpdate.role !== "BUSINESS_CONSULTANT"
       ) {
         return NextResponse.json(
@@ -168,10 +162,7 @@ export async function PUT(
         );
       }
 
-      if (
-        newRole === "ADMIN" || 
-        newRole === "PARTNER"
-      ) {
+      if (newRole === "ADMIN" || newRole === "PARTNER") {
         return NextResponse.json(
           { error: "You cannot promote users to Admin or Partner roles" },
           { status: 403 }
@@ -199,16 +190,24 @@ export async function PUT(
 
     // Check for changes and update fields
     if (name && name !== userToUpdate.name) {
-      updatedFields.push(`Name changed from "${userToUpdate.name}" to "${name}"`);
+      updatedFields.push(
+        `Name changed from "${userToUpdate.name}" to "${name}"`
+      );
     }
     if (email && email !== userToUpdate.email) {
-      updatedFields.push(`Email changed from "${userToUpdate.email}" to "${email}"`);
+      updatedFields.push(
+        `Email changed from "${userToUpdate.email}" to "${email}"`
+      );
     }
     if (typeof newRole !== "undefined" && newRole !== userToUpdate.role) {
-      updatedFields.push(`Role changed from "${userToUpdate.role}" to "${newRole}"`);
+      updatedFields.push(
+        `Role changed from "${userToUpdate.role}" to "${newRole}". Please log out and log back in to see the changes.`
+      );
     }
     if (phone && phone !== userToUpdate.phone) {
-      updatedFields.push(`Phone number changed from "${userToUpdate.phone}" to "${phone}"`);
+      updatedFields.push(
+        `Phone number changed from "${userToUpdate.phone}" to "${phone}"`
+      );
     }
     if (password) {
       updatedFields.push("Password was updated");
@@ -259,7 +258,7 @@ export async function PUT(
           userId: userId,
           oldRole: userToUpdate.role,
           newRole: newRole,
-          relatedUserIds: [userId]  // This is critical! Include the affected user's ID
+          relatedUserIds: [userId], // This is critical! Include the affected user's ID
         }
       );
     }
@@ -271,7 +270,7 @@ export async function PUT(
         name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role,
-      }
+      },
     });
   } catch (error) {
     console.error("Error updating user:", error);
@@ -289,20 +288,17 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     // Check if user is authenticated and has appropriate role
     if (!session || !session.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { role } = session.user;
 
     // Fix: Await the params object before accessing id
     const { id: userId } = await Promise.resolve(params);
-    
+
     // Only admins can delete users
     if (role !== "ADMIN") {
       return NextResponse.json(
@@ -317,24 +313,21 @@ export async function DELETE(
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Delete all associations in the correct order to avoid foreign key constraint errors
-    
+
     // 1. Delete notifications where user is recipient
     await prisma.notification.deleteMany({
       where: { sentToId: userId },
     });
-    
+
     // 2. Delete notifications where user is sender
     await prisma.notification.deleteMany({
       where: { sentById: userId },
     });
-    
+
     // 3. Delete activities by this user
     await prisma.activity.deleteMany({
       where: { userId: userId },
@@ -351,7 +344,7 @@ export async function DELETE(
     });
 
     // 6. Handle tasks
-    // Remove task assignments for this user from the TaskAssignee table
+    // First, update tasks assigned to this user (set assignedToId to null)
     await prisma.taskAssignee.deleteMany({
       where: { userId: userId }
     });
@@ -359,27 +352,24 @@ export async function DELETE(
     // 7. Reassign tasks created by this user to the admin (current user) instead of deleting them
     await prisma.task.updateMany({
       where: { assignedById: userId },
-      data: { assignedById: session.user.id }
+      data: { assignedById: session.user.id },
     });
-    
+
     // 8. Reassign clients managed by this user to the admin
     await prisma.client.updateMany({
       where: { managerId: userId },
-      data: { managerId: session.user.id }
+      data: { managerId: session.user.id },
     });
-    
+
     // Now we can safely delete the user
     const deletedUser = await prisma.user.delete({
       where: { id: userId },
     });
 
-    await logActivity(
-      "user",
-      "deleted",
-      deletedUser.name,
-      session.user.id,
-      { userId: deletedUser.id, userEmail: deletedUser.email }
-    );
+    await logActivity("user", "deleted", deletedUser.name, session.user.id, {
+      userId: deletedUser.id,
+      userEmail: deletedUser.email,
+    });
 
     return NextResponse.json(
       { message: "User deleted successfully" },
@@ -421,7 +411,10 @@ export async function PATCH(
     const validationResult = userUpdateSchema.safeParse(data);
     if (!validationResult.success) {
       return NextResponse.json(
-        { error: "Invalid data format", details: validationResult.error.format() },
+        {
+          error: "Invalid data format",
+          details: validationResult.error.format(),
+        },
         { status: 400 }
       );
     }
@@ -446,19 +439,21 @@ export async function PATCH(
       }
 
       // Log the role change explicitly to ensure it's captured
-      console.log(`Role change for user ${existingUser.name}: ${existingUser.role} -> ${data.role}`);
-      
+      console.log(
+        `Role change for user ${existingUser.name}: ${existingUser.role} -> ${data.role}`
+      );
+
       // Log the activity with clear distinguishing details
       await logActivity(
         "user",
         "role_changed",
         `${existingUser.name} (${existingUser.role} → ${data.role})`,
         session.user.id,
-        { 
+        {
           userId: existingUser.id,
-          previousRole: existingUser.role, 
+          previousRole: existingUser.role,
           newRole: data.role,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         }
       );
     }
@@ -470,19 +465,19 @@ export async function PATCH(
         name: data.name,
         email: data.email,
         role: data.role,
-        // Other fields...
+        // Include roleVersion increment only when role changes
+        ...(data.role && existingUser.role !== data.role
+          ? { roleVersion: { increment: 1 } }
+          : {}),
+        // Other fields remain unchanged
       },
     });
 
     // Log general update activity if no role change occurred
     if (!(data.role && existingUser.role !== data.role)) {
-      await logActivity(
-        "user",
-        "updated",
-        existingUser.name,
-        session.user.id,
-        { userId: existingUser.id }
-      );
+      await logActivity("user", "updated", existingUser.name, session.user.id, {
+        userId: existingUser.id,
+      });
     }
 
     return NextResponse.json(updatedUser);
