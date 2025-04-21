@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { canModifyClients } from "@/lib/permissions";
+import { canModifyClient } from "@/lib/permissions";
 
 interface ClientActionButtonsProps {
   clientId: string;
@@ -13,7 +13,7 @@ interface ClientActionButtonsProps {
 
 export function ClientActionButtons({ clientId, onDeleteClick }: ClientActionButtonsProps) {
   const { data: session } = useSession();
-  const canModify = canModifyClients(session);
+  const canModify = canModifyClient(session);
   
   // If user can't modify clients, don't render any buttons
   if (!canModify) return null;

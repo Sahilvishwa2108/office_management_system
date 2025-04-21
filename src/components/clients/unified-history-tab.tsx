@@ -5,10 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -33,7 +30,8 @@ import {
   Pin,
 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Info, Download } from "lucide-react";
+import { jsPDF } from "jspdf";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -295,6 +293,245 @@ export function UnifiedHistoryTab({
     }
   };
 
+  // First, let's add a function to fetch client details at the top of the component:
+  const fetchClientDetails = async () => {
+    try {
+      const response = await fetch(`/api/clients/${clientId}`);
+
+      if (!response.ok) {
+        throw new Error(
+          `Error fetching client details: ${response.statusText}`
+        );
+      }
+
+      return await response.json();
+    } catch (err) {
+      console.error("Failed to fetch client details:", err);
+      throw err;
+    }
+  };
+
+  // Then replace the downloadHistoryAsPdf function with this updated version
+  // Replace the downloadHistoryAsPdf function with this more compact version
+  const downloadHistoryAsPdf = async () => {
+    try {
+      // Show loading toast
+      toast.info("Preparing your PDF download...");
+
+      // Get client details first
+      const client = await fetchClientDetails();
+
+      // Format date for filename
+      const today = new Date();
+      const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
+
+      // Create client name for filename (remove special characters)
+      const filenameSafeClientName = client.contactPerson
+        .replace(/[^a-z0-9]/gi, "-")
+        .toLowerCase();
+
+      // Create new PDF document with smaller margins
+      const doc = new jsPDF();
+      const filteredHistory = getFilteredHistory();
+
+      // Total page count (for page numbering)
+      let totalPages = 1;
+
+      // Function to add page number and client name
+      const addFooter = (pageNum) => {
+        const pageSize = doc.internal.pageSize;
+        const pageWidth = pageSize.getWidth();
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(
+          `Page ${pageNum} - ${client.contactPerson}`,
+          pageWidth - 15,
+          pageSize.getHeight() - 10,
+          { align: "right" }
+        );
+      };
+
+      // --- REDESIGNED HORIZONTAL HEADER - Ultra compact ---
+      let y = 10; // Start higher up on the page
+
+      // Left side - "Client History" title
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Client History", 15, y);
+
+      // Right side - Client name (larger font)
+      doc.setFontSize(14);
+      doc.text(client.contactPerson, 195, y, { align: "right" });
+      y += 5; // Minimal spacing
+
+      // Second line - Company name and email on same line if possible
+      let secondLineText: string[] = [];
+      if (client.companyName) secondLineText.push(client.companyName);
+      if (client.email) secondLineText.push(client.email);
+
+      if (secondLineText.length > 0) {
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(80, 80, 80);
+        doc.text(secondLineText.join(" • "), 195, y, { align: "right" });
+        doc.setTextColor(0, 0, 0);
+      }
+
+      // Add date and filter on same line
+      y += 5;
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Generated: ${today.toLocaleDateString()}`, 15, y);
+
+      // Add filter info if any
+      if (activeTab !== "all") {
+        doc.text(
+          `Filter: ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`,
+          195,
+          y,
+          { align: "right" }
+        );
+      }
+
+      // Add subtle divider line
+      y += 3;
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.1);
+      doc.line(15, y, 195, y);
+      y += 5;
+      doc.setTextColor(0, 0, 0);
+
+      // --- CONTENT SECTION - More compact ---
+
+      // Loop through entries and add to PDF
+      for (const entry of filteredHistory) {
+        // Check if we need a new page (if less than 25 points left on page - more content per page)
+        if (y > 275) {
+          // Add footer to the current page
+          addFooter(totalPages);
+          // Create a new page
+          doc.addPage();
+          totalPages++;
+          y = 10; // Start at top of new page with minimal margin
+        }
+
+        // Add separator line if not first entry - thinner line
+        if (y > 20) {
+          doc.setLineWidth(0.2); // Thinner line
+          doc.setDrawColor(200, 200, 200);
+          doc.line(15, y, 195, y);
+          y += 6; // Reduced spacing
+        }
+
+        // Handle different entry types
+        if (isTaskHistory(entry)) {
+          // Task history entry - more compact
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "bold");
+          doc.text(entry.taskTitle || "Unnamed Task", 15, y);
+          y += 5;
+
+          // Status
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          const textColor =
+            entry.taskStatus === "completed" ? [0, 128, 0] : [200, 0, 0];
+          doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+          doc.text(
+            `Status: ${
+              entry.taskStatus.charAt(0).toUpperCase() +
+              entry.taskStatus.slice(1)
+            }`,
+            15,
+            y
+          );
+          doc.setTextColor(0, 0, 0);
+          y += 4;
+
+          // Dates - more compact
+          if (entry.taskCompletedDate) {
+            doc.text(
+              `Completed: ${new Date(
+                entry.taskCompletedDate
+              ).toLocaleDateString()}`,
+              15,
+              y
+            );
+            y += 4;
+          }
+
+          // Description if available - more compact
+          if (entry.taskDescription) {
+            doc.setFontSize(8);
+            const splitDescription = doc.splitTextToSize(
+              entry.taskDescription,
+              180 // Wider content area
+            );
+            doc.text(splitDescription, 15, y);
+            y += 4 * splitDescription.length; // Reduced line height
+          }
+
+          // Creator info - more compact
+          doc.setFontSize(7);
+          doc.setTextColor(100, 100, 100);
+          doc.text(
+            `Added by: ${entry.createdBy.name} • ${new Date(
+              entry.createdAt
+            ).toLocaleDateString()}`,
+            15,
+            y
+          );
+          doc.setTextColor(0, 0, 0);
+          y += 8;
+        } else {
+          // General history entry - more compact
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+
+          // Creator name and pinned status
+          let headerText = `${entry.createdBy.name}`;
+          if (entry.pinned) {
+            headerText += " (PINNED)";
+          }
+          doc.text(headerText, 15, y);
+          y += 4;
+
+          // Date
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(100, 100, 100);
+          doc.text(new Date(entry.createdAt).toLocaleString(), 15, y);
+          doc.setTextColor(0, 0, 0);
+          y += 5;
+
+          // Content - more compact
+          doc.setFontSize(9);
+          const splitContent = doc.splitTextToSize(entry.content, 180); // Wider content area
+          doc.text(splitContent, 15, y);
+          y += 4 * splitContent.length + 6; // Reduced spacing
+        }
+      }
+
+      // If no entries, add a message
+      if (filteredHistory.length === 0) {
+        doc.setFontSize(10);
+        doc.text("No history entries found", 105, y, { align: "center" });
+      }
+
+      // Add footer to the last page
+      addFooter(totalPages);
+
+      // Save PDF with the new filename format
+      doc.save(`${filenameSafeClientName}-${dateStr}.pdf`);
+
+      toast.success("PDF downloaded successfully");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to generate PDF";
+      toast.error(errorMessage);
+    }
+  };
   // Helper for avatars
   const getInitials = (name: string): string => {
     return name
@@ -308,9 +545,17 @@ export function UnifiedHistoryTab({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Completed</Badge>;
+        return (
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+            Completed
+          </Badge>
+        );
       case "cancelled":
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">Cancelled</Badge>;
+        return (
+          <Badge className="bg-red-100 text-red-800 hover:bg-red-200">
+            Cancelled
+          </Badge>
+        );
       default:
         return <Badge>{status}</Badge>;
     }
@@ -402,9 +647,24 @@ export function UnifiedHistoryTab({
               className="w-fit"
             >
               <TabsList className="grid grid-cols-3 w-[300px]">
-                <TabsTrigger value="all" className="data-[state=active]:bg-primary/10">All</TabsTrigger>
-                <TabsTrigger value="notes" className="data-[state=active]:bg-primary/10">Notes</TabsTrigger>
-                <TabsTrigger value="tasks" className="data-[state=active]:bg-primary/10">Tasks</TabsTrigger>
+                <TabsTrigger
+                  value="all"
+                  className="data-[state=active]:bg-primary/10"
+                >
+                  All
+                </TabsTrigger>
+                <TabsTrigger
+                  value="notes"
+                  className="data-[state=active]:bg-primary/10"
+                >
+                  Notes
+                </TabsTrigger>
+                <TabsTrigger
+                  value="tasks"
+                  className="data-[state=active]:bg-primary/10"
+                >
+                  Tasks
+                </TabsTrigger>
               </TabsList>
             </Tabs>
             <Button
@@ -416,6 +676,31 @@ export function UnifiedHistoryTab({
               <RefreshCcw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
+
+            {/* Add download button */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Download Client History</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will download all client history entries as a PDF
+                    document.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={downloadHistoryAsPdf}>
+                    Download
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
 
@@ -466,11 +751,11 @@ export function UnifiedHistoryTab({
         ) : (
           <div className="space-y-4">
             {getFilteredHistory().map((entry) => (
-              <Card 
-                key={entry.id} 
+              <Card
+                key={entry.id}
                 className={`overflow-hidden transition-all ${
-                  !isTaskHistory(entry) && entry.pinned 
-                    ? "border-primary/50 bg-primary/5 shadow-[0_0_0_1px_rgba(var(--primary),0.2)]" 
+                  !isTaskHistory(entry) && entry.pinned
+                    ? "border-primary/50 bg-primary/5 shadow-[0_0_0_1px_rgba(var(--primary),0.2)]"
                     : ""
                 }`}
               >
@@ -511,7 +796,9 @@ export function UnifiedHistoryTab({
                             variant="ghost"
                             size="sm"
                             className={`hover:bg-muted/10 p-1 rounded-full ${
-                              entry.pinned ? "text-primary" : "text-muted-foreground"
+                              entry.pinned
+                                ? "text-primary"
+                                : "text-muted-foreground"
                             }`}
                             onClick={() =>
                               togglePinHistoryEntry(entry.id, !entry.pinned)
@@ -528,7 +815,12 @@ export function UnifiedHistoryTab({
                           </Button>
 
                           {/* Delete Button */}
-                          <AlertDialog open={deleteDialogOpen && entryToDelete === entry.id} onOpenChange={setDeleteDialogOpen}>
+                          <AlertDialog
+                            open={
+                              deleteDialogOpen && entryToDelete === entry.id
+                            }
+                            onOpenChange={setDeleteDialogOpen}
+                          >
                             <AlertDialogTrigger asChild>
                               <Button
                                 variant="ghost"
@@ -544,14 +836,17 @@ export function UnifiedHistoryTab({
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete History Entry</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Delete History Entry
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete this history entry.
+                                  This action cannot be undone. This will
+                                  permanently delete this history entry.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
+                                <AlertDialogAction
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   onClick={() => deleteHistoryEntry(entry.id)}
                                 >
@@ -572,9 +867,13 @@ export function UnifiedHistoryTab({
                     <>
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
-                            entry.taskStatus === "completed" ? "bg-green-500" : "bg-red-500"
-                          }`}></div>
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              entry.taskStatus === "completed"
+                                ? "bg-green-500"
+                                : "bg-red-500"
+                            }`}
+                          ></div>
                           <h3 className="font-medium">{entry.taskTitle}</h3>
                         </div>
                         {getStatusBadge(entry.taskStatus)}
