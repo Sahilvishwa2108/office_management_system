@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { SessionProvider } from "next-auth/react";
 import { NotificationProvider } from "@/components/notifications/notification-system";
 import { Toaster } from "sonner";
-import { LoadingBar } from "@/components/ui/loading-bar";
+import { GlobalLoading } from "@/components/ui/global-loading";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,7 +24,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <SessionProvider>
             <NotificationProvider>
-                <LoadingBar />
+                <GlobalLoading />
                 {children}
                 <Toaster position="top-right" richColors closeButton />
             </NotificationProvider>
