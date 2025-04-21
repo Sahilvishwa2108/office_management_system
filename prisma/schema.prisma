@@ -58,7 +58,6 @@ model User {
   updatedById             String?        // ID of the user who last updated this user
   // Relations
   // DEPRECATED: Legacy assignment field - use taskAssignments instead
-  assignedTasks           Task[]         @relation("AssignedToUser")
   createdTasks            Task[]         @relation("AssignedByUser")
   // PRIMARY: Use this relation for all task assignments
   taskAssignments         TaskAssignee[] @relation("UserTaskAssignments")
@@ -116,8 +115,6 @@ model Task {
   // These fields are kept for backward compatibility but should not be used for new code
   assignedById   String    @db.Char(36)
   assignedBy     User      @relation("AssignedByUser", fields: [assignedById], references: [id])
-  assignedToId   String?   @db.Char(36) // DEPRECATED: Use assignees instead
-  assignedTo     User?     @relation("AssignedToUser", fields: [assignedToId], references: [id])
   
   // PRIMARY: Use this relation for all task assignments
   assignees      TaskAssignee[]
@@ -135,7 +132,6 @@ model Task {
   @@index([status, dueDate(sort: Asc)], name: "overdue_tasks_idx")
 
   @@index([assignedById])
-  @@index([assignedToId])
   @@index([clientId])
   @@index([billingStatus])
 }
