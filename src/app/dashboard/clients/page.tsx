@@ -58,6 +58,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { canModifyClient } from "@/lib/permissions";
 import { DataTable } from "@/components/ui/data-table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useCachedFetch } from '@/hooks/use-cached-fetch';
+import { clientBrowserCache } from '@/lib/browser-cache';
+import { ClientListSkeleton } from "@/components/loading/client-skeleton";
 
 interface Client {
   id: string;
@@ -212,10 +215,9 @@ const ClientCard = ({
 
 export default function ClientsPage() {
   console.log("ClientsPage rendering");
-  const router = useRouter(); // Make sure you use this everywhere
+  const router = useRouter();
   const { data: session } = useSession();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Change to false
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
@@ -228,13 +230,33 @@ export default function ClientsPage() {
   const [totalClients, setTotalClients] = useState(0);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
+  
+  // Use cached fetch hook instead of direct axios calls
+  const { 
+    data: clientsResponse, 
+    isLoading, 
+    error, 
+    refresh 
+  } = useCachedFetch(`/api/clients`, {
+    params: {
+      page,
+      limit: 10,
+      isGuest: activeTab === "permanent" ? false : activeTab === "guest" ? true : undefined,
+      search: searchTerm || undefined
+    },
+    cacheTtl: 120, // 2 minutes
+    cache: clientBrowserCache
+  });
 
-  // Check if user can modify clients - MOVED UP
+  // Extract data from the response
+  const clients = clientsResponse?.clients || [];
+
+  // Check if user can modify clients
   const hasWriteAccess = useMemo(() => {
     return canModifyClient(session);
   }, [session]);
 
-  // Function to confirm delete - MOVED UP
+  // Function to confirm delete
   const confirmDelete = useCallback((clientId: string) => {
     setClientToDelete(clientId);
     setDeleteDialogOpen(true);
@@ -506,95 +528,20 @@ export default function ClientsPage() {
     setSearchTerm(e.target.value);
   }, []);
 
-  // Add this ref at the top of your component
-  const currentRequestRef = useRef<number>(0);
+  // Handle loading state
+  if (isLoading) {
+    return <ClientListSkeleton />;
+  }
 
-  // Function to load clients with search and filtering
-  const loadClients = useCallback(async (options?: {
-    skipLoading?: boolean;
-    forceRefresh?: boolean;
-  }) => {
-    // Only show loading UI for initial load or forced refreshes
-    if (!options?.skipLoading) {
-      setLoading(true);
-    }
-    
-    // Use a ref to track the latest request to avoid race conditions
-    const requestId = Date.now();
-    currentRequestRef.current = requestId;
-    
-    setDataError(null);
-    
-    try {
-      let url = `/api/clients?page=${page}&limit=10`;
-
-      if (activeTab === "permanent") {
-        url += "&isGuest=false";
-      } else if (activeTab === "guest") {
-        url += "&isGuest=true";
-      }
-
-      const response = await axios.get(url);
-
-      // Validate response data structure
-      if (!response.data || !Array.isArray(response.data.clients)) {
-        setDataError("Invalid response format from server");
-        setClients([]);
-        return;
-      }
-
-      // Process clients to ensure data integrity
-      const processedClients = response.data.clients.map((client: {
-        id: string;
-        contactPerson: string;
-        companyName?: string;
-        email?: string;
-        phone?: string;
-        isGuest: boolean;
-        accessExpiry?: string;
-        createdAt: string;
-        updatedAt: string;
-        activeTasks: number;
-        completedTasks: number;
-      }) => ({
-        id: client.id || "unknown-id",
-        // Ensure contactPerson always has a fallback value
-        contactPerson: client.contactPerson || "Unnamed Client",
-        companyName: client.companyName || null,
-        email: client.email || null,
-        phone: client.phone || null,
-        isGuest: Boolean(client.isGuest),
-        accessExpiry: client.accessExpiry || null,
-        createdAt: client.createdAt || new Date().toISOString(),
-        updatedAt: client.updatedAt || new Date().toISOString(),
-        activeTasks: typeof client.activeTasks === "number" ? client.activeTasks : 0,
-        completedTasks: typeof client.completedTasks === "number" ? client.completedTasks : 0,
-      }));
-
-      // Only update state if this is still the most recent request
-      if (currentRequestRef.current === requestId) {
-        setClients(processedClients);
-        setTotalPages(response.data.pagination?.pages || 1);
-        setTotalClients(response.data.pagination?.total || processedClients.length);
-      }
-    } catch (error: unknown) {
-      console.error("Error loading clients:", error);
-      const typedError = error as { response?: { data?: { error?: string } } };
-      const errorMessage = typedError?.response?.data?.error || "Failed to load clients";
-      toast.error(errorMessage);
-      setClients([]);
-    } finally {
-      if (currentRequestRef.current === requestId) {
-        setLoading(false);
-      }
-    }
-  }, [page, activeTab]);
-
-  // Add this effect to load clients when component mounts or dependencies change
-  useEffect(() => {
-    console.log("Loading clients effect triggered");
-    loadClients();
-  }, [loadClients]);
+  // Handle error state
+  if (error) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-red-500 mb-4">Failed to load clients: {error.message}</p>
+        <Button onClick={refresh}>Try Again</Button>
+      </div>
+    );
+  }
 
   // deleteClient function implementation
 
@@ -606,7 +553,8 @@ export default function ClientsPage() {
       await axios.delete(`/api/clients/${clientToDelete}`);
       toast.success("Client deleted successfully");
       setDeleteDialogOpen(false);
-      loadClients();
+      // Replace loadClients with refresh
+      refresh();
     } catch (error) {
       console.error("Error deleting client:", error);
       toast.error("Failed to delete client");
@@ -618,56 +566,6 @@ export default function ClientsPage() {
 
   // Note: isClientExpired function is already defined earlier in the component
   // and is used in the columns definition
-
-  // Add proper skeleton state for loading
-  if (loading) {
-    console.log("Rendering loading state");
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-64 mt-2" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-9 w-32" />
-            <Skeleton className="h-9 w-32" />
-          </div>
-        </div>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Skeleton className="h-10 w-full sm:w-72" />
-              <div className="flex-1 flex justify-end">
-                <Skeleton className="h-10 w-40" />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {Array(5)
-                .fill(0)
-                .map((_, i) => (
-                  <div key={i} className="p-4 border rounded-lg">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                      <div className="flex-1">
-                        <Skeleton className="h-6 w-40 mb-1" />
-                        <Skeleton className="h-4 w-24" />
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Skeleton className="h-5 w-16" />
-                        <Skeleton className="h-9 w-24" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -772,7 +670,7 @@ export default function ClientsPage() {
                 <Users className="h-10 w-10 mx-auto text-muted-foreground opacity-20 mb-2" />
                 <h3 className="text-lg font-medium mb-2">Error loading clients</h3>
                 <p className="text-muted-foreground mb-6">{dataError}</p>
-                <Button onClick={() => loadClients()}>Try Again</Button>
+                <Button onClick={() => refresh()}>Try Again</Button>
               </div>
             ) : filteredClients.length === 0 ? (
               <div className="text-center py-12 border rounded-md bg-background">

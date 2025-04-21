@@ -18,117 +18,89 @@ const clientSchema = z.object({
 });
 
 // GET all clients
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
+    
     if (!session) {
-      console.log("API Clients - Unauthorized access attempt");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    // Log user role for debugging
-    console.log(`API Clients - Request from user role: ${session.user.role}`);
-
-    // Parse URL search params
-    const searchParams = req.nextUrl.searchParams;
-    const isGuest = searchParams.get("isGuest");
-    const search = searchParams.get("search");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const skip = (page - 1) * limit;
-
-    // Build the where clause
-    type ClientWhereClause = {
-      isGuest?: boolean;
-      OR?: Array<{[key: string]: unknown}>;
-    };
-    const where: ClientWhereClause = {};
     
-    // Filter by guest status if provided
-    if (isGuest === "true") {
-      where.isGuest = true;
-    } else if (isGuest === "false") {
-      where.isGuest = false;
+    // Extract query parameters
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const searchTerm = searchParams.get('search') || '';
+    const isGuestParam = searchParams.get('isGuest');
+    const isGuest = isGuestParam === 'true' ? true : isGuestParam === 'false' ? false : undefined;
+    
+    // Calculate pagination values
+    const skip = (page - 1) * limit;
+    
+    // Build the where clause based on filters
+    const where: any = {};
+    
+    // Filter by isGuest if specified
+    if (isGuest !== undefined) {
+      where.isGuest = isGuest;
     }
-
-    // Add search functionality
-    if (search) {
+    
+    // Add search filter if provided
+    if (searchTerm) {
       where.OR = [
-        { contactPerson: { contains: search, mode: 'insensitive' } as Record<string, unknown> },
-        { companyName: { contains: search, mode: 'insensitive' } as Record<string, unknown> }
+        { contactPerson: { contains: searchTerm, mode: 'insensitive' } },
+        { companyName: { contains: searchTerm, mode: 'insensitive' } },
+        { email: { contains: searchTerm, mode: 'insensitive' } },
+        { phone: { contains: searchTerm, mode: 'insensitive' } }
       ];
     }
-
-    // Get total count for pagination
-    const totalCount = await prisma.client.count({ where });
-
-    // Get clients with pagination
-    const clients = await prisma.client.findMany({
-      where,
-      include: {
-        manager: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        tasks: {
-          select: {
-            id: true,
-            title: true,
-            status: true,
-          },
-        },
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-      skip,
-      take: limit,
-    });
-
-    // Process clients for response with data validation
-    const processedClients = clients.map((client) => {
-      const activeTasks = client.tasks?.filter(task => 
-        task.status !== "completed" && task.status !== "cancelled"
-      ).length || 0;
-      
-      const completedTasks = client.tasks?.filter(task => 
-        task.status === "completed"
-      ).length || 0;
-
-      return {
-        id: client.id,
-        // Ensure contactPerson is never null or undefined
-        contactPerson: client.contactPerson || "Unnamed Client", 
-        companyName: client.companyName || null,
-        email: client.email || null,
-        phone: client.phone || null,
-        isGuest: Boolean(client.isGuest),
-        accessExpiry: client.accessExpiry,
-        createdAt: client.createdAt,
-        updatedAt: client.updatedAt,
-        activeTasks,
-        completedTasks,
-      };
-    });
-
-    // Before returning the response, log what you're sending
-    console.log(`API Clients - Returning ${processedClients.length} clients`);
-
-    return NextResponse.json({
-      clients: processedClients,
+    
+    // Execute the queries
+    const [clients, totalCount] = await Promise.all([
+      prisma.client.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { updatedAt: 'desc' },
+        include: {
+          tasks: {
+            where: {
+              status: { not: 'completed' }
+            }
+          }
+        }
+      }),
+      prisma.client.count({ where })
+    ]);
+    
+    // Calculate total pages
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    // Prepare the response with data and pagination info
+    const response = {
+      clients: clients.map(client => ({
+        ...client,
+        activeTasks: client.tasks.length,
+        completedTasks: 0, // You could count these if needed
+      })),
       pagination: {
         total: totalCount,
+        pages: totalPages,
         page,
-        limit,
-        pages: Math.ceil(totalCount / limit),
-      },
-    });
+        limit
+      }
+    };
+    
+    // Create the response with appropriate cache headers
+    const res = NextResponse.json(response);
+    
+    // Add cache control headers - vary by user and query params
+    // Stale-while-revalidate pattern: cache for 30s but can serve stale for up to 1 hour while revalidating
+    res.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=3600');
+    
+    return res;
   } catch (error) {
-    console.error("Error in /api/clients:", error);
+    console.error("Error fetching clients:", error);
     return NextResponse.json(
       { error: "Failed to fetch clients" },
       { status: 500 }

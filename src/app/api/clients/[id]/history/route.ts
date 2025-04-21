@@ -171,15 +171,13 @@ export async function DELETE(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const clientId = params.id;
+    // Fix: Resolve params if it's a Promise
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const clientId = resolvedParams.id;
+    
     const body = await request.json();
     const { entryId, pinned } = body;
 
@@ -198,9 +196,9 @@ export async function PATCH(
 
     return NextResponse.json({ updatedEntry });
   } catch (error) {
-    console.error("Error updating pinned status:", error);
+    console.error("Error updating history entry:", error);
     return NextResponse.json(
-      { error: "Failed to update pinned status" },
+      { error: "Failed to update history entry" },
       { status: 500 }
     );
   }

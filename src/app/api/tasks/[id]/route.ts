@@ -6,6 +6,7 @@ import { sendTaskStatusUpdateNotification, sendTaskAssignedNotification } from "
 import { v2 as cloudinary } from "cloudinary";
 import { z } from "zod";
 import { syncTaskAssignments } from "@/lib/task-assignment";
+import { dashboardCache, taskCache, clientCache } from "@/lib/cache";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -281,6 +282,18 @@ export async function PATCH(
           body.note || undefined,
           originalTask.dueDate || undefined
         );
+      }
+    }
+
+    // Invalidate related caches
+    await taskCache.delete(`task:${taskId}`);
+    await dashboardCache.invalidate('*'); // Clear all dashboard caches
+    
+    // If client assignment changed, invalidate client cache
+    if (body.clientId && body.clientId !== originalTask?.clientId) {
+      await clientCache.delete(`client:${body.clientId}`);
+      if (originalTask?.clientId) {
+        await clientCache.delete(`client:${originalTask.clientId}`);
       }
     }
 

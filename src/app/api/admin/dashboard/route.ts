@@ -2,87 +2,30 @@ import { NextResponse, NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { dashboardCache } from "@/lib/cache";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get the session to check if user is authenticated and has admin role
     const session = await getServerSession(authOptions);
 
-    // Check if user is authenticated and has admin role
     if (!session || session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const partners = await prisma.user.findMany({
-      where: { role: "PARTNER" },
-      select: { 
-        id: true, 
-        name: true, 
-        avatar: true,
-        canApproveBilling: true 
-      },
-    });
-
-    // Fetch staff without tasks - UPDATED QUERY
-    const staffWithoutTasks = await prisma.user.findMany({
-      where: {
-        isActive: true,
-        role: { not: "ADMIN" },
-        // Use taskAssignments instead of assignedTasks
-        taskAssignments: {
-          none: {}
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        avatar: true,
-        role: true
-      }
-    });
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const dataType = searchParams.get('dataType') || 'full';
 
-    // For overview tab, we only need tasks
-    if (dataType === 'overview') {
-      // Fetch only tasks
-      const highPriorityTasks = await prisma.task.findMany({
-        where: { 
-          priority: "high",
-          status: { not: "completed" }
-        },
-        take: 5,
-        orderBy: { dueDate: "asc" },
-        include: {
-          assignees: {
-            include: {
-              user: {
-                select: { id: true, name: true }
-              }
-            }
-          }
-        }
-      });
+    // Create cache key based on data type and user ID (to avoid leaking data between users)
+    const cacheKey = `${session.user.id}:${dataType}`;
 
-      return NextResponse.json({
-        tasks: highPriorityTasks.map(task => ({
-          id: task.id,
-          title: task.title,
-          status: task.status,
-          priority: task.priority,
-          dueDate: task.dueDate?.toISOString() || null,
-          assignees: task.assignees.map(a => ({
-            id: a.user.id,
-            name: a.user.name
-          }))
-        })),
-        partners,
-      });
+    // Try to get from cache first
+    const cachedData = await dashboardCache.get(cacheKey);
+    if (cachedData) {
+      return NextResponse.json(cachedData);
     }
 
-    // For analytics tab, we only need stats
+    // For stats, we can cache longer since these don't change as frequently
     if (dataType === 'stats') {
       const [
         totalUsers,
@@ -112,39 +55,108 @@ export async function GET(request: NextRequest) {
         }),
         prisma.task.count({
           where: {
-            status: { not: "completed" },
-            dueDate: { lt: new Date() }
+            dueDate: { lt: new Date() },
+            status: { notIn: ["completed", "cancelled"] }
           }
         }),
-        // Count users created in the last 30 days
         prisma.user.count({
           where: {
             createdAt: {
-              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+              gte: new Date(new Date().setDate(1)) // First day of current month
             }
           }
         })
       ]);
 
-      return NextResponse.json({
-        stats: {
-          totalUsers,
-          activeUsers,
-          totalClients,
-          totalTasks,
-          completedTasks,
-          pendingTasks,
-          inProgressTasks,
-          overdueTasksCount: overdueTasks,
-          newUsersThisMonth
+      const statsData = {
+        totalUsers,
+        activeUsers,
+        totalClients,
+        totalTasks,
+        completedTasks,
+        pendingTasks,
+        inProgressTasks,
+        overdueTasks,
+        newUsersThisMonth
+      };
+
+      // Cache the stats data for 5 minutes (300 seconds)
+      await dashboardCache.set(cacheKey, statsData, { ttl: 300 });
+
+      return NextResponse.json(statsData);
+    }
+
+    // For overview, cache for a shorter time as tasks might change more frequently
+    if (dataType === 'overview') {
+      // Fetch only tasks
+      const highPriorityTasks = await prisma.task.findMany({
+        where: { 
+          priority: "high",
+          status: { not: "completed" }
         },
-        partners,
-        staffWithoutTasks,
+        take: 5,
+        orderBy: { dueDate: "asc" },
+        include: {
+          assignees: {
+            include: {
+              user: {
+                select: { id: true, name: true }
+              }
+            }
+          }
+        }
       });
+
+      const overviewData = {
+        tasks: highPriorityTasks.map(task => ({
+          id: task.id,
+          title: task.title,
+          status: task.status,
+          priority: task.priority,
+          dueDate: task.dueDate?.toISOString() || null,
+          assignees: task.assignees.map(a => ({
+            id: a.user.id,
+            name: a.user.name
+          }))
+        }))
+      };
+
+      // Cache the overview data for 2 minutes (120 seconds)
+      await dashboardCache.set(cacheKey, overviewData, { ttl: 120 });
+
+      return NextResponse.json(overviewData);
     }
 
     // For full data request, return everything
     // This is the original implementation
+    const partners = await prisma.user.findMany({
+      where: { role: "PARTNER" },
+      select: { 
+        id: true, 
+        name: true, 
+        avatar: true,
+        canApproveBilling: true 
+      },
+    });
+
+    // Fetch staff without tasks - UPDATED QUERY
+    const staffWithoutTasks = await prisma.user.findMany({
+      where: {
+        isActive: true,
+        role: { not: "ADMIN" },
+        // Use taskAssignments instead of assignedTasks
+        taskAssignments: {
+          none: {}
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        avatar: true,
+        role: true
+      }
+    });
+
     const [
       totalUsers,
       activeUsers,
@@ -245,7 +257,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Return the dashboard data
-    return NextResponse.json({
+    const fullData = {
       stats: {
         totalUsers,
         activeUsers,
@@ -270,7 +282,12 @@ export async function GET(request: NextRequest) {
       recentActivities: transformedActivities,
       partners,
       staffWithoutTasks,
-    });
+    };
+
+    // Cache the full data for 1 minute (60 seconds)
+    await dashboardCache.set(cacheKey, fullData, { ttl: 60 });
+
+    return NextResponse.json(fullData);
   } catch (error) {
     console.error("Error fetching admin dashboard data:", error);
     return NextResponse.json(

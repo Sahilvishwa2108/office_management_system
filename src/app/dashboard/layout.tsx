@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -31,10 +31,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { NotificationProvider } from "@/components/notifications/notification-system";
-import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+
+// Lazy load non-critical components
+const NotificationProvider = lazy(() =>
+  import('@/components/notifications/notification-system').then(mod => ({
+    default: mod.NotificationProvider
+  }))
+);
 
 interface NavItem {
   title: string;

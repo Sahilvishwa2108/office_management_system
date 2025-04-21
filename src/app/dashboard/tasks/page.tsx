@@ -589,6 +589,13 @@ export default function TasksPage() {
     setSearchTerm("");
   };
 
+  // Load more tasks function for infinite scrolling
+  const loadMoreTasks = useCallback(() => {
+    if (currentPage < pagination.pageCount) {
+      setCurrentPage(prev => prev + 1);
+    }
+  }, [currentPage, pagination.pageCount]);
+
   // Loading state
   if (loading && !refreshing) {
     return (
@@ -794,18 +801,39 @@ export default function TasksPage() {
               </div>
             )}
 
-            {/* Task list - card view - now uses grid layout */}
+            {/* Task list - card view - restored grid layout */}
             {!dataError && filteredTasks.length > 0 && viewMode === "card" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {filteredTasks.map((task) => (
-                  <TaskListItem 
-                    key={task.id} 
-                    task={task}
-                    confirmDelete={confirmDelete}
-                    canDelete={canDeleteForTask(task)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredTasks.slice(0, currentPage * pagination.pageSize).map((task) => (
+                    <TaskListItem
+                      key={task.id}
+                      task={task}
+                      confirmDelete={confirmDelete}
+                      canDelete={canManageTasks}
+                    />
+                  ))}
+                </div>
+                
+                {/* Load more button - only show if there are more pages */}
+                {currentPage < pagination.pageCount && (
+                  <div className="flex justify-center mt-6">
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentPage(prev => prev + 1)}
+                      className="gap-2"
+                      disabled={refreshing}
+                    >
+                      {refreshing ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                      Load More Tasks
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Task list - table view */}

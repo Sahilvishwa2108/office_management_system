@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { NextRequest } from "next/server";
 
 // Define route permissions
 const routePermissions = {
@@ -44,17 +43,40 @@ const routePermissions = {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Add caching for static assets
+  // Add improved caching for static assets
   if (
-    pathname.includes('/_next/static') ||
+    pathname.startsWith('/_next/static') ||
     pathname.includes('/images/') ||
-    pathname.includes('/favicon.ico')
+    pathname.includes('/favicon.ico') ||
+    pathname.endsWith('.png') ||
+    pathname.endsWith('.jpg') ||
+    pathname.endsWith('.svg') ||
+    pathname.endsWith('.css') ||
+    pathname.endsWith('.js')
   ) {
-    const headers = new Headers(request.headers);
-    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
-    
     const response = NextResponse.next();
-    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    
+    // Set more aggressive caching for static assets
+    response.headers.set(
+      'Cache-Control',
+      'public, max-age=31536000, immutable'
+    );
+    
+    // Add content-type based on extension if missing
+    if (!request.headers.get('content-type')) {
+      if (pathname.endsWith('.css')) {
+        response.headers.set('Content-Type', 'text/css');
+      } else if (pathname.endsWith('.js')) {
+        response.headers.set('Content-Type', 'application/javascript');
+      } else if (pathname.endsWith('.png')) {
+        response.headers.set('Content-Type', 'image/png');
+      } else if (pathname.endsWith('.jpg') || pathname.endsWith('.jpeg')) {
+        response.headers.set('Content-Type', 'image/jpeg');
+      } else if (pathname.endsWith('.svg')) {
+        response.headers.set('Content-Type', 'image/svg+xml');
+      }
+    }
+    
     return response;
   }
 

@@ -1,19 +1,83 @@
 import { toast } from "sonner";
 
-// Fix multiple instances of 'any' with specific types
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string;
+      message?: string;
+      details?: Record<string, unknown>;
+    };
+    status?: number;
+    statusText?: string;
+  };
+  message?: string;
+  name?: string;
+  code?: string;
+}
 
-export function handleApiError(error: unknown, fallbackMessage: string = "An error occurred") {
-  const axiosError = error as { 
-    response?: { 
-      data?: Record<string, unknown>; 
-      status?: number 
-    } 
+export function handleApiError(
+  error: unknown, 
+  options: {
+    fallbackMessage?: string;
+    showToast?: boolean;
+    logToConsole?: boolean;
+  } = {}
+): {
+  message: string;
+  statusCode?: number;
+  details?: Record<string, unknown>;
+} {
+  const {
+    fallbackMessage = "An error occurred",
+    showToast = true,
+    logToConsole = true
+  } = options;
+  
+  // Default error response
+  const errorResponse = {
+    message: fallbackMessage,
+    statusCode: undefined as number | undefined,
+    details: undefined as Record<string, unknown> | undefined
   };
   
-  if (axiosError.response?.data && typeof axiosError.response.data === 'object' && 'error' in axiosError.response.data) {
-    toast.error(axiosError.response.data.error as string);
-    return;
+  // Cast the error to our ApiError type
+  const apiError = error as ApiError;
+  
+  if (apiError?.response?.data) {
+    // Handle structured API errors
+    const errorData = apiError.response.data;
+    errorResponse.statusCode = apiError.response.status;
+    
+    if (typeof errorData.error === 'string') {
+      errorResponse.message = errorData.error;
+    } else if (typeof errorData.message === 'string') {
+      errorResponse.message = errorData.message;
+    }
+    
+    if (errorData.details) {
+      errorResponse.details = errorData.details;
+    }
+  } else if (apiError?.message) {
+    // Handle generic JS errors or network errors
+    errorResponse.message = apiError.message;
+    
+    // Add more specific handling for network errors
+    if (apiError.code === 'ECONNABORTED') {
+      errorResponse.message = 'Request timed out. Please try again.';
+    } else if (apiError.name === 'NetworkError' || apiError.message.includes('Network Error')) {
+      errorResponse.message = 'Network connection error. Please check your internet connection.';
+    }
   }
   
-  toast.error(fallbackMessage);
+  // Log to console if enabled
+  if (logToConsole) {
+    console.error('API Error:', error);
+  }
+  
+  // Show toast notification if enabled
+  if (showToast) {
+    toast.error(errorResponse.message);
+  }
+  
+  return errorResponse;
 }

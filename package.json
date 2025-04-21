@@ -5,9 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "build:analyze": "prisma generate && cross-env ANALYZE=true next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "ts-node -P tsconfig-seed.json prisma/seed.ts"
+    "seed": "ts-node -P tsconfig-seed.json prisma/seed.ts",
+    "analyze": "cross-env ANALYZE=true next build",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.8.0",
@@ -63,6 +66,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@next/bundle-analyzer": "^15.2.4",
     "@tailwindcss/postcss": "^4",
     "@types/crypto-js": "^4.2.2",
     "@types/lodash": "^4.17.16",
@@ -73,6 +77,8 @@
     "@types/react-dom": "^19",
     "@types/react-window": "^1.8.8",
     "@types/uuid": "^10.0.0",
+    "compression-webpack-plugin": "^11.0.0",
+    "cross-env": "^7.0.3",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
     "prisma": "^6.6.0",

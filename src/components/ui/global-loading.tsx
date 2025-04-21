@@ -70,11 +70,7 @@ export function GlobalLoading() {
         <div className="loader-ring"></div>
       </div>
       
-      <div className="mt-4 text-primary/80 font-medium">
-        Loading...
-      </div>
-      
-      <div className="mt-2 flex space-x-2">
+      <div className="mt-4 flex space-x-2">
         {[...Array(3)].map((_, i) => (
           <div 
             key={i}
