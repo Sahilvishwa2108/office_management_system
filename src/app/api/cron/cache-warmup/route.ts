@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { dashboardCache } from "@/lib/cache";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    // Check for API key for security
-    const authHeader = request.headers.get('authorization');
+    // Get the user's session
+    const session = await getServerSession(authOptions);
     
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    // Only allow admin users to warm the cache
+    if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
@@ -20,13 +23,16 @@ export async function POST(request: NextRequest) {
       warmUpActiveClients(),
       
       // Warm up pending tasks
-      warmUpPendingTasks()
+      warmUpPendingTasks(),
+
+      // Warm up all users
+      warmUpAllUsers()
     ]);
     
     return NextResponse.json({
       message: 'Cache warmup completed',
       results: results.map((result, index) => ({
-        task: ['dashboardStats', 'activeClients', 'pendingTasks'][index],
+        task: ['dashboardStats', 'activeClients', 'pendingTasks', 'allUsers'][index],
         status: result.status,
         value: result.status === 'fulfilled' ? result.value : null,
         reason: result.status === 'rejected' ? result.reason : null
@@ -68,7 +74,6 @@ async function warmUpDashboardStats() {
     })
   ]);
   
-  // Store in cache for 10 minutes
   const statsData = {
     totalUsers,
     activeUsers,
@@ -80,7 +85,8 @@ async function warmUpDashboardStats() {
     overdueTasks
   };
   
-  await dashboardCache.set('global:stats', statsData, { ttl: 600 });
+  // Increase TTL to 12 hours since we can only run once daily
+  await dashboardCache.set('global:stats', statsData, { ttl: 43200 });
   return { cached: true, items: 1 };
 }
 
@@ -115,8 +121,8 @@ async function warmUpActiveClients() {
     }
   });
   
-  // Store in cache for 5 minutes
-  await dashboardCache.set('global:activeClients', clients, { ttl: 300 });
+  // Increase TTL to 12 hours
+  await dashboardCache.set('global:activeClients', clients, { ttl: 43200 });
   return { cached: true, items: clients.length };
 }
 
@@ -156,7 +162,25 @@ async function warmUpPendingTasks() {
     }
   });
   
-  // Store in cache for 3 minutes
-  await dashboardCache.set('global:pendingTasks', tasks, { ttl: 180 });
+  // Increase TTL to 8 hours
+  await dashboardCache.set('global:pendingTasks', tasks, { ttl: 28800 });
   return { cached: true, items: tasks.length };
+}
+
+// Add additional warmup functions for more comprehensive coverage
+async function warmUpAllUsers() {
+  const users = await prisma.user.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      avatar: true,
+      createdAt: true
+    }
+  });
+  
+  await dashboardCache.set('global:users', users, { ttl: 43200 }); // 12 hours
+  return { cached: true, items: users.length };
 }

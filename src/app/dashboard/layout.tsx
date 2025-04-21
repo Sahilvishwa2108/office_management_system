@@ -66,6 +66,20 @@ export default function DashboardLayout({
 
   const userRole = session?.user?.role || "";
 
+  // Add client-side cache warming for admin users
+  useEffect(() => {
+    // Only trigger cache warming for authenticated admin users
+    if (session?.user?.role === 'ADMIN') {
+      // Use the existing session auth instead of an API key
+      fetch('/api/cron/cache-warmup', {
+        method: 'POST',
+        // No Authorization header with key - use the session cookie instead
+      }).catch(err => {
+        console.error('Cache warmup error:', err);
+      });
+    }
+  }, [session?.user?.id]);
+
   // Navigation items based on user role with categories
   const navItems: NavItem[] = [
     // Main navigation

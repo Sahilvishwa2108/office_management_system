@@ -15,7 +15,7 @@
     },
     {
       "path": "/api/cron/cache-warmup",
-      "schedule": "*/15 7-19 * * 1-5"
+      "schedule": "0 7 * * 1-5"
     }
   ],
   "headers": [
