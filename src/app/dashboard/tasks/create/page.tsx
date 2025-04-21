@@ -56,10 +56,8 @@ const taskFormSchema = z.object({
   priority: z.enum(["low", "medium", "high"]),
   status: z.enum(["pending", "in_progress", "review", "completed", "cancelled"]),
   dueDate: z.date().optional().nullable(),
-  // Change to array for multiple assignees
+  // Only use assignedToIds array
   assignedToIds: z.array(z.string()).optional().default([]),
-  // Keep for backward compatibility
-  assignedToId: z.string().optional().nullable(),
   clientId: z.string().optional().nullable(),
 });
 
@@ -111,9 +109,8 @@ export default function CreateTaskPage() {
       priority: "medium",
       status: "pending",
       dueDate: null,
-      assignedToIds: [], // Initialize as empty array
-      assignedToId: null, // Keep for compatibility
-      clientId: null, // Will be updated once we have the clientIdParam
+      assignedToIds: [], // Properly initialized as array
+      clientId: null,
     },
   });
 
@@ -130,8 +127,8 @@ export default function CreateTaskPage() {
       setIsDataLoading(true);
       try {
         // Fetch users (only staff who can be assigned tasks)
-        const usersResponse = await axios.get<User[]>('/api/users');
-        setUsers(usersResponse.data.filter((user) => 
+        const usersResponse = await axios.get('/api/users');
+        setUsers(usersResponse.data.users.filter((user: User) => 
           ['BUSINESS_EXECUTIVE', 'BUSINESS_CONSULTANT', 'PARTNER'].includes(user.role)
         ));
         
@@ -175,11 +172,6 @@ export default function CreateTaskPage() {
     try {
       setIsLoading(true);
       
-      // Set primary assignee from assignedToIds if available
-      if (data.assignedToIds && data.assignedToIds.length > 0 && !data.assignedToId) {
-        data.assignedToId = data.assignedToIds[0];
-      }
-      
       // Format data as needed
       const taskData = {
         ...data,
@@ -187,8 +179,6 @@ export default function CreateTaskPage() {
         assignedToIds: data.assignedToIds && data.assignedToIds.length > 0 
           ? data.assignedToIds 
           : undefined,
-        // Keep for backward compatibility
-        assignedToId: data.assignedToId === "null" ? null : data.assignedToId,
         clientId: data.clientId === "null" ? null : data.clientId,
         dueDate: data.dueDate ? data.dueDate.toISOString() : null,
       };
@@ -300,12 +290,12 @@ export default function CreateTaskPage() {
                             <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
                             <span>Medium</span>
                           </SelectItem>
-                          <SelectItem value="high" className="flex items-center gap-2">
-                            <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                            <span>High</span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                            <SelectItem value="high" className="flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                              <span>High</span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       <FormMessage />
                     </FormItem>
                   )}

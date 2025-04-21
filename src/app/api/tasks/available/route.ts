@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { TaskStatus, BillingStatus, TaskPriority } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,20 +14,31 @@ export async function GET(req: NextRequest) {
     
     // Get search params for filtering
     const { searchParams } = new URL(req.url);
-    const status = searchParams.get("status");
+    const statusParam = searchParams.get("status");
     
     // Define filters based on role - apply RBAC
-    let availableTasks = [];
+    // Initialize with proper type instead of empty array
+    let availableTasks: Array<{
+      id: string;
+      title: string;
+      status: TaskStatus;
+      priority: TaskPriority;
+      dueDate: Date | null;
+      billingStatus: BillingStatus | null;
+    }> = [];
+    
+    // Create a properly typed status filter
+    const statusFilter = statusParam ? 
+      { status: statusParam as TaskStatus } : 
+      { status: { notIn: ["completed", "cancelled"] as TaskStatus[] } };
     
     if (session.user.role === "ADMIN") {
       // Admins can assign any task
       availableTasks = await prisma.task.findMany({
         where: {
           // Tasks that are not completed or billed
-          status: { notIn: ["completed", "cancelled"] },
-          billingStatus: { not: "billed" },
-          // Optional status filter
-          ...(status ? { status } : {}),
+          ...statusFilter,
+          billingStatus: { not: "billed" as BillingStatus },
         },
         select: {
           id: true,
@@ -48,10 +60,8 @@ export async function GET(req: NextRequest) {
           // Tasks created by this partner
           assignedById: session.user.id,
           // Tasks that are not completed or billed
-          status: { notIn: ["completed", "cancelled"] },
-          billingStatus: { not: "billed" },
-          // Optional status filter
-          ...(status ? { status } : {}),
+          ...statusFilter,
+          billingStatus: { not: "billed" as BillingStatus },
         },
         select: {
           id: true,

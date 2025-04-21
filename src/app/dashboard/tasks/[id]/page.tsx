@@ -118,6 +118,9 @@ const canEditTask = (task: Task, currentUser: User) => {
   // Creator can edit their own tasks
   if (task.assignedBy?.id === currentUser.id) return true;
   
+  // Assignee can edit their assigned task
+  if (task.assignees?.some(a => a.userId === currentUser.id)) return true;
+  
   // No one else can edit tasks
   return false;
 };
@@ -348,7 +351,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                   <TaskAssignees 
                     assignees={task.assignees} 
                     legacyAssignedTo={task.assignedTo}
-                    showTooltip={true}
+                    showDetails={true}
                   />
                 </div>
                 

@@ -44,13 +44,16 @@ export async function PATCH(
       );
     }
 
-    // Get the task
+    // Update the task query to include assignees but not assignedTo
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: {
-        assignees: true,
+        assignees: {
+          include: {
+            user: true
+          }
+        },
         assignedBy: true,
-        assignedTo: true,
       },
     });
 
@@ -58,16 +61,14 @@ export async function PATCH(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // Enhanced permission check to account for multiple assignees
+    // Update the permission check to use the assignees
     if (currentUser.role === "PARTNER") {
-      // Check if partner is either the main assignee, in the assignees list, or created the task
-      const isAssigned = task.assignedToId === currentUser.id || 
-                         task.assignees.some(a => a.userId === currentUser.id) ||
-                         task.assignedById === currentUser.id;  // Add this check
+      const isCreator = task.assignedById === currentUser.id;
+      const isAssignee = task.assignees.some(a => a.userId === currentUser.id);
       
-      if (!isAssigned) {
+      if (!isCreator && !isAssignee) {
         return NextResponse.json(
-          { error: "You can only reassign tasks that were assigned to you or that you created" },
+          { error: "You don't have permission to reassign this task" },
           { status: 403 }
         );
       }
@@ -89,14 +90,15 @@ export async function PATCH(
       );
     }
 
-    // Track previous assignees for notifications
-    const previousAssigneeIds = task.assignees.map(a => a.userId);
-
     // Execute reassignment in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Use the helper function to handle all assignment logic
       return syncTaskAssignments(tx, taskId, validatedData.assignedToIds);
     });
+
+    // When tracking previous assignees, make sure to handle the case where assignees might not be loaded
+    const previousAssignees = task.assignees || [];
+    const previousAssigneeIds = previousAssignees.map(a => a.userId);
 
     // Log activity
     await prisma.activity.create({

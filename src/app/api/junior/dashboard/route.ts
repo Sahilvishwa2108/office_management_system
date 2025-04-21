@@ -36,7 +36,11 @@ export async function GET() {
     // Get all tasks assigned to the current user
     const tasks = await prisma.task.findMany({
       where: {
-        assignedToId: currentUser.id,
+        assignees: {
+          some: {
+            userId: currentUser.id
+          }
+        }
       },
       include: {
         assignedBy: {
@@ -47,6 +51,18 @@ export async function GET() {
             role: true,
           },
         },
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              }
+            }
+          }
+        }
       },
       orderBy: {
         updatedAt: "desc",

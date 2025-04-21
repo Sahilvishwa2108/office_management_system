@@ -32,7 +32,16 @@ export async function POST(
       include: {
         client: true,
         assignedBy: { select: { id: true, name: true } },
-        assignedTo: { select: { id: true, name: true } }
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
       }
     });
 
@@ -74,10 +83,10 @@ export async function POST(
                 id: task.assignedBy.id,
                 name: task.assignedBy.name
               } : null,
-              assignedTo: task.assignedTo ? {
-                id: task.assignedTo.id,
-                name: task.assignedTo.name
-              } : null
+              assignees: task.assignees.map(assignee => ({
+                id: assignee.user.id,
+                name: assignee.user.name
+              }))
             }
           }
         });

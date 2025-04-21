@@ -48,8 +48,12 @@ export async function POST(
       where: { id: taskId },
       include: {
         assignedBy: true,
-        assignedTo: true,
-      },
+        assignees: {
+          include: {
+            user: true
+          }
+        }
+      }
     });
 
     if (!task) {
@@ -60,7 +64,7 @@ export async function POST(
     const canComment = 
       currentUser.role === "ADMIN" ||
       task.assignedById === currentUser.id ||
-      task.assignedToId === currentUser.id;
+      task.assignees.some(assignee => assignee.userId === currentUser.id);
 
     // Add check for assignees
     if (!canComment) {
@@ -132,16 +136,18 @@ export async function POST(
       });
     }
 
-    // Create notification for assigned user if different from commenter
-    if (task.assignedToId && task.assignedToId !== currentUser.id) {
-      await prisma.notification.create({
-        data: {
-          title: "New Comment on Task",
-          content: `${currentUser.name} commented on task: ${task.title} [taskId: ${task.id}]`,
-          sentById: currentUser.id,
-          sentToId: task.assignedToId,
-        },
-      });
+    // Create notifications for all assignees if different from commenter
+    for (const assignee of task.assignees) {
+      if (assignee.userId !== currentUser.id) {
+        await prisma.notification.create({
+          data: {
+            title: "New Comment on Task",
+            content: `${currentUser.name} commented on task: ${task.title} [taskId: ${task.id}]`,
+            sentById: currentUser.id,
+            sentToId: assignee.userId,
+          },
+        });
+      }
     }
 
     return NextResponse.json(comment, { status: 201 });
@@ -184,8 +190,12 @@ export async function GET(
       where: { id: taskId },
       include: {
         assignedBy: true,
-        assignedTo: true,
-      },
+        assignees: {
+          include: {
+            user: true
+          }
+        }
+      }
     });
 
     if (!task) {
@@ -196,7 +206,7 @@ export async function GET(
     let canAccessComments = 
       currentUser.role === "ADMIN" ||
       task.assignedById === currentUser.id ||
-      task.assignedToId === currentUser.id;
+      task.assignees.some(a => a.userId === currentUser.id);
       
     // Add a check for being in the assignees list
     if (!canAccessComments) {

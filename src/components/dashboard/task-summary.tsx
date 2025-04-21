@@ -10,9 +10,16 @@ interface Task {
   status: string;
   priority: string;
   dueDate: string | null;
-  assignedTo?: {
-    name: string;
-  } | null;
+  // Remove the assignedTo property
+  // assignedTo?: { name: string; } | null;
+  
+  // Add the assignees array property
+  assignees?: Array<{ 
+    user: { 
+      id: string;
+      name: string;
+    } 
+  }>;
 }
 
 interface TaskSummaryProps {
@@ -92,8 +99,8 @@ export function TaskSummary({
                       ? `Due: ${format(new Date(task.dueDate), "MMM d, yyyy")}`
                       : "No due date"}
                   </div>
-                  {showAssignee && task.assignedTo && (
-                    <div>Assigned to: {task.assignedTo.name}</div>
+                  {showAssignee && task.assignees && task.assignees.length > 0 && (
+                    <div>Assigned to: {task.assignees.map(a => a.user.name).join(', ')}</div>
                   )}
                 </div>
               </div>

@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
     const users = await prisma.user.findMany({
       where,
       orderBy: {
-        createdAt: "desc",
+        createdAt: "desc"
       },
       select: {
         id: true,
@@ -159,19 +159,23 @@ export async function GET(request: NextRequest) {
         updatedAt: true,
         _count: {
           select: {
-            assignedTasks: true,
+            taskAssignments: true // Count taskAssignments instead
           }
         }
       },
     });
 
     // Map the response to include assignedTasksCount
-    const response = users.map((user) => ({
-      ...user,
-      assignedTasksCount: user._count.assignedTasks, // Add assignedTasksCount
-    }));
 
-    return NextResponse.json(response);
+    const totalCount = users.length;
+    
+    return NextResponse.json({
+      users: users.map(user => ({
+        ...user,
+        assignedTaskCount: user._count.taskAssignments // Use the new field name
+      })),
+      totalCount
+    });
   } catch (error) {
     console.error("Error fetching users:", error);
     return NextResponse.json(

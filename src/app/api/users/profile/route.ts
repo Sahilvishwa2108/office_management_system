@@ -16,12 +16,16 @@ export async function GET() {
     
     const userId = session.user.id;
     
-    // Get the user with valid relations
+    // Get the user with valid relations using the new schema
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        // Only include relations that exist in the schema
-        assignedTasks: true,
+        // Use the new many-to-many relationship
+        taskAssignments: {
+          include: {
+            task: true
+          }
+        },
         createdTasks: true,
         managedClients: true,
         notificationsReceived: {
@@ -40,7 +44,7 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
     
-    // Transform the user data as needed for the frontend
+    // Transform the user data to maintain the same API contract for the frontend
     const userProfile = {
       id: user.id,
       name: user.name,
@@ -50,7 +54,10 @@ export async function GET() {
       avatar: user.avatar,
       isActive: user.isActive,
       managedClients: user.managedClients,
-      assignedTasks: user.assignedTasks,
+      
+      // Convert taskAssignments to the format expected by the frontend
+      assignedTasks: user.taskAssignments.map(assignment => assignment.task),
+      
       createdTasks: user.createdTasks,
       unreadNotifications: user.notificationsReceived.length
     };

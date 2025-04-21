@@ -53,15 +53,20 @@ export async function GET(
         isActive: true,
         createdAt: true,
         updatedAt: true,
-        assignedTasks: { // Include assigned tasks
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            status: true,
-            priority: true,
-            dueDate: true,
-          },
+        // Get assigned tasks through the many-to-many relationship
+        taskAssignments: {
+          include: {
+            task: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                status: true,
+                priority: true,
+                dueDate: true,
+              }
+            }
+          }
         },
       },
     });
@@ -94,7 +99,8 @@ export async function GET(
       avatar: user.avatar,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-      assignedTasks: user.assignedTasks, // Include assigned tasks in the response
+      // Transform taskAssignments to provide a flatter structure
+      assignedTasks: user.taskAssignments.map(assignment => assignment.task),
     });
   } catch (error) {
     console.error("Error getting user:", error);
@@ -343,14 +349,13 @@ export async function DELETE(
     await prisma.message.deleteMany({
       where: { senderId: userId },
     });
-    
+
     // 6. Handle tasks
-    // First, update tasks assigned to this user (set assignedToId to null)
-    await prisma.task.updateMany({
-      where: { assignedToId: userId },
-      data: { assignedToId: null }
+    // Remove task assignments for this user from the TaskAssignee table
+    await prisma.taskAssignee.deleteMany({
+      where: { userId: userId }
     });
-    
+
     // 7. Reassign tasks created by this user to the admin (current user) instead of deleting them
     await prisma.task.updateMany({
       where: { assignedById: userId },

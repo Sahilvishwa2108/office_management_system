@@ -55,7 +55,7 @@ interface User {
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
-  assignedTasksCount: number;
+  assignedTaskCount: number; // Changed from assignedTasksCount
 }
 
 // Client roles to exclude
@@ -155,7 +155,7 @@ const UserCard = ({
             </Badge>
           )}
           <Badge variant="secondary" className="text-xs">
-            {user.assignedTasksCount} Tasks
+            {user.assignedTaskCount} Tasks
           </Badge>
         </div>
         <div className="mt-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -267,7 +267,6 @@ export default function UsersPage() {
   const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
-      // Use the new roles parameter
       const params: Record<string, string> = {};
       if (selectedRoles.length > 0) {
         params.roles = selectedRoles.join(",");
@@ -275,8 +274,8 @@ export default function UsersPage() {
 
       const response = await axios.get("/api/users", { params });
 
-      // Filter out client users and the current logged-in user
-      const filteredUsers = response.data.filter(
+      // Fix: Access the users array from the response object
+      const filteredUsers = response.data.users.filter(
         (user: User) =>
           !CLIENT_ROLES.includes(user.role) && user.id !== session?.user?.id
       );
@@ -524,7 +523,7 @@ export default function UsersPage() {
                           <TableCell className="font-medium">{user.name}</TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>{formatRole(user.role)}</TableCell>
-                          <TableCell>{user.assignedTasksCount}</TableCell>
+                          <TableCell>{user.assignedTaskCount}</TableCell>
                           <TableCell>
                             {user.isActive !== false ? (
                               <Badge

@@ -88,15 +88,14 @@ export default function ReassignTaskPage() {
         
         // Set initial selection from task data
         const initialAssignees = taskResponse.data.assignees?.map(a => a.userId) || [];
-        // Fallback to legacy assignedToId
         if (initialAssignees.length === 0 && taskResponse.data.assignedToId) {
           initialAssignees.push(taskResponse.data.assignedToId);
         }
         setSelectedUserIds(initialAssignees);
         
         // Fetch users (only staff who can be assigned tasks)
-        const usersResponse = await axios.get<User[]>('/api/users');
-        setUsers(usersResponse.data.filter((user) => 
+        const usersResponse = await axios.get('/api/users');
+        setUsers(usersResponse.data.users.filter((user) => 
           ['BUSINESS_EXECUTIVE', 'BUSINESS_CONSULTANT', 'PARTNER'].includes(user.role)
         ));
         

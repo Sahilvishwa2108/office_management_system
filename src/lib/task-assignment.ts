@@ -2,7 +2,6 @@ import { PrismaClient, Prisma } from "@prisma/client";
 
 /**
  * Helper function to manage task assignments using only the many-to-many relationship.
- * This eliminates the inconsistency between assignedToId and assignees.
  * 
  * @param prisma Prisma client instance (or transaction client)
  * @param taskId ID of the task to update
@@ -48,25 +47,7 @@ export async function syncTaskAssignments(
     });
   }
   
-  // 6. For backward compatibility, update the legacy assignedToId field
-  // This is only for backward compatibility and will be deprecated in the future
-  if (uniqueAssigneeIds.length > 0) {
-    await prisma.task.update({
-      where: { id: taskId },
-      data: {
-        assignedToId: uniqueAssigneeIds[0]
-      }
-    });
-  } else {
-    await prisma.task.update({
-      where: { id: taskId },
-      data: {
-        assignedToId: null
-      }
-    });
-  }
-  
-  // 7. Return the updated task with assignees
+  // 6. Return the updated task with assignees
   return prisma.task.findUnique({
     where: { id: taskId },
     include: {
@@ -82,17 +63,7 @@ export async function syncTaskAssignments(
             }
           }
         }
-      },
-      // Still include assignedTo for backward compatibility
-      assignedTo: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          avatar: true,
-        }
-      },
+      }
     }
   });
 }

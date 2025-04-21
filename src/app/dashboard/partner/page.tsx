@@ -104,11 +104,14 @@ interface PartnerDashboardData {
     status: string;
     priority: string;
     dueDate?: string;
-    assignedTo?: {
-      id: string;
-      name: string;
-      avatar?: string;
-    };
+    // Replace assignedTo with assignees
+    assignees?: Array<{
+      user: {
+        id: string;
+        name: string;
+        avatar?: string;
+      }
+    }>;
     progress?: number;
   }>;
   recentActivities: Array<{
@@ -125,60 +128,38 @@ interface PartnerDashboardData {
   }>;
 }
 
-// Add a reference to the function to refresh dashboard data
-const fetchDashboardData = async () => {
-  setLoading(true);
-  setError(null);
-  try {
-    // Fetch dashboard data from API
-    const response = await fetch("/api/admin/dashboard"); // or partner/dashboard
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch dashboard data");
-    }
-
-    const data = await response.json();
-    setDashboardData(data);
-    setStatsLoaded(true);
-  } catch (err) {
-    console.error("Error fetching dashboard data:", err);
-    setError(err instanceof Error ? err.message : "Unknown error occurred");
-  } finally {
-    setLoading(false);
-  }
-};
-
 function PartnerDashboardContent() {
   const { data: session } = useSession();
-  const [dashboardData, setDashboardData] =
-    useState<PartnerDashboardData | null>(null);
+  const [dashboardData, setDashboardData] = useState<PartnerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statsLoaded, setStatsLoaded] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // Add this function inside the component where state setters are accessible
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch dashboard data from API
+      const response = await fetch("/api/partner/dashboard");
 
-        // Make API call to fetch dashboard data
-        const response = await fetch("/api/partner/dashboard");
-
-        if (!response.ok) {
-          throw new Error(`Error fetching dashboard data: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setDashboardData(data);
-      } catch (err) {
-        console.error("Failed to fetch partner dashboard data:", err);
-        setError("Failed to load dashboard data. Please try again later.");
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error(`Error fetching dashboard data: ${response.status}`);
       }
-    };
 
+      const data = await response.json();
+      setDashboardData(data);
+      setStatsLoaded(true);
+    } catch (err) {
+      console.error("Failed to fetch partner dashboard data:", err);
+      setError("Failed to load dashboard data. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDashboardData();
   }, []);
 
@@ -354,7 +335,9 @@ function PartnerDashboardContent() {
                                     {task.title}
                                   </p>
                                   <p className="text-sm text-muted-foreground truncate">
-                                    {task.assignedTo?.name || "Unassigned"}
+                                    {task.assignees && task.assignees.length > 0 
+                                      ? task.assignees[0].user.name 
+                                      : "Unassigned"}
                                   </p>
                                 </div>
                                 <div
@@ -475,16 +458,16 @@ function PartnerDashboardContent() {
                                   
                                   <div className="mt-3 flex items-center justify-between">
                                     <div className="flex items-center gap-1.5">
-                                      {task.assignedTo ? (
+                                      {task.assignees && task.assignees.length > 0 ? (
                                         <div className="flex items-center gap-1">
                                           <Avatar className="h-5 w-5">
-                                            <AvatarImage src={task.assignedTo.avatar || 
-                                                `https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedTo.name}`} />
+                                            <AvatarImage src={task.assignees[0].user.avatar || 
+                                                `https://api.dicebear.com/7.x/initials/svg?seed=${task.assignees[0].user.name}`} />
                                             <AvatarFallback className="text-[10px]">
-                                              {task.assignedTo.name.substring(0, 2).toUpperCase()}
+                                              {task.assignees[0].user.name.substring(0, 2).toUpperCase()}
                                             </AvatarFallback>
                                           </Avatar>
-                                          <span className="text-xs text-slate-600 dark:text-slate-400">{task.assignedTo.name}</span>
+                                          <span className="text-xs text-slate-600 dark:text-slate-400">{task.assignees[0].user.name}</span>
                                         </div>
                                       ) : (
                                         <span className="text-xs text-slate-500 dark:text-slate-400">Unassigned</span>

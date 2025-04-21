@@ -98,8 +98,8 @@ export default function EditTaskPage() {
       priority: "medium",
       status: "pending",
       dueDate: null,
-      assignedToIds: [], // Initialize as empty array
-      assignedToId: null,
+      assignedToIds: [], // Properly initialized as array
+      assignedToId: null, // Legacy field
       clientId: null,
     },
   });
@@ -137,25 +137,19 @@ export default function EditTaskPage() {
 
         // Fetch users (only staff who can be assigned tasks)
         const usersResponse = await axios.get('/api/users');
-        setUsers((usersResponse.data as User[]).filter((user: User) =>
+        setUsers(usersResponse.data.users.filter((user: User) =>
           ['BUSINESS_EXECUTIVE', 'BUSINESS_CONSULTANT', 'PARTNER'].includes(user.role)
         ));
-        
+
         // Fetch clients
         await fetchClients();
-        
-        // Create array of assignee IDs from the task data
-        interface Assignee {
-          userId: string;
-        }
 
-        const assigneeIds: string[] = taskData.assignees?.map((a: Assignee) => a.userId) || [];
-        // Fallback to legacy assignedToId if assignees is empty
+        // Set form values
+        const assigneeIds = taskData.assignees?.map((a: { userId: string }) => a.userId) || [];
         if (assigneeIds.length === 0 && taskData.assignedToId) {
           assigneeIds.push(taskData.assignedToId);
         }
-        
-        // Set form values
+
         form.reset({
           title: taskData.title,
           description: taskData.description || "",
@@ -296,8 +290,8 @@ export default function EditTaskPage() {
                           <SelectItem value="high" className="flex items-center gap-2">
                             <span className="h-2 w-2 rounded-full bg-red-500"></span>
                             <span>High</span>
-                          </SelectItem>
-                        </SelectContent>
+</SelectItem>
+                          </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>

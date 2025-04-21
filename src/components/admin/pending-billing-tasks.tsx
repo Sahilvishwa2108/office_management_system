@@ -12,16 +12,19 @@ import { BillingApprovalButton } from "@/components/tasks/billing-approval-butto
 import { Receipt, RefreshCcw, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
+// Update interface to remove assignedTo and add assignees
 interface Task {
   id: string;
   title: string;
   description?: string;
   status: string;
   billingStatus: string;
-  assignedTo?: {
+  // REMOVE: assignedTo field
+  assignees?: Array<{
     id: string;
     name: string;
-  };
+    avatar?: string;
+  }>;
   client?: {
     id: string;
     contactPerson: string;
@@ -160,7 +163,9 @@ export function PendingBillingTasks() {
                 )}
                 <span className="mx-2">•</span>
                 <span>
-                  Completed {formatDistanceToNow(new Date(task.updatedAt), { addSuffix: true })}
+                  {task.assignees && task.assignees.length > 0 
+                    ? `Assigned to: ${task.assignees.map(a => a.name).join(', ')}`
+                    : "Unassigned"}
                 </span>
               </div>
               

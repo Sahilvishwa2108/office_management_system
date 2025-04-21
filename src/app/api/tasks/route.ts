@@ -13,10 +13,8 @@ const taskCreateSchema = z.object({
   priority: z.enum(["low", "medium", "high"]),
   status: z.enum(["pending", "in_progress", "review", "completed", "cancelled"]),
   dueDate: z.string().optional().nullable(),
-  // Change to accept an array of IDs and allow empty array
   assignedToIds: z.array(z.string()).optional().default([]),
-  // Keep this for backward compatibility
-  assignedToId: z.string().optional().nullable(),
+  assignedToId: z.string().optional().nullable(), // Legacy field
   clientId: z.string().optional().nullable(),
 });
 
@@ -62,13 +60,17 @@ export async function GET(request: NextRequest) {
     } else if (currentUser.role === "PARTNER") {
       where.OR = [
         { assignedById: currentUser.id },
-        { assignedToId: currentUser.id },
-        { assignees: { some: { userId: currentUser.id } } } // Add this line
+        { assignees: { some: { userId: currentUser.id } } }
       ];
+    } else if (currentUser.role === "BUSINESS_EXECUTIVE" || currentUser.role === "BUSINESS_CONSULTANT") {
+      where.assignees = {
+        some: {
+          userId: currentUser.id
+        }
+      };
     } else {
       where.OR = [
-        { assignedToId: currentUser.id },
-        { assignees: { some: { userId: currentUser.id } } } // Add this line
+        { assignees: { some: { userId: currentUser.id } } }
       ];
     }
 
@@ -98,29 +100,13 @@ export async function GET(request: NextRequest) {
     // Execute the actual query
     const tasks = await prisma.task.findMany({
       where,
-      orderBy: orderBy,
       include: {
-        client: {
-          select: {
-            id: true,
-            companyName: true,
-            contactPerson: true,
-          },
-        },
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-          },
-        },
         assignedBy: {
           select: {
             id: true,
             name: true,
-            email: true, 
-            avatar: true,
+            email: true,
+            role: true,
           },
         },
         assignees: {
@@ -136,6 +122,16 @@ export async function GET(request: NextRequest) {
             },
           },
         },
+        client: {
+          select: {
+            id: true,
+            contactPerson: true,
+            companyName: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -194,11 +190,10 @@ export async function POST(request: NextRequest) {
           dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
           assignedById: currentUser.id,
           clientId: validatedData.clientId,
-          // Do not set assignedToId at all - it's no longer our primary way of tracking assignments
         },
       });
       
-      // Determine final list of assignees (from either source)
+      // Determine final list of assignees
       const assigneeIds = validatedData.assignedToIds?.length 
         ? validatedData.assignedToIds 
         : (validatedData.assignedToId ? [validatedData.assignedToId] : []);

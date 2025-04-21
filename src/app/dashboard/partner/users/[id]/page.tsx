@@ -54,7 +54,7 @@ interface UserDetails {
   isActive?: boolean;
   createdAt: string;
   updatedAt: string;
-  assignedTasks: Task[];
+  taskAssignments?: { task: Task }[];
 }
 
 export default function PartnerUserDetailsPage({
@@ -245,7 +245,7 @@ export default function PartnerUserDetailsPage({
               <ClipboardList className="h-6 w-6 text-primary" />
               <div>
                 <p className="text-sm font-medium">Tasks Assigned</p>
-                <p className="text-xl font-bold">{user.assignedTasks.length}</p>
+                <p className="text-xl font-bold">{user.taskAssignments?.length || 0}</p>
               </div>
             </div>
             
@@ -270,52 +270,52 @@ export default function PartnerUserDetailsPage({
             Assigned Tasks
           </h2>
           <Badge variant="outline" className="text-sm py-1 px-3">
-            {user.assignedTasks.length} Total
+            {user.taskAssignments?.length || 0} Total
           </Badge>
         </div>
 
-        {user.assignedTasks.length > 0 ? (
+        {user.taskAssignments && user.taskAssignments.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {user.assignedTasks.map((task, index) => (
+            {user.taskAssignments.map((assignment, index) => (
               <div 
-                key={task.id} 
+                key={assignment.task.id} 
                 className="task-card opacity-0 translate-y-4"
                 style={{
                   animation: `fadeIn 0.5s ease forwards ${index * 0.05}s`
                 }}
               >
                 <Link 
-                  href={`/dashboard/partner/tasks/${task.id}`}
+                  href={`/dashboard/partner/tasks/${assignment.task.id}`}
                   className="block h-full"
                 >
                   <Card className="h-full border transition-all duration-300 hover:shadow-md hover:border-primary/20 cursor-pointer">
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg line-clamp-2">{task.title}</CardTitle>
+                        <CardTitle className="text-lg line-clamp-2">{assignment.task.title}</CardTitle>
                         <div className="flex items-center">
-                          {getTaskStatusIcon(task.status)}
+                          {getTaskStatusIcon(assignment.task.status)}
                         </div>
                       </div>
-                      {task.dueDate && (
+                      {assignment.task.dueDate && (
                         <CardDescription className="flex items-center gap-1 mt-1">
                           <Calendar className="h-3 w-3" />
-                          {format(new Date(task.dueDate), "PP")}
+                          {format(new Date(assignment.task.dueDate), "PP")}
                         </CardDescription>
                       )}
                     </CardHeader>
                     
                     <CardContent className="pb-3">
                       <p className="text-sm text-muted-foreground line-clamp-3">
-                        {task.description || "No description provided."}
+                        {assignment.task.description || "No description provided."}
                       </p>
                     </CardContent>
                     
                     <CardFooter className="pt-0 flex justify-between items-center">
                       <Badge variant="outline">
-                        {task.status}
+                        {assignment.task.status}
                       </Badge>
-                      <Badge variant={getPriorityVariant(task.priority)}>
-                        {task.priority}
+                      <Badge variant={getPriorityVariant(assignment.task.priority)}>
+                        {assignment.task.priority}
                       </Badge>
                     </CardFooter>
                   </Card>

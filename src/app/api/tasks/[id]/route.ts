@@ -64,16 +64,6 @@ export async function GET(
             avatar: true,
           },
         },
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            avatar: true,
-          },
-        },
-        // Add this inclusion for all assignees
         assignees: {
           include: {
             user: {
@@ -83,9 +73,9 @@ export async function GET(
                 email: true,
                 role: true,
                 avatar: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
         client: {
           select: {
@@ -105,8 +95,6 @@ export async function GET(
     const canViewTask =
       currentUser.role === "ADMIN" ||
       task.assignedById === currentUser.id ||
-      task.assignedToId === currentUser.id ||
-      // Add check for being in assignees list
       task.assignees.some(a => a.userId === currentUser.id);
 
     if (!canViewTask) {
@@ -209,10 +197,7 @@ export async function PATCH(
       // Update the task without any assignment fields
       const updated = await tx.task.update({
         where: { id: taskId },
-        data: {
-          ...updateData,
-          // Don't set any assignment fields here
-        },
+        data: updateData,
       });
       
       // If assignedToIds is provided, update the task assignments
@@ -251,20 +236,52 @@ export async function PATCH(
       );
     }
 
-    // Send notification if assignee changed
-    if (
-      body.assignedToId &&
-      body.assignedToId !== originalTask.assignedToId &&
-      body.assignedToId !== currentUser.id
-    ) {
-      await sendTaskAssignedNotification(
-        originalTask.id,
-        originalTask.title,
-        currentUser.id,
-        body.assignedToId,
-        body.note || undefined,
-        originalTask.dueDate || undefined
+    // Send notifications when assignees change
+    if (body.assignedToIds && Array.isArray(body.assignedToIds)) {
+      // Get existing assignees to compare
+      const existingAssignees = await prisma.taskAssignee.findMany({
+        where: { taskId },
+        select: { userId: true }
+      });
+      const existingAssigneeIds = existingAssignees.map(a => a.userId);
+      
+      // Find new assignees (those in body.assignedToIds but not in existingAssigneeIds)
+      const newAssigneeIds = body.assignedToIds.filter(id => 
+        !existingAssigneeIds.includes(id) && id !== currentUser.id
       );
+      
+      // Send notifications to each new assignee
+      for (const newAssigneeId of newAssigneeIds) {
+        await sendTaskAssignedNotification(
+          originalTask.id,
+          originalTask.title,
+          currentUser.id,
+          newAssigneeId,
+          body.note || undefined,
+          originalTask.dueDate || undefined
+        );
+      }
+    }
+    // Handle the legacy assignedToId field for backward compatibility
+    else if (body.assignedToId && body.assignedToId !== currentUser.id) {
+      // Get existing assignees to check if this is actually a new assignee
+      const existingAssignees = await prisma.taskAssignee.findMany({
+        where: { taskId },
+        select: { userId: true }
+      });
+      const existingAssigneeIds = existingAssignees.map(a => a.userId);
+      
+      // Only send notification if this is a new assignee
+      if (!existingAssigneeIds.includes(body.assignedToId)) {
+        await sendTaskAssignedNotification(
+          originalTask.id,
+          originalTask.title,
+          currentUser.id,
+          body.assignedToId,
+          body.note || undefined,
+          originalTask.dueDate || undefined
+        );
+      }
     }
 
     return NextResponse.json(updatedTask);

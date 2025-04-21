@@ -5,12 +5,9 @@ import axios from "axios";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Info, Trash2 } from "lucide-react";
+import { Bell, Info } from "lucide-react";
 
 interface Notification {
   id: string;

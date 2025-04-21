@@ -23,20 +23,24 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Fetch staff without tasks
+    // Fetch staff without tasks - UPDATED QUERY
     const staffWithoutTasks = await prisma.user.findMany({
       where: {
         isActive: true,
         role: { not: "ADMIN" },
-        assignedTasks: { none: {} }, // No assigned tasks
+        // Use taskAssignments instead of assignedTasks
+        taskAssignments: {
+          none: {}
+        },
       },
       select: {
         id: true,
         name: true,
         avatar: true,
-        role: true,
-      },
+        role: true
+      }
     });
+
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const dataType = searchParams.get('dataType') || 'full';
@@ -52,7 +56,13 @@ export async function GET(request: NextRequest) {
         take: 5,
         orderBy: { dueDate: "asc" },
         include: {
-          assignedTo: { select: { name: true } }
+          assignees: {
+            include: {
+              user: {
+                select: { id: true, name: true }
+              }
+            }
+          }
         }
       });
 
@@ -63,7 +73,10 @@ export async function GET(request: NextRequest) {
           status: task.status,
           priority: task.priority,
           dueDate: task.dueDate?.toISOString() || null,
-          assignedTo: task.assignedTo
+          assignees: task.assignees.map(a => ({
+            id: a.user.id,
+            name: a.user.name
+          }))
         })),
         partners,
       });
@@ -184,7 +197,13 @@ export async function GET(request: NextRequest) {
         take: 5,
         orderBy: { dueDate: "asc" },
         include: {
-          assignedTo: { select: { name: true } }
+          assignees: {
+            include: {
+              user: {
+                select: { id: true, name: true }
+              }
+            }
+          }
         }
       })
     ]);
@@ -243,7 +262,10 @@ export async function GET(request: NextRequest) {
         status: task.status,
         priority: task.priority,
         dueDate: task.dueDate?.toISOString() || null,
-        assignedTo: task.assignedTo
+        assignees: task.assignees.map(a => ({
+          id: a.user.id,
+          name: a.user.name
+        }))
       })),
       recentActivities: transformedActivities,
       partners,

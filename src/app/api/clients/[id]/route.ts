@@ -49,7 +49,7 @@ export async function GET(
             status: true,
             priority: true,
             dueDate: true,
-            assignedTo: {
+            assignedBy: {
               select: {
                 id: true,
                 name: true,

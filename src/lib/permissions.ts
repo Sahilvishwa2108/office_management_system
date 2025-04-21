@@ -10,8 +10,6 @@ export const canEditTask = (
   task: { 
     assignedById?: string;
     assignees?: Array<{ userId: string }>;
-    // Keep assignedToId for backward compatibility
-    assignedToId?: string;
     [key: string]: unknown 
   }
 ) => {
@@ -23,11 +21,8 @@ export const canEditTask = (
   // Creator can edit their tasks
   if (task.assignedById === session.user.id) return true;
   
-  // Check if user is in the assignees list (primary method)
+  // Check if user is in the assignees list
   if (task.assignees?.some(a => a.userId === session.user.id)) return true;
-  
-  // Fallback to legacy check for backward compatibility only
-  if (task.assignedToId === session.user.id) return true;
   
   return false;
 };
@@ -58,8 +53,6 @@ export const canViewTask = (
   task: {
     assignedById?: string;
     assignees?: Array<{ userId: string }>;
-    // Keep assignedToId for backward compatibility
-    assignedToId?: string;
     [key: string]: unknown
   }
 ) => {
@@ -71,11 +64,8 @@ export const canViewTask = (
   // Creator can view their tasks
   if (task.assignedById === session.user.id) return true;
   
-  // Check if user is in the assignees list (primary method)
+  // Check if user is in the assignees list
   if (task.assignees?.some(a => a.userId === session.user.id)) return true;
-  
-  // Fallback to legacy check for backward compatibility only
-  if (task.assignedToId === session.user.id) return true;
   
   return false;
 };

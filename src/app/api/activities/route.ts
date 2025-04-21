@@ -100,6 +100,32 @@ export async function GET(request: NextRequest) {
       where
     });
 
+    // Fetch tasks assigned to the current user
+    const tasks = await prisma.task.findMany({
+      where: {
+        assignees: {
+          some: {
+            userId: session.user.id
+          }
+        }
+      },
+      include: {
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              }
+            }
+          }
+        }
+        // Other includes...
+      },
+    });
+
     // Format the response
     return NextResponse.json({
       data: activities.map(activity => ({
@@ -121,6 +147,7 @@ export async function GET(request: NextRequest) {
         limit,
         pages: Math.ceil(totalCount / limit),
       },
+      tasks, // Include tasks in the response
     }, {
       headers: {
         // Add caching headers

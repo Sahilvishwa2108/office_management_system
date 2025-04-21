@@ -51,15 +51,19 @@ export async function GET() {
       where: {
         OR: [
           { assignedById: session.user.id },
-          { assignedToId: { in: staffMembers.map(s => s.id) } }
+          { assignees: { some: { userId: { in: staffMembers.map(s => s.id) } } } }
         ]
       },
       include: {
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            avatar: true
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatar: true
+              }
+            }
           }
         }
       }
@@ -96,7 +100,9 @@ export async function GET() {
 
     // Count tasks per staff member
     const staffWithTaskCounts = staffMembers.map(s => {
-      const staffTasks = tasks.filter(t => t.assignedToId === s.id);
+      const staffTasks = tasks.filter(t => 
+        t.assignees.some(a => a.userId === s.id)
+      );
       const activeTaskCount = staffTasks.filter(t => t.status !== "completed").length;
       const completedTaskCount = staffTasks.filter(t => t.status === "completed").length;
 
@@ -109,20 +115,34 @@ export async function GET() {
     });
 
     // Process tasks to include progress percentage
-    const processedTasks = tasks.map(task => ({
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      dueDate: task.dueDate?.toISOString(),
-      assignedTo: task.assignedTo ? {
-        id: task.assignedTo.id,
-        name: task.assignedTo.name,
-        image: task.assignedTo.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedTo.name}`
-      } : undefined,
-      progress: calculateTaskProgress(task.status)
-    }));
+    const processedTasks = tasks.map(task => {
+      // Get the first assignee if available for backward compatibility
+      const primaryAssignee = task.assignees.length > 0 
+        ? task.assignees[0].user 
+        : null;
+
+      return {
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate?.toISOString(),
+        // Use primary assignee from assignees array
+        assignedTo: primaryAssignee ? {
+          id: primaryAssignee.id,
+          name: primaryAssignee.name,
+          image: primaryAssignee.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${primaryAssignee.name}`
+        } : undefined,
+        // Include all assignees for more flexibility
+        assignees: task.assignees.map(a => ({
+          id: a.user.id,
+          name: a.user.name,
+          image: a.user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${a.user.name}`
+        })),
+        progress: calculateTaskProgress(task.status)
+      };
+    });
 
     // Get recent activities (excluding login/logout)
     const recentActivities = await prisma.activity.findMany({
