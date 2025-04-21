@@ -27,6 +27,8 @@ interface Task {
   priority: string;
   dueDate: string | null;
   billingStatus?: string;
+  assignedToId?: string | null;
+  assignees?: Array<{userId: string}>;
 }
 
 interface AssignTaskButtonProps {
@@ -81,9 +83,28 @@ export function AssignTaskButton({
   const assignTask = async (taskId: string) => {
     setAssigning(taskId);
     try {
-      // Use the assignedToIds array approach consistently
+      // Step 1: Fetch the current task to get existing assignees
+      const taskResponse = await axios.get(`/api/tasks/${taskId}`);
+      const task = taskResponse.data;
+      
+      // Step 2: Extract current assignee IDs
+      const currentAssigneeIds = task.assignees ? 
+        task.assignees.map((a: { userId: string }) => a.userId) : 
+        [];
+      
+      // If there's a legacy assignedToId and it's not in the assignees list, include it
+      if (task.assignedToId && !currentAssigneeIds.includes(task.assignedToId)) {
+        currentAssigneeIds.push(task.assignedToId);
+      }
+      
+      // Step 3: Add the new user if not already included
+      if (!currentAssigneeIds.includes(userId)) {
+        currentAssigneeIds.push(userId);
+      }
+      
+      // Step 4: Send the complete updated list of assignees
       await axios.patch(`/api/tasks/${taskId}/reassign`, {
-        assignedToIds: [userId], 
+        assignedToIds: currentAssigneeIds,
         note: `Task assigned to ${userName} via quick assignment`,
       }, {
         headers: {

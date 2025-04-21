@@ -35,12 +35,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get query parameters and log them
+    // Get query parameters
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const billingStatus = searchParams.get("billingStatus");
+    const searchTerm = searchParams.get("search");
     
-
+    // Get pagination parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const pageSize = parseInt(searchParams.get("limit") || "20");
+    const sortField = searchParams.get("sortField") || "createdAt";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
+    
     // Build the where clause based on the user's role
     const where: Record<string, unknown> = {};
 
@@ -74,6 +80,14 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    // Add search filter if provided
+    if (searchTerm) {
+      where.OR = [
+        ...(Array.isArray(where.OR) ? where.OR : []),
+        { title: { contains: searchTerm, mode: 'insensitive' } },
+        { description: { contains: searchTerm, mode: 'insensitive' } }
+      ];
+    }
 
     // Check the database directly for completed tasks with pending_billing status
     const directCheckCount = await prisma.task.count({
@@ -86,18 +100,15 @@ export async function GET(request: NextRequest) {
     // Use directCheckCount or remove it:
     console.log(`Found ${directCheckCount} tasks with pending billing status`);
     
-    // Get pagination and sorting parameters
-    const page = parseInt(searchParams.get("page") || "1");
-    const pageSize = parseInt(searchParams.get("limit") || "10");
-    const sortField = searchParams.get("sortField") || "createdAt";
-    const sortOrder = searchParams.get("sortOrder") || "desc";
-    
     // Create orderBy object for prisma
     const orderBy = {
       [sortField]: sortOrder
     };
 
-    // Execute the actual query
+    // Count total matching tasks for pagination
+    const totalCount = await prisma.task.count({ where });
+    
+    // Execute the actual query with pagination
     const tasks = await prisma.task.findMany({
       where,
       include: {
@@ -137,7 +148,16 @@ export async function GET(request: NextRequest) {
       take: pageSize,
     });
 
-    return NextResponse.json(tasks);
+    // Return both tasks and pagination metadata
+    return NextResponse.json({
+      tasks,
+      pagination: {
+        total: totalCount,
+        page,
+        pageSize,
+        pageCount: Math.ceil(totalCount / pageSize)
+      }
+    });
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error message:", error.message);

@@ -62,16 +62,25 @@ export function PendingBillingTasks() {
       // Log the raw response to see its structure
       console.log("📥 Raw API response:", response);
       console.log("📄 Response data:", response.data);
-      console.log("📊 Number of tasks returned:", Array.isArray(response.data) ? response.data.length : "Not an array");
       
-      // Check if response.data exists and is an array
-      if (!response.data) {
-        console.warn("⚠️ Response data is null or undefined");
-      } else if (!Array.isArray(response.data)) {
-        console.warn("⚠️ Response data is not an array:", typeof response.data);
+      // Handle both new and old response formats
+      let tasksData;
+      if (response.data && response.data.tasks) {
+        // New format with pagination
+        console.log("📊 New response format detected with pagination");
+        tasksData = response.data.tasks;
+      } else if (Array.isArray(response.data)) {
+        // Old format (direct array)
+        console.log("📊 Old response format detected (direct array)");
+        tasksData = response.data;
+      } else {
+        // Unexpected format
+        console.warn("⚠️ Unexpected response format:", typeof response.data);
+        tasksData = [];
       }
       
-      setTasks(response.data || []);
+      console.log("📊 Number of tasks to display:", tasksData.length);
+      setTasks(tasksData);
       setError(null);
     } catch (err) {
       console.error("❌ Error fetching pending billing tasks:", err);

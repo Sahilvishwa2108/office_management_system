@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -46,22 +46,34 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 
 import {
-  Search,
-  Plus,
-  MoreVertical,
-  Eye,
-  Edit,
-  Trash2,
-  Loader2,
-  ClipboardList,
-  RefreshCw,
-  Grid,
-  List} from "lucide-react";
+  Search, 
+  Plus, 
+  MoreVertical, 
+  Eye, 
+  Edit, 
+  Trash2, 
+  Loader2, 
+  ClipboardList, 
+  RefreshCw, 
+  Grid, 
+  List,
+  ChevronLeft,
+  ChevronRight 
+} from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { canDeleteTask } from "@/lib/permissions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TaskAssignees } from "@/components/tasks/task-assignees";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const getInitials = (name: string): string => {
   return name
@@ -97,6 +109,13 @@ interface Task {
     }
   }[];
   [key: string]: unknown; // Add index signature to satisfy canDeleteTask requirements
+}
+
+interface PaginationMeta {
+  total: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
 }
 
 // Task Card Component - Improved styling for mobile
@@ -350,6 +369,20 @@ export default function TasksPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
   const [searchMode, setSearchMode] = useState<"client" | "server">("client");
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    total: 0,
+    page: 1,
+    pageSize: 20,
+    pageCount: 0
+  });
+
+  // Use URL search params to persist pagination state
+  const searchParams = useSearchParams();
+  
+  // Get current page from URL or default to 1
+  const currentPage = useMemo(() => {
+    return parseInt(searchParams.get("page") || "1");
+  }, [searchParams]);
 
   // Use debounced search with longer delay for smoother experience
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -452,17 +485,39 @@ export default function TasksPage() {
         url.searchParams.append("search", debouncedSearchTerm);
       }
 
-      const response = await axios.get<Task[]>(url.toString(), { timeout: 8000 });
-      setAllTasks(response.data);
+      // Add pagination parameters
+      url.searchParams.append("page", currentPage.toString());
+      url.searchParams.append("limit", pagination.pageSize.toString());
+
+      // Add sorting parameters
+      url.searchParams.append("sortField", "createdAt");
+      url.searchParams.append("sortOrder", "desc");
+
+      // Increase timeout to 15 seconds
+      const response = await axios.get(url.toString(), { 
+        timeout: 15000 
+      });
+      
+      // Handle new response format with pagination
+      const { tasks, pagination: paginationMeta } = response.data;
+      setAllTasks(tasks);
+      setPagination(paginationMeta);
     } catch (error) {
       console.error("Error fetching tasks:", error);
-      setDataError("Failed to load tasks. Please try again.");
-      toast.error("Failed to load tasks");
+      
+      // Provide more specific error messages
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        setDataError("Request timed out. The server is taking too long to respond. Try applying filters to reduce the amount of data.");
+        toast.error("Request timed out. Try narrowing your search.");
+      } else {
+        setDataError("Failed to load tasks. Please try again.");
+        toast.error("Failed to load tasks");
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [statusFilter, debouncedSearchTerm, searchMode]);
+  }, [statusFilter, debouncedSearchTerm, searchMode, currentPage, pagination.pageSize]);
 
   // Only fetch when status filter changes or on refresh - not on search term changes
   useEffect(() => {
@@ -508,10 +563,12 @@ export default function TasksPage() {
     );
   }, [allTasks, debouncedSearchTerm, searchMode]);
 
-  // Handle view mode toggle
-  const handleViewModeChange = useCallback((mode: "card" | "table") => {
-    setViewMode(mode);
-  }, []);
+  // Update URL when page changes
+  const handlePageChange = useCallback((page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", page.toString());
+    router.push(`?${params.toString()}`);
+  }, [router, searchParams]);
 
   // Delete task handler
   const confirmDelete = useCallback((taskId: string) => {
@@ -748,6 +805,20 @@ export default function TasksPage() {
               </div>
             )}
 
+            {/* Task list - card view - now uses grid layout */}
+            {!dataError && filteredTasks.length > 0 && viewMode === "card" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {filteredTasks.map((task) => (
+                  <TaskListItem 
+                    key={task.id} 
+                    task={task}
+                    confirmDelete={confirmDelete}
+                    canDelete={canDeleteForTask(task)}
+                  />
+                ))}
+              </div>
+            )}
+
             {/* Task list - table view */}
             {!dataError && filteredTasks.length > 0 && viewMode === "table" && (
               <div className="rounded-md border">
@@ -768,7 +839,7 @@ export default function TasksPage() {
                           key={task.id} 
                           task={task}
                           confirmDelete={confirmDelete}
-                          canDelete={canDeleteForTask(task)} // Apply permission check
+                          canDelete={canDeleteForTask(task)}
                         />
                       ))}
                     </TableBody>
@@ -776,42 +847,108 @@ export default function TasksPage() {
                 </ResponsiveTable>
               </div>
             )}
-
-            {/* Task list - card view - now uses grid layout */}
-            {!dataError && filteredTasks.length > 0 && viewMode === "card" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {filteredTasks.map((task) => (
-                  <TaskListItem 
-                    key={task.id} 
-                    task={task}
-                    confirmDelete={confirmDelete}
-                    canDelete={canDeleteForTask(task)} // Apply permission check
-                  />
-                ))}
-              </div>
-            )}
           </div>
         </CardContent>
         
         {/* Always show count summary in footer */}
         {!dataError && filteredTasks.length > 0 && (
-          <CardFooter className="border-t py-3 flex justify-between items-center">
-            <div className="text-sm text-muted-foreground">
-              {filteredTasks.length} task{filteredTasks.length !== 1 && "s"} 
+          <CardFooter className="border-t py-3 flex-col sm:flex-row gap-2">
+            <div className="text-sm text-muted-foreground flex-1">
+              {pagination.total} task{pagination.total !== 1 && "s"} 
               {searchTerm ? " matching your search" : ""}
               {statusFilter !== "all" ? ` with ${statusFilter} status` : ""}
+              {pagination.total > 0 && ` (showing ${(pagination.page - 1) * pagination.pageSize + 1}-${Math.min(pagination.page * pagination.pageSize, pagination.total)} of ${pagination.total})`}
             </div>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchTasks(true)}
-              disabled={refreshing}
-              className="h-8 gap-1"
-            >
-              <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto">
+              {pagination.pageCount > 1 && (
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => handlePageChange(Math.max(1, pagination.page - 1))}
+                        disabled={pagination.page === 1}
+                      />
+                    </PaginationItem>
+                    
+                    {/* First page */}
+                    {pagination.page > 2 && (
+                      <PaginationItem>
+                        <PaginationLink onClick={() => handlePageChange(1)}>
+                          1
+                        </PaginationLink>
+                      </PaginationItem>
+                    )}
+                    
+                    {/* Ellipsis if needed */}
+                    {pagination.page > 3 && (
+                      <PaginationItem>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    )}
+                    
+                    {/* Previous page if not first */}
+                    {pagination.page > 1 && (
+                      <PaginationItem>
+                        <PaginationLink onClick={() => handlePageChange(pagination.page - 1)}>
+                          {pagination.page - 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )}
+                    
+                    {/* Current page */}
+                    <PaginationItem>
+                      <PaginationLink isActive>
+                        {pagination.page}
+                      </PaginationLink>
+                    </PaginationItem>
+                    
+                    {/* Next page if not last */}
+                    {pagination.page < pagination.pageCount && (
+                      <PaginationItem>
+                        <PaginationLink onClick={() => handlePageChange(pagination.page + 1)}>
+                          {pagination.page + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )}
+                    
+                    {/* Ellipsis if needed */}
+                    {pagination.page < pagination.pageCount - 2 && (
+                      <PaginationItem>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    )}
+                    
+                    {/* Last page */}
+                    {pagination.page < pagination.pageCount - 1 && (
+                      <PaginationItem>
+                        <PaginationLink onClick={() => handlePageChange(pagination.pageCount)}>
+                          {pagination.pageCount}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => handlePageChange(Math.min(pagination.pageCount, pagination.page + 1))}
+                        disabled={pagination.page === pagination.pageCount}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+            
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchTasks(true)}
+                disabled={refreshing}
+                className="h-8 gap-1"
+              >
+                <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            </div>
           </CardFooter>
         )}
       </Card>
