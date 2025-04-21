@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -56,10 +56,7 @@ import {
   ClipboardList, 
   RefreshCw, 
   Grid, 
-  List,
-  ChevronLeft,
-  ChevronRight 
-} from "lucide-react";
+  List} from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { canDeleteTask } from "@/lib/permissions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -351,7 +348,7 @@ const TaskTableRow = ({
   );
 };
 
-// Main component - no more separate content component or Suspense
+// Main component - no more useSearchParams
 export default function TasksPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -369,20 +366,14 @@ export default function TasksPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
   const [searchMode, setSearchMode] = useState<"client" | "server">("client");
+  // Add current page to state instead of getting from URL
+  const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationMeta>({
     total: 0,
     page: 1,
     pageSize: 20,
     pageCount: 0
   });
-
-  // Use URL search params to persist pagination state
-  const searchParams = useSearchParams();
-  
-  // Get current page from URL or default to 1
-  const currentPage = useMemo(() => {
-    return parseInt(searchParams.get("page") || "1");
-  }, [searchParams]);
 
   // Use debounced search with longer delay for smoother experience
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -565,10 +556,8 @@ export default function TasksPage() {
 
   // Update URL when page changes
   const handlePageChange = useCallback((page: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", page.toString());
-    router.push(`?${params.toString()}`);
-  }, [router, searchParams]);
+    setCurrentPage(page);
+  }, []);
 
   // Delete task handler
   const confirmDelete = useCallback((taskId: string) => {
