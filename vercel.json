@@ -11,7 +11,7 @@
     },
     {
       "path": "/api/cron/scheduled-task-deletions",
-      "schedule": "5 * * * *"
+      "schedule": "0 12 * * *" 
     }
   ]
 }

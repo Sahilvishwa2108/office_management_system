@@ -32,6 +32,7 @@ import {
   MoreHorizontal,
   KeyIcon,
   FilterX,
+  ClipboardList,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -197,6 +198,27 @@ const UserCard = ({
                 Edit User
               </Link>
             </DropdownMenuItem>
+            {/* Add AssignTask option here */}
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+            >
+              <div className="w-full">
+                <AssignTaskButton
+                  userId={user.id}
+                  userName={user.name}
+                  onAssigned={() => router.refresh()}
+                  variant="ghost"
+                  className="w-full justify-start p-0 h-auto"
+                >
+                  <ClipboardList className="w-4 h-4 mr-2" />
+                  Assign Task
+                </AssignTaskButton>
+              </div>
+            </DropdownMenuItem>
+            {/* Other menu items */}
             <DropdownMenuItem
               onClick={() => onToggleStatus(user.id, user.isActive !== false)}
             >
@@ -576,6 +598,28 @@ export default function UsersPage() {
                                     Edit User
                                   </Link>
                                 </DropdownMenuItem>
+                                {/* Add AssignTask option here */}
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                  }}
+                                  className="px-2"
+                                >
+                                  <div className="w-full">
+                                    <AssignTaskButton
+                                      userId={user.id}
+                                      userName={user.name}
+                                      onAssigned={() => router.refresh()}
+                                      variant="ghost"
+                                      className="w-full justify-start p-0 h-auto"
+                                    >
+                                      <ClipboardList className="w-4 h-4 mr-2" />
+                                      Assign Task
+                                    </AssignTaskButton>
+                                  </div>
+                                </DropdownMenuItem>
+                                {/* Other menu items */}
                                 <DropdownMenuItem
                                   onClick={() =>
                                     handleToggleStatus(

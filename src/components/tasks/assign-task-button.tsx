@@ -38,6 +38,7 @@ interface AssignTaskButtonProps {
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
+  children?: React.ReactNode; // Add support for children
 }
 
 export function AssignTaskButton({
@@ -47,6 +48,7 @@ export function AssignTaskButton({
   variant = "outline",
   size = "sm",
   className,
+  children,
 }: AssignTaskButtonProps) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -150,15 +152,19 @@ export function AssignTaskButton({
         onClick={() => setOpen(true)}
         title={`Assign task to ${userName}`}
       >
-        {size === "icon" ? (
-          <ClipboardList className="h-4 w-4" />
-        ) : (
-          "Assign Task"
+        {children || (
+          <>
+            {size === "icon" ? (
+              <ClipboardList className="h-4 w-4" />
+            ) : (
+              "Assign Task"
+            )}
+          </>
         )}
       </Button>
       
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border-slate-200 dark:border-slate-800">
           <DialogHeader>
             <DialogTitle>Assign Task to {userName}</DialogTitle>
             <DialogDescription>

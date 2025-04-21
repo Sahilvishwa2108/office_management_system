@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -39,6 +39,7 @@ import {
   Eye,
   Loader2,
   FilterX,
+  ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { UserCount } from "@/components/dashboard/user-count";
@@ -152,9 +153,9 @@ const UserCard = ({
         </span>
       </div>
       <div className="mt-4" onClick={(e) => e.stopPropagation()}>
-        <AssignTaskButton 
-          userId={user.id} 
-          userName={user.name} 
+        <AssignTaskButton
+          userId={user.id}
+          userName={user.name}
           onAssigned={() => router.refresh()}
         />
       </div>
@@ -499,6 +500,26 @@ export default function PartnerUsersPage() {
                                   <Eye className="w-4 h-4 mr-2" />
                                   View Details
                                 </Link>
+                              </DropdownMenuItem>
+                              {/* Add AssignTask option here */}
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                }}
+                              >
+                                <div className="w-full">
+                                  <AssignTaskButton
+                                    userId={user.id}
+                                    userName={user.name}
+                                    onAssigned={() => router.refresh()}
+                                    variant="ghost"
+                                    className="w-full justify-start p-0 h-auto"
+                                  >
+                                    <ClipboardList className="w-4 h-4 mr-2" />
+                                    Assign Task
+                                  </AssignTaskButton>
+                                </div>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

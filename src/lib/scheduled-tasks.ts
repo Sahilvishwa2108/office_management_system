@@ -158,8 +158,8 @@ export function initScheduledTasks() {
   // Run daily at 00:01 AM
   cron.schedule('1 0 * * *', checkForExpiredClients);
   
-  // Run hourly to check for tasks to delete (more frequent than once a day)
-  cron.schedule('5 * * * *', checkForScheduledTaskDeletions);
+  // Run daily at noon for task deletions (matches Vercel config)
+  cron.schedule('0 12 * * *', checkForScheduledTaskDeletions);
   
   console.log('Scheduled tasks initialized');
 }
