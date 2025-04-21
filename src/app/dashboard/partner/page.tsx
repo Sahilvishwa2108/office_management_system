@@ -469,13 +469,13 @@ function PartnerDashboardContent() {
                                       {task.assignees && task.assignees.length > 0 ? (
                                         <div className="flex items-center gap-1">
                                           <Avatar className="h-5 w-5">
-                                            <AvatarImage src={task.assignees[0].user.avatar || 
-                                                `https://api.dicebear.com/7.x/initials/svg?seed=${task.assignees[0].user.name}`} />
+                                            <AvatarImage src={task.assignees?.[0]?.user?.avatar || 
+                                                `https://api.dicebear.com/7.x/initials/svg?seed=${task.assignees?.[0]?.user?.name}`} />
                                             <AvatarFallback className="text-[10px]">
-                                              {task.assignees[0].user.name.substring(0, 2).toUpperCase()}
+                                              {(task.assignees?.[0]?.user?.name || 'U').substring(0, 2).toUpperCase()}
                                             </AvatarFallback>
                                           </Avatar>
-                                          <span className="text-xs text-slate-600 dark:text-slate-400">{task.assignees[0].user.name}</span>
+                                          <span className="text-xs text-slate-600 dark:text-slate-400">{task.assignees?.[0]?.user?.name}</span>
                                         </div>
                                       ) : (
                                         <span className="text-xs text-slate-500 dark:text-slate-400">Unassigned</span>
@@ -883,8 +883,8 @@ function PartnerDashboardContent() {
                                     <Avatar className="h-7 w-7">
                                       <AvatarImage
                                         src={
-                                          staff.avatar ||
-                                          `https://api.dicebear.com/7.x/initials/svg?seed=${staff.name}`
+                                          staff?.avatar ||
+                                          `https://api.dicebear.com/7.x/initials/svg?seed=${staff?.name}`
                                         }
                                       />
                                       <AvatarFallback>
