@@ -21,6 +21,7 @@ export async function GET() {
         role: true,
         avatar: true,
         isActive: true,
+        canApproveBilling: true,
       },
     });
 

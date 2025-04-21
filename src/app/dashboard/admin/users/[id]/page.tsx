@@ -130,6 +130,8 @@ export default function UserDetailsPage({
       setLoading(true);
       try {
         const response = await axios.get(`/api/users/${userId}`);
+        
+        // Keep the original isActive value, don't convert it
         setUser(response.data);
       } catch (error: unknown) {
         const errorMessage =
@@ -140,7 +142,7 @@ export default function UserDetailsPage({
         setLoading(false);
       }
     };
-
+  
     fetchUserDetails();
   }, [userId]);
 
@@ -163,20 +165,19 @@ export default function UserDetailsPage({
   // Handle user status toggle (block/unblock)
   const handleToggleUserStatus = async () => {
     if (!user) return;
-
+  
     setActionLoading(true);
-
-    // Determine what action we're performing based on current status
-    const isBlocking = user.isActive !== false;
-    // Toggle the status as before
-    const newStatus = !user.isActive;
-
+    
+    // Using the same pattern as in the user list page
+    const currentStatus = user.isActive !== false;
+    const newStatus = !currentStatus;
+    
     try {
       await axios.patch(`/api/users/${userId}/status`, { isActive: newStatus });
       setUser({ ...user, isActive: newStatus });
-
+      
       toast.success(
-        `User ${isBlocking ? "blocked" : "activated"} successfully`
+        `User ${newStatus ? "activated" : "blocked"} successfully`
       );
     } catch (error: unknown) {
       const errorMessage =
@@ -228,18 +229,20 @@ export default function UserDetailsPage({
           </Button>
 
           <Button
-            variant={user.isActive !== false ? "outline" : "secondary"}
-            onClick={handleToggleUserStatus}
-            disabled={actionLoading}
-            className="transition-all"
-          >
-            {actionLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Ban className="h-4 w-4 mr-2" />
-            )}
-            {user.isActive !== false ? "Block User" : "Unblock User"}
-          </Button>
+  variant={user.isActive !== false ? "outline" : "secondary"}
+  onClick={handleToggleUserStatus}
+  disabled={actionLoading}
+  className="transition-all"
+>
+  {actionLoading ? (
+    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+  ) : user.isActive !== false ? (
+    <Ban className="h-4 w-4 mr-2" />
+  ) : (
+    <CheckCheck className="h-4 w-4 mr-2" />
+  )}
+  {user.isActive !== false ? "Block User" : "Activate User"}
+</Button>
 
           <Button variant="outline" asChild className="group">
             <Link href={`/dashboard/admin/users/${userId}/reset-password`}>
@@ -298,8 +301,8 @@ export default function UserDetailsPage({
                 </AvatarFallback>
               </Avatar>
               <Badge className={user.isActive !== false ? "bg-green-500" : "bg-red-500"}>
-                {user.isActive !== false ? "Active" : "Blocked"}
-              </Badge>
+  {user.isActive !== false ? "Active" : "Blocked"}
+</Badge>
             </div>
 
             <div className="space-y-3">

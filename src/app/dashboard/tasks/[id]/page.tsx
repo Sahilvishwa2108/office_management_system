@@ -56,6 +56,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  canApproveBilling?: boolean;
 }
 
 // Update Task interface to include assignees
@@ -149,7 +150,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   const [task, setTask] = useState<Task | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string; role: string; canApproveBilling?: boolean; } | null>(null);
   const [loading, setLoading] = useState(true);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -255,7 +256,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   // Update the existing canEditTask function call to include billing status check
   const taskEditableStatus = useMemo(() => 
-    task ? (isTaskEditable(task, currentBillingStatus) && canEditTask(task, session?.user)) : false,
+    task && session?.user ? (isTaskEditable(task, currentBillingStatus) && canEditTask(task, session.user as User)) : false,
   [task, currentBillingStatus, session?.user]);
 
   if (loading) {
@@ -439,7 +440,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                   </Button>
                 )}
                 
-                {canReassignTask(session?.user) && currentBillingStatus !== "billed" && (
+                {session?.user && canReassignTask(session.user as User) && currentBillingStatus !== "billed" && (
                   <Button 
                     variant="outline" 
                     className="w-full" 
@@ -463,7 +464,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                   </Link>
                 </Button>
 
-                {task.status === "completed" && (currentBillingStatus === "pending_billing") && isAdmin && (
+                {task.status === "completed" && (currentBillingStatus === "pending_billing") && (isAdmin || currentUser?.canApproveBilling) && (
                   <div className="mt-4">
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
                       <div className="flex items-start gap-3">
