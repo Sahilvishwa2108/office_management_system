@@ -186,7 +186,7 @@ export default function DashboardLayout({
   }
 
   // Get initials for avatar
-  const getInitials = (name?: string) => {
+  const getInitials = (name?: string | null) => {
     return (
       name
         ?.split(" ")
@@ -213,6 +213,9 @@ export default function DashboardLayout({
 
   // Modified function to determine if a nav item is active (only one at a time)
   const isActiveNavItem = (itemHref: string) => {
+    // Handle the case when pathname is null
+    if (pathname === null) return false;
+    
     // For dashboard root paths like /dashboard/admin, only highlight when exact match
     if (itemHref.split("/").length === 3) {
       // e.g., /dashboard/admin
@@ -300,7 +303,7 @@ export default function DashboardLayout({
                   )}
                 >
                   <Building2 className="h-6 w-6" />
-                  {!sidebarCollapsed && <span>Office Manager</span>}
+                  {!sidebarCollapsed && <span>Office Pilot</span>}
                 </Link>
               </div>
 
@@ -322,7 +325,7 @@ export default function DashboardLayout({
                   <Avatar className="h-9 w-9">
                     <AvatarImage
                       src={session?.user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
-                      alt={session?.user?.name}
+                      alt={session?.user?.name ?? ""}
                     />
                     <AvatarFallback>
                       {getInitials(session?.user?.name)}
@@ -398,7 +401,7 @@ export default function DashboardLayout({
                     className="flex items-center gap-1 font-semibold"
                   >
                     <Building2 className="h-6 w-6" />
-                    <span className="font-semibold">Office Manager</span>
+                    <span className="font-semibold">Office Pilot</span>
                   </Link>
                 </div>
 
@@ -408,7 +411,7 @@ export default function DashboardLayout({
                   <Avatar className="h-8 w-8" onClick={() => setIsMobileNavOpen(true)}>
                     <AvatarImage
                       src={session?.user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
-                      alt={session?.user?.name}
+                      alt={session?.user?.name ?? ""}
                     />
                     <AvatarFallback>{getInitials(session?.user?.name)}</AvatarFallback>
                   </Avatar>
@@ -483,7 +486,7 @@ export default function DashboardLayout({
                       <Avatar className="h-9 w-9">
                         <AvatarImage
                           src={session?.user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
-                          alt={session?.user?.name}
+                          alt={session?.user?.name ?? ""}
                         />
                         <AvatarFallback>
                           {getInitials(session?.user?.name)}

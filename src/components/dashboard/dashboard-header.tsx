@@ -23,7 +23,7 @@ export function DashboardHeader() {
   const isLoading = status === "loading";
 
   // Get user initials for avatar fallback
-  const getInitials = (name?: string) => {
+  const getInitials = (name?: string | null) => {
     return name
       ?.split(" ")
       .map((part) => part[0])
