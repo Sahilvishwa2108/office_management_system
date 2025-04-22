@@ -100,11 +100,6 @@ export function GlobalLoading() {
           <div className="absolute -inset-4 rounded-full border-4 border-t-primary/80 border-r-primary/30 border-b-primary/10 border-l-primary/50 animate-spin" style={{ animationDuration: '3s' }}></div>
         </div>
         
-        {/* Loading text */}
-        <p className="mt-6 text-sm font-medium text-foreground/80 animate-pulse" style={{ animationDuration: '2s' }}>
-          Loading...
-        </p>
-        
         {/* Progress dots */}
         <div className="mt-4 flex space-x-3">
           {[...Array(3)].map((_, i) => (

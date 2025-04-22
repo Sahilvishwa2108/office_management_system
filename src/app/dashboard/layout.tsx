@@ -531,9 +531,9 @@ export default function DashboardLayout({
                       </Link>
                     ))}
                   </nav>
-                  <div className="mt-6 border-t pt-4">
+                  <div className="mt-6 border-t pt-4 flex flex-col" style={{ minHeight: '180px' }}>
                     <div className="flex items-center gap-3 rounded-md p-2">
-                      <Avatar className="h-9 w-9">
+                      <Avatar className="h-10 w-10">
                         <AvatarImage
                           src={session?.user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${session?.user?.name}`}
                           alt={session?.user?.name ?? ""}
@@ -542,46 +542,45 @@ export default function DashboardLayout({
                           {getInitials(session?.user?.name)}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex flex-1 flex-col truncate">
-                        <span className="truncate text-sm font-medium">
+                      <div className="flex flex-1 flex-col">
+                        <span className="text-sm font-medium line-clamp-1">
                           {session?.user?.name}
                         </span>
-                        <span className="truncate text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground line-clamp-1">
                           {session?.user?.email}
                         </span>
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      className="mt-4 w-full justify-start gap-2"
-                      onClick={() => {
-                        setIsMobileNavOpen(false);
-                        signOut({ redirect: true, callbackUrl: "/login" });
-                      }}
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Log out
-                    </Button>
-                  </div>
+                    <div className="mt-3 border-t pt-3">
+                      <Button
+                        variant="ghost"
+                        className="w-full flex items-center justify-between py-3 px-4 bg-muted/30 hover:bg-destructive/10 hover:text-destructive group transition-colors"
+                        onClick={() => {
+                          setIsMobileNavOpen(false);
+                          signOut({ redirect: true, callbackUrl: "/login" });
+                        }}
+                      >
+                        <span className="font-medium flex items-center">
+                          <LogOut className="h-4 w-4 mr-3 transition-transform group-hover:rotate-12" />
+                          Sign Out
+                        </span>
+                        <ArrowRight className="h-4 w-4 opacity-0 -translate-x-2 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
+                      </Button>
+                    </div>
                   
-                  {/* Add this creators section */}
-                  <div className="mt-6 border-t pt-4 pb-4 text-xs text-muted-foreground/80">
-                    <div className="flex items-center justify-center gap-1.5 mb-2 font-medium">
-                      <Code className="h-3.5 w-3.5" /> 
-                      <span>Created with</span> 
-                      <Heart className="h-3 w-3 text-rose-500 animate-pulse" />
-                    </div>
-                    <div className="text-center font-medium">
-                      Sahil Vishwakarma
-                    </div>
-                    <div className="text-center text-xs text-muted-foreground/60">
-                      sahilvishwa2108@gmail.com
-                    </div>
-                    <div className="text-center font-medium mt-2">
-                      Priyesh Kurmi
-                    </div>
-                    <div className="text-center text-xs text-muted-foreground/60">
-                      kpriyesh1908@gmail.com
+                    {/* Creator credits - moved inside the flex-col for better spacing */}
+                    <div className="mt-auto pt-4 pb-4 text-xs text-muted-foreground/80">
+                      <div className="flex items-center justify-center gap-1.5 mb-2 font-medium">
+                        <Code className="h-3.5 w-3.5" /> 
+                        <span>Created with</span> 
+                        <Heart className="h-3 w-3 text-rose-500 animate-pulse" />
+                      </div>
+                      <div className="text-center font-medium">
+                        Sahil Vishwakarma
+                      </div>
+                      <div className="text-center font-medium mt-2">
+                        Priyesh Kurmi
+                      </div>
                     </div>
                   </div>
                 </ScrollArea>

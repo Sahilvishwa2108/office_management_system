@@ -349,6 +349,27 @@ export default function PartnerUsersPage() {
     );
   }
 
+  useEffect(() => {
+    // Check for mobile viewport on component mount
+    if (typeof window !== "undefined") {
+      const isMobileView = window.innerWidth < 768;
+      if (isMobileView) {
+        setViewMode("card");
+      }
+      
+      // Also handle window resize
+      const handleResize = () => {
+        const isMobile = window.innerWidth < 768;
+        if (isMobile && viewMode === "table") {
+          setViewMode("card");
+        }
+      };
+      
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }
+  }, [viewMode]);
+
   return (
     <div className="space-y-6">
       {/* Title Row with Button */}
