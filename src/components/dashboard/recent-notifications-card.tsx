@@ -118,7 +118,6 @@ export function RecentNotificationsCard({
       notification.title === "Your profile was updated" ||
       notification.title.endsWith("profile")
     ) {
-      console.log("Redirecting to /dashboard/settings/profile");
       router.push("/dashboard/settings/profile");
     } else if (
       notification.title === "New Task Assigned" ||
@@ -162,6 +161,8 @@ export function RecentNotificationsCard({
           "Failed to extract taskId from content:",
           notification.content
         );
+        toast.info("Redirecting to task list...");
+        router.push("/dashboard/tasks?view=card");
       }
     } else if (isRoleChangeNotification(notification)) {
       // For role change notifications, redirect to login

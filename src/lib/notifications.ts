@@ -192,7 +192,7 @@ export async function sendTaskAssignedNotification(
       sentToId: assigneeUserId,
       taskId,
       sendEmail: true,
-      emailSubject: `Task Assigned: ${taskTitle}`,
+      emailSubject: `Task Assigned:${taskTitle}`,
       emailHtml,
       sendWhatsApp: !!assignee.phone,
     });
@@ -232,7 +232,7 @@ export async function sendTaskReassignedNotification(
 
     await createNotification({
       title: "New Task Assigned",
-      content: `${reassigner.name} reassigned the task "${taskTitle}" to you. [taskId: ${taskId}]`,
+      content: `${reassigner.name} reassigned the task "${taskTitle}" to you. [taskId:${taskId}]`,
       taskId,
       sentById: reassignerUserId,
       sentToId: newAssigneeId,

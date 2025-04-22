@@ -122,10 +122,11 @@ export async function PATCH(
       if (assigneeId !== currentUser.id) {
         await prisma.notification.create({
           data: {
-            title: "Task Assigned",
+            title: "New Task Assigned",
             content: `${currentUser.name} assigned you a task: ${task.title}${
               validatedData.note ? ` - Note: ${validatedData.note}` : ""
-            }`,
+            } [taskId: ${task.id}]`,
+            taskId: task.id,
             sentById: currentUser.id,
             sentToId: assigneeId,
           },
