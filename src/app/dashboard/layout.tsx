@@ -23,6 +23,8 @@ import {
   Building2,
   LayoutDashboard,
   ArrowRight,
+  Code,
+  Heart,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import {
@@ -375,6 +377,54 @@ export default function DashboardLayout({
                   )}
                 </div>
               </div>
+
+              {/* Project Creators Section */}
+              <div className={cn(
+                "border-t",
+                sidebarCollapsed ? "px-1 py-2" : "px-3 py-3"
+              )}>
+                {sidebarCollapsed ? (
+                  // Minimal version for collapsed sidebar
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex justify-center">
+                          <Heart className="h-3 w-3 text-rose-500 animate-pulse" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-[220px] p-3">
+                        <div className="text-center">
+                          <p className="font-medium">Office Pilot</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            © {new Date().getFullYear()} All rights reserved
+                          </p>
+                          <div className="mt-2 pt-1 border-t border-border/40">
+                            <p className="font-medium text-xs">Created by</p>
+                            <p className="text-xs">Sahil Vishwakarma</p>
+                            <p className="text-xs">Priyesh Kurmi</p>
+                          </div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  // Expanded version with full details
+                  <div className="space-y-2">
+                    {/* Copyright line */}
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground/70">
+                      <span>Office Pilot</span>
+                      <span>© {new Date().getFullYear()}</span>
+                    </div>
+                    
+                    {/* Decorative separator */}
+                    <div className="relative flex items-center py-1">
+                      <div className="flex-grow border-t border-border/20"></div>
+                      <span className="text-[10px] text-muted-foreground/50 mx-2">All rights reserved</span>
+                      <div className="flex-grow border-t border-border/20"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Main content with margin to account for sidebar */}
@@ -512,6 +562,27 @@ export default function DashboardLayout({
                       <LogOut className="h-4 w-4" />
                       Log out
                     </Button>
+                  </div>
+                  
+                  {/* Add this creators section */}
+                  <div className="mt-6 border-t pt-4 pb-4 text-xs text-muted-foreground/80">
+                    <div className="flex items-center justify-center gap-1.5 mb-2 font-medium">
+                      <Code className="h-3.5 w-3.5" /> 
+                      <span>Created with</span> 
+                      <Heart className="h-3 w-3 text-rose-500 animate-pulse" />
+                    </div>
+                    <div className="text-center font-medium">
+                      Sahil Vishwakarma
+                    </div>
+                    <div className="text-center text-xs text-muted-foreground/60">
+                      sahilvishwa2108@gmail.com
+                    </div>
+                    <div className="text-center font-medium mt-2">
+                      Priyesh Kurmi
+                    </div>
+                    <div className="text-center text-xs text-muted-foreground/60">
+                      kpriyesh1908@gmail.com
+                    </div>
                   </div>
                 </ScrollArea>
               </div>
