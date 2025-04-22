@@ -59,26 +59,66 @@ export function GlobalLoading() {
   }, [pathname, status]);
 
   return (
-    <div 
-      className={cn(
-        "fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background transition-opacity duration-300",
-        isLoading ? "opacity-100" : "opacity-0 pointer-events-none"
-      )}
-    >
-      <div className="relative">
-        <Building2 className="h-12 w-12 text-primary animate-pulse" />
-        <div className="loader-ring"></div>
-      </div>
+    <>
+      <style jsx>{`
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+          100% { transform: translateY(0px); }
+        }
+        .float-animation {
+          animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes ripple {
+          0% { transform: scale(0.8); opacity: 0.8; }
+          50% { transform: scale(1.2); opacity: 0.2; }
+          100% { transform: scale(0.8); opacity: 0.8; }
+        }
+        .ripple-animation {
+          animation: ripple 2s ease-in-out infinite;
+        }
+      `}</style>
       
-      <div className="mt-4 flex space-x-2">
-        {[...Array(3)].map((_, i) => (
-          <div 
-            key={i}
-            className="h-2 w-2 rounded-full bg-primary/60 animate-bounce"
-            style={{ animationDelay: `${i * 0.15}s` }}
-          />
-        ))}
+      <div 
+        className={cn(
+          "fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm transition-all duration-500",
+          isLoading ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+      >
+        <div className="relative h-24 w-24 flex items-center justify-center">
+          {/* Ripple effect circles */}
+          <div className="absolute inset-0 rounded-full bg-primary/10 ripple-animation"></div>
+          <div className="absolute inset-0 rounded-full bg-primary/5 ripple-animation" style={{ animationDelay: '0.5s' }}></div>
+          
+          {/* Building icon with floating animation */}
+          <div className="relative z-10 float-animation">
+            <Building2 className="h-16 w-16 text-primary drop-shadow-lg" />
+          </div>
+          
+          {/* Spinning ring around the icon */}
+          <div className="absolute -inset-4 rounded-full border-4 border-t-primary/80 border-r-primary/30 border-b-primary/10 border-l-primary/50 animate-spin" style={{ animationDuration: '3s' }}></div>
+        </div>
+        
+        {/* Loading text */}
+        <p className="mt-6 text-sm font-medium text-foreground/80 animate-pulse" style={{ animationDuration: '2s' }}>
+          Loading...
+        </p>
+        
+        {/* Progress dots */}
+        <div className="mt-4 flex space-x-3">
+          {[...Array(3)].map((_, i) => (
+            <div 
+              key={i}
+              className="h-3 w-3 rounded-full bg-primary animate-bounce shadow-sm"
+              style={{ 
+                animationDelay: `${i * 0.15}s`,
+                opacity: 0.6 + (i * 0.2)
+              }}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
