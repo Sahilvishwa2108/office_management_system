@@ -260,8 +260,12 @@ export default function PartnerUsersPage() {
         },
       });
 
+      const usersArray = Array.isArray(response.data) 
+      ? response.data 
+      : response.data.users || response.data.data || [];  
+
       // Filter for junior staff only on the client side as well
-      const filtered = response.data.filter(
+      const filtered = usersArray.filter(
         (user: User) =>
           user.role === "BUSINESS_EXECUTIVE" ||
           user.role === "BUSINESS_CONSULTANT"

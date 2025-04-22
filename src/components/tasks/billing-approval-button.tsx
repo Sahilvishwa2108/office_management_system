@@ -102,7 +102,7 @@ export function BillingApprovalButton({
             <ul className="list-disc pl-5">
               <li>Mark the task as billed</li>
               <li>Add an entry to the client&apos;s billing history</li>
-              <li>Schedule the task for deletion in 24 hours</li>
+              <li>Delete the task immediately</li> {/* Updated this line */}
             </ul>
           </div>
 

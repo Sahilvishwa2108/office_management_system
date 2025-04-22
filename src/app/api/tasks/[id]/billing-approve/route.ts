@@ -92,14 +92,12 @@ export async function POST(
         });
       }
 
-      // 2. Update task billing status
+      // 2. Update task billing status (only needed for logging/auditing)
       const updatedTask = await tx.task.update({
         where: { id: taskId },
         data: {
           billingStatus: "billed",
           billingDate: new Date(),
-          // Schedule task for deletion after history is created
-          // scheduledDeletionDate: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours later
         }
       });
       console.log(`Task ${updatedTask.id} updated with billing status: ${updatedTask.billingStatus}`);
@@ -117,12 +115,11 @@ export async function POST(
         }
       );
 
-      // 4. Delete task immediately if it's not linked to a client
-      if (!task.clientId) {
-        await tx.task.delete({
-          where: { id: taskId }
-        });
-      }
+      // 4. Delete task immediately instead of scheduling
+      // No need to check client existence since we've already created history if needed
+      await tx.task.delete({
+        where: { id: taskId }
+      });
     });
 
     // Return more detailed success response

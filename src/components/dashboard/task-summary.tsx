@@ -100,7 +100,7 @@ export function TaskSummary({
                       : "No due date"}
                   </div>
                   {showAssignee && task.assignees && task.assignees.length > 0 && (
-                    <div>Assigned to: {task.assignees.map(a => a.user.name).join(', ')}</div>
+                    <div>Assigned to: {task.assignees.map(a => a.user?.name || 'Unassigned').join(', ')}</div>
                   )}
                 </div>
               </div>

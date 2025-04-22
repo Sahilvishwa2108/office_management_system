@@ -10,10 +10,6 @@
       "schedule": "0 0 * * *"
     },
     {
-      "path": "/api/cron/scheduled-task-deletions",
-      "schedule": "0 12 * * *" 
-    },
-    {
       "path": "/api/cron/cache-warmup",
       "schedule": "0 7 * * 1-5"
     }
