@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -58,7 +58,7 @@ interface User {
   isActive?: boolean;
   createdAt: string;
   updatedAt: string;
-  assignedTasksCount: number;
+  assignedTaskCount: number;
   avatar?: string;
 }
 
@@ -143,7 +143,7 @@ const UserCard = ({
             </Badge>
           )}
           <Badge variant="secondary" className="text-xs">
-            {user.assignedTasksCount} Tasks
+            {user.assignedTaskCount} Tasks
           </Badge>
         </div>
       </div>
@@ -174,6 +174,33 @@ export default function PartnerUsersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [pageLoading, setPageLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
+  const viewModeRef = useRef(viewMode);
+
+  // Update ref when viewMode changes
+useEffect(() => {
+  viewModeRef.current = viewMode;
+}, [viewMode]);
+
+useEffect(() => {
+  // Check for mobile viewport on component mount
+  if (typeof window !== "undefined") {
+    const isMobileView = window.innerWidth < 768;
+    if (isMobileView) {
+      setViewMode("card");
+    }
+    
+    // Also handle window resize
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      if (isMobile && viewModeRef.current === "table") {
+        setViewMode("card");
+      }
+    };
+    
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }
+}, []); // Empty dependency array
 
   // Format the role for display
   const formatRole = (role: string) => {
@@ -265,11 +292,18 @@ export default function PartnerUsersPage() {
       : response.data.users || response.data.data || [];  
 
       // Filter for junior staff only on the client side as well
-      const filtered = usersArray.filter(
+      interface FilteredUser extends User {
+        assignedTasksCount: number;
+      }
+
+      const filtered: FilteredUser[] = usersArray.filter(
         (user: User) =>
           user.role === "BUSINESS_EXECUTIVE" ||
           user.role === "BUSINESS_CONSULTANT"
-      );
+      ).map((user: User): FilteredUser => ({
+        ...user,
+        assignedTasksCount: user.assignedTaskCount || 0 
+      }));
 
       setUsers(filtered);
     } catch (error) {
@@ -348,27 +382,6 @@ export default function PartnerUsersPage() {
       </div>
     );
   }
-
-  useEffect(() => {
-    // Check for mobile viewport on component mount
-    if (typeof window !== "undefined") {
-      const isMobileView = window.innerWidth < 768;
-      if (isMobileView) {
-        setViewMode("card");
-      }
-      
-      // Also handle window resize
-      const handleResize = () => {
-        const isMobile = window.innerWidth < 768;
-        if (isMobile && viewMode === "table") {
-          setViewMode("card");
-        }
-      };
-      
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }
-  }, [viewMode]);
 
   return (
     <div className="space-y-6">
@@ -496,7 +509,7 @@ export default function PartnerUsersPage() {
                         <TableCell>
                           <Badge variant="outline">{formatRole(user.role)}</Badge>
                         </TableCell>
-                        <TableCell>{user.assignedTasksCount}</TableCell>
+                        <TableCell>{user.assignedTaskCount}</TableCell>
                         <TableCell>
                           {user.isActive !== false ? (
                             <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>
