@@ -32,7 +32,9 @@ import {
   MoreHorizontal,
   KeyIcon,
   FilterX,
-  ClipboardList,
+  Trash,
+  Plus,
+  ClipboardPlus, // Add this import
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,6 +48,16 @@ import { RoleFilter } from "@/components/ui/role-filter";
 import React from "react";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { AssignTaskButton } from "@/components/tasks/assign-task-button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface User {
   id: string;
@@ -100,9 +112,11 @@ const getInitials = (name: string): string => {
 const UserCard = ({
   user,
   onToggleStatus,
+  onDeleteUser,
 }: {
   user: User;
   onToggleStatus: (id: string, status: boolean) => Promise<void>;
+  onDeleteUser: (id: string, name: string) => Promise<void>;
 }) => {
   const router = useRouter();
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
@@ -198,27 +212,7 @@ const UserCard = ({
                 Edit User
               </Link>
             </DropdownMenuItem>
-            {/* Add AssignTask option here */}
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-            >
-              <div className="w-full">
-                <AssignTaskButton
-                  userId={user.id}
-                  userName={user.name}
-                  onAssigned={() => router.refresh()}
-                  variant="ghost"
-                  className="w-full justify-start p-0 h-auto"
-                >
-                  <ClipboardList className="w-4 h-4 mr-2" />
-                  Assign Task
-                </AssignTaskButton>
-              </div>
-            </DropdownMenuItem>
-            {/* Other menu items */}
+            {/* Removed redundant Assign Task button */}
             <DropdownMenuItem
               onClick={() => onToggleStatus(user.id, user.isActive !== false)}
             >
@@ -241,6 +235,17 @@ const UserCard = ({
                 Reset Password
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteUser(user.id, user.name);
+              }}
+              className="text-red-600 focus:text-red-600 hover:text-red-700"
+            >
+              <Trash className="w-4 h-4 mr-2" />
+              Delete User
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -262,6 +267,8 @@ export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{id: string, name: string} | null>(null);
 
   // Check for URL parameters only on client side in useEffect
   useEffect(() => {
@@ -357,6 +364,33 @@ export default function UsersPage() {
       toast.error(
         typedError.response?.data?.error || "Failed to update user status"
       );
+    }
+  };
+
+  // Handle delete user
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    // Open dialog instead of using confirm
+    setUserToDelete({ id: userId, name: userName });
+    setDeleteDialogOpen(true);
+  };
+
+  // Add a new function to perform the actual deletion
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    
+    try {
+      await axios.delete(`/api/users/${userToDelete.id}`);
+      // Remove user from the list
+      setUsers(users.filter(user => user.id !== userToDelete.id));
+      toast.success(`User ${userToDelete.name} deleted successfully`);
+    } catch (error: unknown) {
+      const typedError = error as { response?: { data?: { error?: string } } };
+      toast.error(
+        typedError.response?.data?.error || "Failed to delete user"
+      );
+    } finally {
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
     }
   };
 
@@ -547,7 +581,9 @@ export default function UsersPage() {
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Role</TableHead>
-                      <TableHead>Assigned Tasks</TableHead>
+                      <TableHead className="whitespace-nowrap">
+                        Tasks 
+                      </TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead className="w-[80px]">Actions</TableHead>
@@ -566,7 +602,21 @@ export default function UsersPage() {
                           <TableCell className="font-medium">{user.name}</TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>{formatRole(user.role)}</TableCell>
-                          <TableCell>{user.assignedTaskCount}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span>{user.assignedTaskCount}</span>
+                              <AssignTaskButton
+                                userId={user.id}
+                                userName={user.name}
+                                onAssigned={() => router.refresh()}
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 rounded-full hover:bg-muted"
+                              >
+                                <ClipboardPlus className="h-3.5 w-3.5" />
+                              </AssignTaskButton>
+                            </div>
+                          </TableCell>
                           <TableCell>
                             {user.isActive !== false ? (
                               <Badge
@@ -619,28 +669,7 @@ export default function UsersPage() {
                                     Edit User
                                   </Link>
                                 </DropdownMenuItem>
-                                {/* Add AssignTask option here */}
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                  }}
-                                  className="px-2"
-                                >
-                                  <div className="w-full">
-                                    <AssignTaskButton
-                                      userId={user.id}
-                                      userName={user.name}
-                                      onAssigned={() => router.refresh()}
-                                      variant="ghost"
-                                      className="w-full justify-start p-0 h-auto"
-                                    >
-                                      <ClipboardList className="w-4 h-4 mr-2" />
-                                      Assign Task
-                                    </AssignTaskButton>
-                                  </div>
-                                </DropdownMenuItem>
-                                {/* Other menu items */}
+                                {/* Removed Assign Task button from here */}
                                 <DropdownMenuItem
                                   onClick={() =>
                                     handleToggleStatus(
@@ -670,6 +699,14 @@ export default function UsersPage() {
                                     Reset Password
                                   </Link>
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteUser(user.id, user.name)}
+                                  className="text-red-600 focus:text-red-600 hover:text-red-700"
+                                >
+                                  <Trash className="w-4 h-4 mr-2" />
+                                  Delete User
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -697,6 +734,7 @@ export default function UsersPage() {
                     key={user.id}
                     user={user}
                     onToggleStatus={handleToggleStatus}
+                    onDeleteUser={handleDeleteUser}
                   />
                 ))
               ) : (
@@ -708,6 +746,25 @@ export default function UsersPage() {
           )}
         </CardContent>
       </Card>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm User Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {userToDelete?.name}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteUser}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

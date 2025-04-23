@@ -167,40 +167,37 @@ export default function CreateTaskPage() {
     }
   };
   
-  // Updated form submission handler
-  const onSubmit = async (data: TaskFormValues) => {
-    try {
-      setIsLoading(true);
-      
-      // Format data as needed
-      const taskData = {
-        ...data,
-        // Convert empty arrays to undefined to avoid validation issues
-        assignedToIds: data.assignedToIds && data.assignedToIds.length > 0 
-          ? data.assignedToIds 
-          : undefined,
-        clientId: data.clientId === "null" ? null : data.clientId,
-        dueDate: data.dueDate ? data.dueDate.toISOString() : null,
-      };
-      
-      // Submit to API
-      await axios.post("/api/tasks", taskData);
-      
-      toast.success("Task created successfully");
-      
-      // Redirect to appropriate page
-      if (data.clientId && data.clientId !== "null") {
-        router.push(`/dashboard/clients/${data.clientId}`);
-      } else {
-        router.push("/dashboard/tasks");
-      }
-    } catch (error) {
-      console.error("Error creating task:", error);
-      toast.error("Failed to create task");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Update the onSubmit function's redirect logic
+
+const onSubmit = async (data: TaskFormValues) => {
+  try {
+    setIsLoading(true);
+    
+    // Format data as needed
+    const taskData = {
+      ...data,
+      // Convert empty arrays to undefined to avoid validation issues
+      assignedToIds: data.assignedToIds && data.assignedToIds.length > 0 
+        ? data.assignedToIds 
+        : undefined,
+      clientId: data.clientId === "null" ? null : data.clientId,
+      dueDate: data.dueDate ? data.dueDate.toISOString() : null,
+    };
+    
+    // Submit to API
+    await axios.post("/api/tasks", taskData);
+    
+    toast.success("Task created successfully");
+    
+    // Always redirect to tasks list page
+    router.push("/dashboard/tasks");
+  } catch (error) {
+    console.error("Error creating task:", error);
+    toast.error("Failed to create task");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Loading state
   if (isDataLoading) {
