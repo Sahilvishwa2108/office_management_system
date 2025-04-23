@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
@@ -54,12 +54,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { canModifyClient } from "@/lib/permissions";
 import { DataTable } from "@/components/ui/data-table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { useCachedFetch } from '@/hooks/use-cached-fetch';
-import { clientBrowserCache } from '@/lib/browser-cache';
 import { ClientListSkeleton } from "@/components/loading/client-skeleton";
 
 interface Client {
@@ -231,22 +228,43 @@ export default function ClientsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
   
-  // Use cached fetch hook instead of direct axios calls
-  const { 
-    data: clientsResponse, 
-    isLoading, 
-    error, 
-    refresh 
-  } = useCachedFetch(`/api/clients`, {
-    params: {
-      page,
-      limit: 10,
-      isGuest: activeTab === "permanent" ? false : activeTab === "guest" ? true : undefined,
-      search: searchTerm || undefined
-    },
-    cacheTtl: 120, // 2 minutes
-    cache: clientBrowserCache
-  });
+  // ADD THIS BLOCK INSTEAD
+interface ClientsResponse {
+  clients: Client[];
+  totalPages: number;
+  totalClients: number;
+}
+
+const [clientsResponse, setClientsResponse] = useState<ClientsResponse | null>(null);
+const [isLoading, setIsLoading] = useState(true);
+const [error, setError] = useState<Error | null>(null);
+
+// Add this function to fetch clients
+const fetchClients = useCallback(async () => {
+  setIsLoading(true);
+  try {
+    const response = await axios.get('/api/clients', {
+      params: {
+        page,
+        limit: 10,
+        isGuest: activeTab === "permanent" ? false : activeTab === "guest" ? true : undefined,
+        search: searchTerm || undefined
+      }
+    });
+    setClientsResponse(response.data);
+    setError(null);
+  } catch (err) {
+    setError(err as Error);
+    console.error("Error fetching clients:", err);
+  } finally {
+    setIsLoading(false);
+  }
+}, [page, activeTab, searchTerm]);
+
+// Create a refresh function that matches the one from useCachedFetch
+const refresh = useCallback(() => {
+  fetchClients();
+}, [fetchClients]);
 
   // Extract data from the response
   const clients = clientsResponse?.clients || [];
@@ -459,6 +477,11 @@ export default function ClientsPage() {
     }
   }, []);
 
+  // ADD THIS BLOCK after your other useEffects
+useEffect(() => {
+  fetchClients();
+}, [fetchClients]);
+
   // Save view mode preference when it changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -543,26 +566,25 @@ export default function ClientsPage() {
     );
   }
 
-  // deleteClient function implementation
+  // ADD THIS BLOCK INSTEAD
+const deleteClient = async () => {
+  if (!clientToDelete) return;
 
-  const deleteClient = async () => {
-    if (!clientToDelete) return;
-
-    setDeleteLoading(true);
-    try {
-      await axios.delete(`/api/clients/${clientToDelete}`);
-      toast.success("Client deleted successfully");
-      setDeleteDialogOpen(false);
-      // Replace loadClients with refresh
-      refresh();
-    } catch (error) {
-      console.error("Error deleting client:", error);
-      toast.error("Failed to delete client");
-    } finally {
-      setDeleteLoading(false);
-      setClientToDelete(null);
-    }
-  };
+  setDeleteLoading(true);
+  try {
+    await axios.delete(`/api/clients/${clientToDelete}`);
+    toast.success("Client deleted successfully");
+    setDeleteDialogOpen(false);
+    // Just call the refresh function
+    refresh();
+  } catch (error) {
+    console.error("Error deleting client:", error);
+    toast.error("Failed to delete client");
+  } finally {
+    setDeleteLoading(false);
+    setClientToDelete(null);
+  }
+};
 
   // Note: isClientExpired function is already defined earlier in the component
   // and is used in the columns definition
@@ -582,23 +604,27 @@ export default function ClientsPage() {
 
         {/* Only show create buttons for admin users */}
         {hasWriteAccess && (
-          <div className="flex flex-col xs:flex-row gap-2">
-            <Button asChild className="w-full xs:w-auto">
-              <Link href="/dashboard/clients/create">
-                <Building className="mr-2 h-4 w-4" />
-                <span className="hidden xs:inline">Add Permanent Client</span>
-                <span className="xs:hidden">Add Permanent</span>
-              </Link>
-            </Button>
-            <Button variant="outline" asChild className="w-full xs:w-auto">
-              <Link href="/dashboard/clients/guest/create">
-                <Plus className="mr-2 h-4 w-4" />
-                <span className="hidden xs:inline">Add Guest Client</span>
-                <span className="xs:hidden">Add Guest</span>
-              </Link>
-            </Button>
-          </div>
-        )}
+  <div className="flex flex-row gap-2">
+    <Button asChild className="flex-1">
+      <Link href="/dashboard/clients/create">
+        <div className="flex items-center justify-center">
+          <Building className="mr-2 h-4 w-4" />
+          <span className="hidden xs:inline">Add Permanent Client</span>
+          <span className="xs:hidden">Add Permanent</span>
+        </div>
+      </Link>
+    </Button>
+    <Button variant="outline" asChild className="flex-1">
+      <Link href="/dashboard/clients/guest/create">
+        <div className="flex items-center justify-center">
+          <Plus className="mr-2 h-4 w-4" />
+          <span className="hidden xs:inline">Add Guest Client</span>
+          <span className="xs:hidden">Add Guest</span>
+        </div>
+      </Link>
+    </Button>
+  </div>
+)}
       </div>
       {/* Client tabs and search */}
       <Card>

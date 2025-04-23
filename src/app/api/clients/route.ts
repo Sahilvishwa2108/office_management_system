@@ -93,10 +93,11 @@ export async function GET(request: NextRequest) {
     
     // Create the response with appropriate cache headers
     const res = NextResponse.json(response);
-    
-    // Add cache control headers - vary by user and query params
-    // Stale-while-revalidate pattern: cache for 30s but can serve stale for up to 1 hour while revalidating
-    res.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=3600');
+
+// Set headers to disable caching
+res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+res.headers.set('Pragma', 'no-cache');
+res.headers.set('Expires', '0');
     
     return res;
   } catch (error) {
