@@ -34,18 +34,20 @@ import {
   ListTodo, // Add this import for ListTodo
   CheckCircle,
   Receipt,
+  Download,
 } from "lucide-react";
 import { TaskComments } from "@/components/tasks/task-comments";
 import { TaskDetailSkeleton } from "@/components/loading/task-skeleton";
 import { BillingApprovalButton } from "@/components/tasks/billing-approval-button"; // Add this import for BillingApprovalButton
 import { TaskAssignees } from "@/components/tasks/task-assignees";
+import { generateAndDownloadTaskPdf } from "@/lib/task-pdf-generate";
 
 // Add the missing getInitials function
 const getInitials = (name: string): string => {
   return name
-    .split(' ')
-    .map(word => word[0])
-    .join('')
+    .split(" ")
+    .map((word) => word[0])
+    .join("")
     .toUpperCase()
     .substring(0, 2);
 };
@@ -67,7 +69,7 @@ interface TaskAssignee {
     name: string;
     email: string;
     role: string;
-  }
+  };
 }
 
 interface Task {
@@ -112,16 +114,16 @@ interface Comment {
 // Add these helper functions to control permissions
 const canEditTask = (task: Task, currentUser: User) => {
   if (!currentUser) return false;
-  
+
   // Admin can edit all tasks
   if (currentUser.role === "ADMIN") return true;
-  
+
   // Creator can edit their own tasks
   if (task.assignedBy?.id === currentUser.id) return true;
-  
+
   // Assignee can edit their assigned task
-  if (task.assignees?.some(a => a.userId === currentUser.id)) return true;
-  
+  if (task.assignees?.some((a) => a.userId === currentUser.id)) return true;
+
   // No one else can edit tasks
   return false;
 };
@@ -140,7 +142,11 @@ const isTaskEditable = (task, billingStatus) => {
   return true;
 };
 
-export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function TaskDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
   // Properly type the unwrapped params
   const resolvedParams = React.use(params) as { id: string };
@@ -150,16 +156,24 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   const [task, setTask] = useState<Task | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string; role: string; canApproveBilling?: boolean; } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    canApproveBilling?: boolean;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState<string | null>(null);
 
   // Add a state variable to track billing status changes
-  const [currentBillingStatus, setCurrentBillingStatus] = useState(task?.billingStatus);
+  const [currentBillingStatus, setCurrentBillingStatus] = useState(
+    task?.billingStatus
+  );
 
-  // Memoized data fetching functions
+  // Memoized data fetching 
   const fetchTask = useCallback(async () => {
     try {
       setLoading(true);
@@ -180,7 +194,9 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const fetchComments = useCallback(async () => {
     try {
       setCommentsLoading(true);
-      const response = await axios.get<Comment[]>(`/api/tasks/${taskId}/comments`);
+      const response = await axios.get<Comment[]>(
+        `/api/tasks/${taskId}/comments`
+      );
       setComments(response.data);
     } catch (error) {
       console.error("Error fetching comments:", error);
@@ -194,7 +210,12 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   const fetchCurrentUser = useCallback(async () => {
     try {
-      const response = await axios.get<{ id: string; name: string; email: string; role: string }>('/api/users/me');
+      const response = await axios.get<{
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+      }>("/api/users/me");
       setCurrentUser(response.data);
     } catch (error) {
       console.error("Error fetching current user:", error);
@@ -204,38 +225,43 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   // Load all data in parallel for better performance
   useEffect(() => {
     if (taskId) {
-      Promise.all([
-        fetchTask(),
-        fetchComments(),
-        fetchCurrentUser()
-      ]);
+      Promise.all([fetchTask(), fetchComments(), fetchCurrentUser()]);
     }
   }, [fetchTask, fetchComments, fetchCurrentUser, taskId]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending": return "bg-gray-500 hover:bg-gray-600";
-      case "in_progress": return "bg-blue-500 hover:bg-blue-600";
-      case "review": return "bg-yellow-500 hover:bg-yellow-600";
-      case "completed": return "bg-green-500 hover:bg-green-600";
-      case "cancelled": return "bg-red-500 hover:bg-red-600";
-      default: return "bg-gray-500 hover:bg-gray-600";
+      case "pending":
+        return "bg-gray-500 hover:bg-gray-600";
+      case "in_progress":
+        return "bg-blue-500 hover:bg-blue-600";
+      case "review":
+        return "bg-yellow-500 hover:bg-yellow-600";
+      case "completed":
+        return "bg-green-500 hover:bg-green-600";
+      case "cancelled":
+        return "bg-red-500 hover:bg-red-600";
+      default:
+        return "bg-gray-500 hover:bg-gray-600";
     }
   };
 
   // Use useMemo where appropriate
-  const statusColor = useMemo(() => getStatusColor(task?.status || "pending"), [task?.status]);
-  
+  const statusColor = useMemo(
+    () => getStatusColor(task?.status || "pending"),
+    [task?.status]
+  );
+
   const updateTaskStatus = async () => {
     if (!newStatus || newStatus === task?.status) return;
 
     try {
       setUpdating(true);
       await axios.patch(`/api/tasks/${taskId}`, {
-        status: newStatus
+        status: newStatus,
       });
 
-      setTask(prev => prev ? {...prev, status: newStatus} : null);
+      setTask((prev) => (prev ? { ...prev, status: newStatus } : null));
       toast.success("Task status updated successfully");
     } catch (error) {
       console.error("Error updating task:", error);
@@ -247,17 +273,26 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "low": return "bg-green-500 hover:bg-green-600";
-      case "medium": return "bg-yellow-500 hover:bg-yellow-600";
-      case "high": return "bg-red-500 hover:bg-red-600";
-      default: return "bg-gray-500 hover:bg-gray-600";
+      case "low":
+        return "bg-green-500 hover:bg-green-600";
+      case "medium":
+        return "bg-yellow-500 hover:bg-yellow-600";
+      case "high":
+        return "bg-red-500 hover:bg-red-600";
+      default:
+        return "bg-gray-500 hover:bg-gray-600";
     }
   };
 
   // Update the existing canEditTask function call to include billing status check
-  const taskEditableStatus = useMemo(() => 
-    task && session?.user ? (isTaskEditable(task, currentBillingStatus) && canEditTask(task, session.user as User)) : false,
-  [task, currentBillingStatus, session?.user]);
+  const taskEditableStatus = useMemo(
+    () =>
+      task && session?.user
+        ? isTaskEditable(task, currentBillingStatus) &&
+          canEditTask(task, session.user as User)
+        : false,
+    [task, currentBillingStatus, session?.user]
+  );
 
   if (loading) {
     return <TaskDetailSkeleton />;
@@ -277,10 +312,10 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     <div className="container py-6">
       {/* Back button and title */}
       <div className="mb-6">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="mb-4" 
+        <Button
+          variant="outline"
+          size="sm"
+          className="mb-4"
           onClick={() => router.push("/dashboard/tasks")}
         >
           <ArrowLeftIcon className="h-4 w-4 mr-2" /> Back to Tasks
@@ -296,23 +331,77 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <CardTitle className="text-2xl">{task.title}</CardTitle>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
-                    <Badge className={statusColor}>
-                      {task.status}
-                    </Badge>
-                    <Badge variant="outline" className={getPriorityColor(task.priority)}>
+                    <Badge className={statusColor}>{task.status}</Badge>
+                    <Badge
+                      variant="outline"
+                      className={getPriorityColor(task.priority)}
+                    >
                       {task.priority}
                     </Badge>
                     {task.dueDate && (
-                      <Badge variant="outline" className={
-                        new Date(task.dueDate) < new Date() && task.status !== 'completed' 
-                          ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" 
-                          : ""
-                      }>
-                        Due: {format(new Date(task.dueDate), 'MMM dd, yyyy')}
+                      <Badge
+                        variant="outline"
+                        className={
+                          new Date(task.dueDate) < new Date() &&
+                          task.status !== "completed"
+                            ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                            : ""
+                        }
+                      >
+                        Due: {format(new Date(task.dueDate), "MMM dd, yyyy")}
                       </Badge>
                     )}
                   </div>
                 </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      // Always show loading state
+                      const toastId = toast.loading("Preparing PDF...");
+
+                      // Always fetch fresh comments for PDF to ensure we have the latest
+                      const response = await axios.get(
+                        `/api/tasks/${taskId}/comments`
+                      );
+                      const commentData = response.data;
+
+                      // Add this console log to debug
+                      console.log(
+                        "Comments for PDF:",
+                        commentData.length,
+                        commentData
+                      );
+
+                      // Generate PDF with the freshly fetched comments
+                      generateAndDownloadTaskPdf(task, commentData);
+
+                      // Update state for future use
+                      setComments(commentData);
+
+                      // Show success message
+                      toast.success("PDF generated!!", { id: toastId });
+                    } catch (error) {
+                      console.error("Error generating PDF:", error);
+                      toast.error("Failed to generate PDF");
+                    }
+                  }}
+                  disabled={commentsLoading}
+                >
+                  {commentsLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Preparing...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download PDF
+                    </>
+                  )}
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -333,46 +422,51 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <h3 className="text-sm font-medium mb-1">Assigned By</h3>
                   <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-  <AvatarImage
-    src={
-      task.assignedBy.avatar || 
-      `https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedBy.name}`
-    }
-    alt={task.assignedBy.name}
-  />
-  <AvatarFallback>{getInitials(task.assignedBy.name)}</AvatarFallback>
-</Avatar>
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage
+                        src={
+                          task.assignedBy.avatar ||
+                          `https://api.dicebear.com/7.x/initials/svg?seed=${task.assignedBy.name}`
+                        }
+                        alt={task.assignedBy.name}
+                      />
+                      <AvatarFallback>
+                        {getInitials(task.assignedBy.name)}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="text-sm">{task.assignedBy.name}</div>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium mb-1">Assigned To</h3>
-                  <TaskAssignees 
-                    assignees={task.assignees} 
+                  <TaskAssignees
+                    assignees={task.assignees}
                     legacyAssignedTo={task.assignedTo}
-                    showDetails={true}
+                    showDetails={false}
+                    showTooltip={true}
+                    size="md"
                   />
                 </div>
-                
+
                 {task.client && (
                   <div>
                     <h3 className="text-sm font-medium mb-1">Client</h3>
-                    <Link 
+                    <Link
                       href={`/dashboard/clients/${task.client.id}`}
                       className="text-sm text-primary hover:underline"
                     >
                       {task.client.contactPerson}
-                      {task.client.companyName && ` (${task.client.companyName})`}
+                      {task.client.companyName &&
+                        ` (${task.client.companyName})`}
                     </Link>
                   </div>
                 )}
-                
+
                 <div>
                   <h3 className="text-sm font-medium mb-1">Created</h3>
                   <div className="text-sm text-muted-foreground">
-                    {format(new Date(task.createdAt), 'MMM dd, yyyy')}
+                    {format(new Date(task.createdAt), "MMM dd, yyyy")}
                   </div>
                 </div>
               </div>
@@ -408,10 +502,15 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                   </SelectContent>
                 </Select>
               </div>
-              
-              <Button 
-                onClick={updateTaskStatus} 
-                disabled={!newStatus || newStatus === task.status || updating || currentBillingStatus === "billed"} 
+
+              <Button
+                onClick={updateTaskStatus}
+                disabled={
+                  !newStatus ||
+                  newStatus === task.status ||
+                  updating ||
+                  currentBillingStatus === "billed"
+                }
                 className="w-full"
               >
                 {updating ? (
@@ -423,85 +522,95 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                   "Update Status"
                 )}
               </Button>
-              
+
               {/* Action buttons */}
               <div className="pt-4 space-y-3 border-t">
-                {taskEditableStatus && (
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    asChild
-                    disabled={currentBillingStatus === "billed"}
-                  >
-                    <Link href={`/dashboard/tasks/${task.id}/edit`}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit Task
-                    </Link>
-                  </Button>
-                )}
-                
-                {session?.user && canReassignTask(session.user as User) && currentBillingStatus !== "billed" && (
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    asChild
-                  >
-                    <Link href={`/dashboard/tasks/${task.id}/reassign`}>
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      Reassign Task
-                    </Link>
-                  </Button>
-                )}
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  asChild
-                >
+                {session?.user &&
+                  isTaskEditable(task, currentBillingStatus) &&
+                  (session.user.role === "ADMIN" ||
+                    task.assignedBy?.id === session.user.id) && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      asChild
+                      disabled={currentBillingStatus === "billed"}
+                    >
+                      <Link href={`/dashboard/tasks/${task.id}/edit`}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit Task
+                      </Link>
+                    </Button>
+                  )}
+
+                {session?.user &&
+                  canReassignTask(session.user as User) &&
+                  currentBillingStatus !== "billed" && (
+                    <Button variant="outline" className="w-full" asChild>
+                      <Link href={`/dashboard/tasks/${task.id}/reassign`}>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Reassign Task
+                      </Link>
+                    </Button>
+                  )}
+
+                <Button variant="outline" className="w-full" asChild>
                   <Link href={`/dashboard/tasks`}>
                     <ListTodo className="mr-2 h-4 w-4" />
                     View All Tasks
                   </Link>
                 </Button>
 
-                {task.status === "completed" && (currentBillingStatus === "pending_billing") && (isAdmin || currentUser?.canApproveBilling) && (
-                  <div className="mt-4">
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
-                      <div className="flex items-start gap-3">
-                        <Receipt className="h-5 w-5 text-amber-600 mt-0.5" />
-                        <div>
-                          <h3 className="font-medium">Billing Approval Required</h3>
-                          <p className="text-sm text-amber-800 mb-3">
-                            This task has been marked as completed and is awaiting billing approval.
-                          </p>
-                          <BillingApprovalButton 
-                            taskId={task.id} 
-                            onApproved={() => {
-                              setTask(prev => prev ? { ...prev, billingStatus: "billed" } : null);
-                              toast.success("Task billing approved successfully");
-                            }}
-                          />
+                {task.status === "completed" &&
+                  currentBillingStatus === "pending_billing" &&
+                  (isAdmin || currentUser?.canApproveBilling) && (
+                    <div className="mt-4">
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                        <div className="flex items-start gap-3">
+                          <Receipt className="h-5 w-5 text-amber-600 mt-0.5" />
+                          <div>
+                            <h3 className="font-medium">
+                              Billing Approval Required
+                            </h3>
+                            <p className="text-sm text-amber-800 mb-3">
+                              This task has been marked as completed and is
+                              awaiting billing approval.
+                            </p>
+                            <BillingApprovalButton
+                              taskId={task.id}
+                              onApproved={() => {
+                                setTask((prev) =>
+                                  prev
+                                    ? { ...prev, billingStatus: "billed" }
+                                    : null
+                                );
+                                toast.success(
+                                  "Task billing approved successfully"
+                                );
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {task.status === "completed" && currentBillingStatus === "billed" && (
-                  <div className="mt-4">
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                        <p className="text-sm text-green-700 font-medium">
-                          This task has been completed and billed
+                {task.status === "completed" &&
+                  currentBillingStatus === "billed" && (
+                    <div className="mt-4">
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          <p className="text-sm text-green-700 font-medium">
+                            This task has been completed and billed
+                          </p>
+                        </div>
+                        <p className="text-xs text-green-600 mt-1">
+                          Task details have been saved to client history and
+                          this task is now locked for editing.
                         </p>
                       </div>
-                      <p className="text-xs text-green-600 mt-1">
-                        Task details have been saved to client history and this task is now locked for editing.
-                      </p>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </CardContent>
           </Card>
@@ -520,11 +629,13 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               {commentsLoading ? (
                 <div className="flex flex-col items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                  <p className="text-sm text-muted-foreground">Loading comments...</p>
+                  <p className="text-sm text-muted-foreground">
+                    Loading comments...
+                  </p>
                 </div>
               ) : currentUser ? (
-                <TaskComments 
-                  taskId={taskId} 
+                <TaskComments
+                  taskId={taskId}
                   comments={comments}
                   currentUser={currentUser}
                 />

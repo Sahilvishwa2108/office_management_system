@@ -319,7 +319,7 @@ export async function POST(request: NextRequest) {
         await prisma.notification.create({
           data: {
             title: "Permission Granted",
-            content: "You have been granted permission to approve billing requests.",
+            content: "You have been granted permission to approve billing requests. You can now approve billing on dashboard and task pages.",
             sentById: session.user.id, // Admin who made the change
             sentToId: updatedUser.id, // Partner receiving the notification
           },
