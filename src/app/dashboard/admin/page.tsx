@@ -263,10 +263,10 @@ export default function AdminDashboard() {
                     <CardDescription>Frequently used administrative operations</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-auto max-h-[270px] custom-scrollbar">
-                    <Link href="/dashboard/admin/users/create" className="block">
+                    <Link href="/dashboard/admin/users/create" className="block cursor-pointer">
                       <Button
                         variant="outline"
-                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-blue-50/50 dark:from-transparent dark:to-blue-950/20"
+                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-blue-50/50 dark:from-transparent dark:to-blue-950/20 cursor-pointer"
                       >
                         <div className="flex flex-col items-start">
                           <span className="font-medium text-blue-700 dark:text-blue-400">Create User</span>
@@ -279,10 +279,10 @@ export default function AdminDashboard() {
                         </div>
                       </Button>
                     </Link>
-                    <Link href="/dashboard/admin/clients/create" className="block">
+                    <Link href="/dashboard/clients/create" className="block cursor-pointer">
                       <Button
                         variant="outline"
-                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-purple-50/50 dark:from-transparent dark:to-purple-950/20"
+                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-purple-50/50 dark:from-transparent dark:to-purple-950/20 cursor-pointer"
                       >
                         <div className="flex flex-col items-start">
                           <span className="font-medium text-purple-700 dark:text-purple-400">Create Client</span>
@@ -295,10 +295,10 @@ export default function AdminDashboard() {
                         </div>
                       </Button>
                     </Link>
-                    <Link href="/dashboard/tasks/create" className="block">
+                    <Link href="/dashboard/tasks/create" className="block cursor-pointer">
                       <Button
                         variant="outline"
-                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-green-50/50 dark:from-transparent dark:to-green-950/20"
+                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-green-50/50 dark:from-transparent dark:to-green-950/20 cursor-pointer"
                       >
                         <div className="flex flex-col items-start">
                           <span className="font-medium text-green-700 dark:text-green-400">Create Task</span>
@@ -311,10 +311,10 @@ export default function AdminDashboard() {
                         </div>
                       </Button>
                     </Link>
-                    <Link href="/dashboard/admin/clients/guest/create" className="block">
+                    <Link href="/dashboard/clients/guest/create" className="block cursor-pointer">
                       <Button
                         variant="outline"
-                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-amber-50/50 dark:from-transparent dark:to-amber-950/20"
+                        className="w-full justify-between h-20 p-4 group hover:shadow-md hover:border-primary/30 transition-all bg-gradient-to-br from-transparent to-amber-50/50 dark:from-transparent dark:to-amber-950/20 cursor-pointer"
                       >
                         <div className="flex flex-col items-start">
                           <span className="font-medium text-amber-700 dark:text-amber-400">Create Guest</span>

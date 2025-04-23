@@ -44,10 +44,40 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+// Update the profile schema with the phone formatting logic
+
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email").optional(),
-  phone: z.string().optional(),
+  phone: z.string()
+    .optional()
+    .transform(val => {
+      if (!val) return val;
+      
+      // Remove all spaces from the input
+      const cleaned = val.replace(/\s+/g, '');
+      
+      // Check if it's a 10-digit number without country code
+      if (/^[6-9]\d{9}$/.test(cleaned)) {
+        return `+91${cleaned}`;
+      }
+      
+      // If it has country code already, ensure format is correct
+      if (/^\+91\d{10}$/.test(cleaned)) {
+        return cleaned;
+      }
+      
+      // If it's in another format but has country code indicator, clean it
+      if (cleaned.includes('+91')) {
+        const digits = cleaned.match(/\d{10}$/)?.[0];
+        if (digits) return `+91${digits}`;
+      }
+      
+      return cleaned; // Return as is if it doesn't match known patterns
+    })
+    .refine(val => !val || /^\+91[6-9]\d{9}$/.test(val), {
+      message: "Phone number must be a valid Indian mobile number in format +91XXXXXXXXXX"
+    })
 });
 
 export default function ProfilePage() {
