@@ -101,6 +101,11 @@ export async function middleware(request: NextRequest) {
 
   // Not signed in - redirect to login
   if (!token) {
+    // If user is accessing the root URL, show the landing page
+    if (pathname === "/") {
+      return NextResponse.next();
+    }
+    // For all other protected routes, redirect to login
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
