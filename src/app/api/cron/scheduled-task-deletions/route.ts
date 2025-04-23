@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { logSystemActivity } from "@/lib/activity-service";
+import { logSystemActivity } from "@/lib/activity-logger";
 
 export async function POST(request: Request) {
   try {

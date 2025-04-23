@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { prisma } from '@/lib/prisma';
-import { logSystemActivity } from '@/lib/activity-service';
+import { logSystemActivity } from '@/lib/activity-logger';
 
 // Function to check and delete expired guest clients
 async function checkForExpiredClients() {

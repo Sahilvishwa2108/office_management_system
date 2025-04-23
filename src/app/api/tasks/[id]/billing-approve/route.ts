@@ -18,7 +18,7 @@ export async function POST(
 
     // Only admin can approve billing
     if (session.user.role !== "ADMIN" &&
-      !(session.user.role === "PARTNER" && session.user.canApproveBilling)) {
+      !(session.user.role === "PARTNER" && 'canApproveBilling' in session.user && session.user.canApproveBilling)) {
       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
     }
 

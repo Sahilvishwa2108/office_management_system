@@ -8,14 +8,15 @@ export type ActivityAction =
   | "assigned" 
   | "completed" 
   | "role_changed"
-  | "status_changed";
+  | "status_changed"
+  | "auto_deleted";  // Added for system actions
 
 export interface ActivityDetails {
   [key: string]: unknown;
 }
 
 /**
- * Creates an activity record in the database and maintains a limit of 500 recent activities
+ * Creates an activity record in the database and maintains a limit of 20 recent activities
  * Login/logout activities are excluded from being stored
  */
 export async function logActivity(
@@ -39,7 +40,7 @@ export async function logActivity(
 
     if (!userExists) {
       console.warn(`Skipping activity logging: User with ID ${userId} not found`);
-      return; // Skip creating the activity if user doesn't exist
+      return;
     }
 
     // Create the new activity record
@@ -53,14 +54,62 @@ export async function logActivity(
       }
     });
 
+    // Clean up old activities (limit to 20)
+    await cleanupOldActivities();
+  } catch (error) {
+    console.error("Failed to log activity:", error);
+    // Don't throw the error up the chain to prevent breaking core functionality
+  }
+}
+
+/**
+ * Log activity with system as the actor
+ * Used for automated actions where no user initiated the action
+ */
+export async function logSystemActivity(
+  action: string,
+  target: string,
+  relatedUserId?: string,
+  details?: Record<string, unknown>
+) {
+  try {
+    // Create the activity record with system type
+    await prisma.activity.create({
+      data: {
+        type: "system",
+        action,
+        target,
+        // Use the related user ID if provided or use a system identifier
+        userId: relatedUserId || "system",
+        details: details ? JSON.parse(JSON.stringify(details)) : undefined
+      }
+    });
+    
+    // Clean up old activities (limit to 20)
+    await cleanupOldActivities();
+    
+    return true;
+  } catch (error) {
+    console.error("Failed to log system activity:", error);
+    // Don't throw to prevent breaking core functionality
+    return false;
+  }
+}
+
+/**
+ * Helper function to clean up old activities
+ * Maintains a maximum of 20 activities in the database
+ */
+async function cleanupOldActivities() {
+  try {
     // Get the current count of activities
     const totalCount = await prisma.activity.count();
     
-    // If we have more than 500 activities, trim the oldest ones
-    if (totalCount > 500) {
+    // If we have more than 20 activities, trim the oldest ones
+    if (totalCount > 20) {
       const activitiesToDelete = await prisma.activity.findMany({
         orderBy: { createdAt: 'asc' },
-        take: totalCount - 500,
+        take: totalCount - 20,
         select: { id: true }
       });
       
@@ -71,7 +120,6 @@ export async function logActivity(
       }
     }
   } catch (error) {
-    console.error("Failed to log activity:", error);
-    // Don't throw the error up the chain to prevent breaking core functionality
+    console.error("Failed to clean up old activities:", error);
   }
 }
