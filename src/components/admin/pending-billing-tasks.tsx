@@ -179,6 +179,7 @@ export function PendingBillingTasks() {
               
               <div className="flex gap-2">
                 <BillingApprovalButton
+                  task={task}
                   taskId={task.id}
                   onApproved={() => {
                     refreshData();

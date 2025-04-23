@@ -49,7 +49,10 @@ import {
 } from "@/components/ui/tooltip";
 
 // Add the missing getInitials function
-const getInitials = (name: string): string => {
+// Add null safety to the getInitials function
+const getInitials = (name?: string): string => {
+  if (!name) return "??"; // Return placeholder if name is undefined/null
+  
   return name
     .split(" ")
     .map((word) => word[0])
@@ -631,6 +634,7 @@ export default function TaskDetailPage({
                             </p>
                             <BillingApprovalButton
                               taskId={task.id}
+                              task={task}
                               onApproved={() => {
                                 setTask((prev) =>
                                   prev
