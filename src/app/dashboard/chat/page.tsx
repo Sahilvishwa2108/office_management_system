@@ -1534,7 +1534,15 @@ function ChatPageContent() {
                       message={message}
                       index={index}
                       messages={messages}
-                      session={session || { user: undefined }}
+                      session={{
+                        user: session?.user
+                          ? {
+                              id: session.user.id,
+                              name: session.user.name || "",
+                              role: session.user.role,
+                            }
+                          : undefined,
+                      }}
                       onDelete={deleteMessage}
                       onEdit={startEditingMessage}
                       onImageView={openImageViewer}
@@ -1778,7 +1786,7 @@ function ChatPageContent() {
       
       {/* Image Viewer Dialog */}
       <Dialog open={imageViewerOpen} onOpenChange={setImageViewerOpen}>
-        <DialogContent className="sm:max-w-[80vw] max-h-[90vh] flex flex-col p-0 gap-0 border-none bg-background/70 backdrop-blur-xl">
+      <DialogContent className="sm:max-w-[80vw] max-h-[90vh] flex flex-col p-0 gap-0 border-none bg-background/70 backdrop-blur-xl hide-default-close-btn">
           <div className="p-4 flex items-center border-b">
             <DialogTitle className="text-sm flex-1 truncate">
               {currentImage?.filename}

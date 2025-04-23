@@ -433,3 +433,8 @@ div:has(> .animate-spin)::before {
 .animate-bounce {
   animation: bounce-custom 1s infinite;
 }
+
+/* Hide default close button in dialogs with hide-default-close-btn class */
+.hide-default-close-btn .absolute.top-4.right-4 {
+  display: none !important;
+}
