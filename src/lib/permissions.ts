@@ -18,11 +18,10 @@ export const canEditTask = (
   // Admin can edit any task
   if (session.user.role === "ADMIN") return true;
   
-  // Creator can edit their tasks
-  if (task.assignedById === session.user.id) return true;
-  
-  // Check if user is in the assignees list
-  if (task.assignees?.some(a => a.userId === session.user.id)) return true;
+  // Partners can only edit tasks they created
+  if (session.user.role === "PARTNER") {
+    return task.assignedById === session.user.id;
+  }
   
   return false;
 };

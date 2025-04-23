@@ -56,7 +56,9 @@ import {
   ClipboardList, 
   RefreshCw, 
   Grid, 
-  List} from "lucide-react";
+  List,
+  ChevronDown
+} from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { canDeleteTask } from "@/lib/permissions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -119,11 +121,13 @@ interface PaginationMeta {
 const TaskListItem = ({ 
   task, 
   confirmDelete,
-  canDelete 
+  canDelete,
+  canEdit 
 }: { 
   task: Task, 
   confirmDelete: (id: string) => void,
-  canDelete: boolean 
+  canDelete: boolean,
+  canEdit: boolean 
 }) => {
   const router = useRouter();
   
@@ -212,17 +216,19 @@ const TaskListItem = ({
           </Link>
         </Button>
         
-        <Button
-          variant="outline"
-          size="sm"
-          asChild
-          className="h-9 flex-1 sm:flex-none"
-        >
-          <Link href={`/dashboard/tasks/${task.id}/edit`}>
-            <Edit className="h-3.5 w-3.5 mr-1" />
-            Edit
-          </Link>
-        </Button>
+        {canEdit && (
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="h-9 flex-1 sm:flex-none"
+          >
+            <Link href={`/dashboard/tasks/${task.id}/edit`}>
+              <Edit className="h-3.5 w-3.5 mr-1" />
+              Edit
+            </Link>
+          </Button>
+        )}
         
         {canDelete && (
           <Button
@@ -244,11 +250,13 @@ const TaskListItem = ({
 const TaskTableRow = ({ 
   task, 
   confirmDelete,
-  canDelete
+  canDelete,
+  canEdit
 }: { 
   task: Task, 
   confirmDelete: (id: string) => void,
-  canDelete: boolean
+  canDelete: boolean,
+  canEdit: boolean
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -326,12 +334,16 @@ const TaskTableRow = ({
                 View Details
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/dashboard/tasks/${task.id}/edit`}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Task
-              </Link>
-            </DropdownMenuItem>
+            
+            {canEdit && (
+              <DropdownMenuItem asChild>
+                <Link href={`/dashboard/tasks/${task.id}/edit`}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Task
+                </Link>
+              </DropdownMenuItem>
+            )}
+            
             {canDelete && (
               <DropdownMenuItem
                 className="text-red-600 focus:text-red-600"
@@ -466,19 +478,20 @@ export default function TasksPage() {
 
     try {
       const url = new URL("/api/tasks", window.location.origin);
-
-      if (statusFilter && statusFilter !== "all") {
-        url.searchParams.append("status", statusFilter);
-      }
-
-      // Only apply search to server request if server-side search is enabled
-      if (searchMode === "server" && debouncedSearchTerm) {
-        url.searchParams.append("search", debouncedSearchTerm);
-      }
-
+      
       // Add pagination parameters
       url.searchParams.append("page", currentPage.toString());
       url.searchParams.append("limit", pagination.pageSize.toString());
+
+      // Add status filter parameter if it's not "all"
+      if (statusFilter !== "all") {
+        url.searchParams.append("status", statusFilter);
+      }
+
+      // Add search term if using server-side search
+      if (searchMode === "server" && debouncedSearchTerm) {
+        url.searchParams.append("search", debouncedSearchTerm);
+      }
 
       // Add sorting parameters
       url.searchParams.append("sortField", "createdAt");
@@ -529,6 +542,13 @@ export default function TasksPage() {
   // Permission check - memoized
   const canManageTasks = useMemo(() => {
     return session?.user?.role === "ADMIN" || session?.user?.role === "PARTNER";
+  }, [session]);
+
+  // Permission check for editing a specific task
+  const canEditTask = useCallback((task: Task) => {
+    if (session?.user?.role === "ADMIN") return true;
+    if (session?.user?.role === "PARTNER" && session?.user?.id === task.assignedById) return true;
+    return false;
   }, [session]);
 
   // Permission check based on the current task
@@ -696,44 +716,45 @@ export default function TasksPage() {
             <div className="flex flex-col gap-3">
               {/* Task status filter */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto overflow-x-auto">
-                  <div className="flex rounded-md overflow-hidden border w-full sm:w-auto">
-                    <Button 
-                      variant={statusFilter === "all" ? "default" : "ghost"} 
-                      size="sm"
-                      onClick={() => setStatusFilter("all")}
-                      className="flex-1 sm:flex-none rounded-none min-w-[80px] px-2 sm:px-3"
-                    >
-                      All Tasks
-                    </Button>
-                    <Button 
-                      variant={statusFilter === "pending" ? "default" : "ghost"} 
-                      size="sm"
-                      onClick={() => setStatusFilter("pending")}
-                      className="flex-1 sm:flex-none rounded-none min-w-[80px] px-2 sm:px-3"
-                    >
-                      Pending
-                    </Button>
-                    <Button 
-                      variant={statusFilter === "in_progress" ? "default" : "ghost"} 
-                      size="sm"
-                      onClick={() => setStatusFilter("in_progress")}
-                      className="flex-1 sm:flex-none rounded-none min-w-[80px] px-2 sm:px-3"
-                    >
-                      In Progress
-                    </Button>
-                    <Button 
-                      variant={statusFilter === "completed" ? "default" : "ghost"} 
-                      size="sm"
-                      onClick={() => setStatusFilter("completed")}
-                      className="flex-1 sm:flex-none rounded-none min-w-[80px] px-2 sm:px-3"
-                    >
-                      Completed
-                    </Button>
-                  </div>
+                <div className="w-full sm:w-48">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between">
+                        <span>
+                          {statusFilter === "all" ? "All Tasks" : 
+                          statusFilter === "pending" ? "Pending" :
+                          statusFilter === "in_progress" ? "In Progress" :
+                          statusFilter === "review" ? "In Review" :
+                          statusFilter === "completed" ? "Completed" :
+                          statusFilter === "cancelled" ? "Cancelled" : "All Tasks"}
+                        </span>
+                        <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-48">
+                      <DropdownMenuItem onClick={() => setStatusFilter("all")}>
+                        All Tasks
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setStatusFilter("pending")}>
+                        Pending
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setStatusFilter("in_progress")}>
+                        In Progress
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setStatusFilter("review")}>
+                        In Review
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setStatusFilter("completed")}>
+                        Completed
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setStatusFilter("cancelled")}>
+                        Cancelled
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 
-                {/* Search box - improved for smoother experience */}
+                {/* Search box remains here */}
                 <div className="relative w-full">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -810,7 +831,8 @@ export default function TasksPage() {
                       key={task.id}
                       task={task}
                       confirmDelete={confirmDelete}
-                      canDelete={canManageTasks}
+                      canDelete={canDeleteForTask(task)} // Fixed: Now properly checks ownership
+                      canEdit={canEditTask(task)}
                     />
                   ))}
                 </div>
@@ -857,6 +879,7 @@ export default function TasksPage() {
                           task={task}
                           confirmDelete={confirmDelete}
                           canDelete={canDeleteForTask(task)}
+                          canEdit={canEditTask(task)}
                         />
                       ))}
                     </TableBody>
