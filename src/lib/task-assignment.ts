@@ -2,6 +2,7 @@ import { PrismaClient, Prisma } from "@prisma/client";
 
 /**
  * Helper function to manage task assignments using only the many-to-many relationship.
+ * Optimized with parallel processing for better performance with multiple assignees.
  * 
  * @param prisma Prisma client instance (or transaction client)
  * @param taskId ID of the task to update
@@ -27,7 +28,7 @@ export async function syncTaskAssignments(
   const assigneesToAdd = uniqueAssigneeIds.filter(id => !existingAssigneeIds.includes(id));
   const assigneesToRemove = existingAssigneeIds.filter(id => !uniqueAssigneeIds.includes(id));
   
-  // 4. Remove assignees who are no longer assigned
+  // 4. Remove assignees who are no longer assigned (already batch operation)
   if (assigneesToRemove.length > 0) {
     await prisma.taskAssignee.deleteMany({
       where: {
@@ -37,14 +38,18 @@ export async function syncTaskAssignments(
     });
   }
   
-  // 5. Add new assignees using proper relation connections
-  for (const userId of assigneesToAdd) {
-    await prisma.taskAssignee.create({
-      data: {
-        task: { connect: { id: taskId } },
-        user: { connect: { id: userId } },
-      }
-    });
+  // 5. Add new assignees using parallel processing instead of sequential loop
+  if (assigneesToAdd.length > 0) {
+    await Promise.all(
+      assigneesToAdd.map(userId => 
+        prisma.taskAssignee.create({
+          data: {
+            task: { connect: { id: taskId } },
+            user: { connect: { id: userId } },
+          }
+        })
+      )
+    );
   }
   
   // 6. Return the updated task with assignees
