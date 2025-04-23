@@ -62,6 +62,7 @@ model User {
   createdTasks            Task[]         @relation("AssignedByUser")
   // PRIMARY: Use this relation for all task assignments
   taskAssignments         TaskAssignee[] @relation("UserTaskAssignments")
+  lastStatusUpdatedTasks  Task[]         @relation("LastStatusUpdater")
   messages                Message[]
   notificationsSent       Notification[] @relation("SentBy")
   notificationsReceived   Notification[] @relation("SentTo")
@@ -111,6 +112,11 @@ model Task {
   billingStatus  BillingStatus? @default(pending_billing) // Changed from String?
   billingDate    DateTime?
   scheduledDeletionDate DateTime? // Add this field
+
+  // Add these new fields
+  lastStatusUpdatedById String?   @db.Char(36)
+  lastStatusUpdatedBy   User?     @relation("LastStatusUpdater", fields: [lastStatusUpdatedById], references: [id])
+  lastStatusUpdatedAt   DateTime?
   
   // DEPRECATED: Legacy assignment fields - use assignees instead
   // These fields are kept for backward compatibility but should not be used for new code

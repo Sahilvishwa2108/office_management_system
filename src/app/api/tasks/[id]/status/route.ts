@@ -66,7 +66,10 @@ export async function PATCH(
       // Ensure we set billingStatus whether it has a client or not
       const updateData = {
         status: status as TaskStatus,
-        billingStatus: BillingStatus.pending_billing
+        billingStatus: BillingStatus.pending_billing,
+        // Add status update tracking
+        lastStatusUpdatedById: currentUser.id,
+        lastStatusUpdatedAt: new Date()
       };
       
       console.log(`📝 Update data for completed task:`, updateData);
@@ -80,7 +83,8 @@ export async function PATCH(
       console.log(`✅ Task updated:`, {
         id: updatedTask.id,
         status: updatedTask.status,
-        billingStatus: updatedTask.billingStatus
+        billingStatus: updatedTask.billingStatus,
+        lastStatusUpdatedBy: currentUser.id
       });
 
       // Create client history if needed
@@ -92,7 +96,8 @@ export async function PATCH(
       return NextResponse.json({
         message: `Task status updated to ${status}`,
         status: updatedTask.status,
-        billingStatus: updatedTask.billingStatus
+        billingStatus: updatedTask.billingStatus,
+        lastStatusUpdatedBy: currentUser.name
       });
     } else {
       // Normal status update for non-completed tasks
@@ -100,13 +105,19 @@ export async function PATCH(
       
       const updatedTask = await prisma.task.update({
         where: { id: taskId },
-        data: { status: status as TaskStatus },
+        data: { 
+          status: status as TaskStatus,
+          // Add status update tracking
+          lastStatusUpdatedById: currentUser.id,
+          lastStatusUpdatedAt: new Date()
+        },
       });
       
       console.log(`✅ Task updated:`, {
         id: updatedTask.id,
         status: updatedTask.status,
-        billingStatus: updatedTask.billingStatus
+        billingStatus: updatedTask.billingStatus,
+        lastStatusUpdatedBy: currentUser.id
       });
 
       return NextResponse.json(updatedTask);

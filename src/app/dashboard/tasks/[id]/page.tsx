@@ -41,6 +41,12 @@ import { TaskDetailSkeleton } from "@/components/loading/task-skeleton";
 import { BillingApprovalButton } from "@/components/tasks/billing-approval-button"; // Add this import for BillingApprovalButton
 import { TaskAssignees } from "@/components/tasks/task-assignees";
 import { generateAndDownloadTaskPdf } from "@/lib/task-pdf-generate";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Add the missing getInitials function
 const getInitials = (name: string): string => {
@@ -81,7 +87,16 @@ interface Task {
   dueDate: string | null;
   createdAt: string;
   updatedAt: string;
-  billingStatus?: string; // Add billingStatus property
+  billingStatus?: string; // Add billingStatus 
+  // Add these new fields
+  lastStatusUpdatedAt?: string;
+  lastStatusUpdatedBy?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    avatar?: string;
+  };
   assignedBy: {
     id: string;
     name: string;
@@ -254,14 +269,23 @@ export default function TaskDetailPage({
 
   const updateTaskStatus = async () => {
     if (!newStatus || newStatus === task?.status) return;
-
+  
     try {
       setUpdating(true);
-      await axios.patch(`/api/tasks/${taskId}`, {
+      // Make the API call and store the response
+      const response = await axios.patch(`/api/tasks/${taskId}/status`, {
         status: newStatus,
       });
-
-      setTask((prev) => (prev ? { ...prev, status: newStatus } : null));
+  
+      // Update the task with ALL the updated data from the response
+      // This will include lastStatusUpdatedBy and lastStatusUpdatedAt
+      setTask((prev) => prev ? { 
+        ...prev, 
+        status: newStatus,
+        lastStatusUpdatedBy: response.data.lastStatusUpdatedBy || currentUser,
+        lastStatusUpdatedAt: new Date().toISOString()
+      } : null);
+      
       toast.success("Task status updated successfully");
     } catch (error) {
       console.error("Error updating task:", error);
@@ -522,6 +546,36 @@ export default function TaskDetailPage({
                   "Update Status"
                 )}
               </Button>
+
+              {/* Add this section to show last status update info */}
+{/* Status update info with improved layout */}
+{task.lastStatusUpdatedBy && task.lastStatusUpdatedAt && (
+  <div className="flex items-center gap-2 px-2 py-2 bg-muted/30 rounded-md text-sm">
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Avatar className="h-6 w-6">
+            <AvatarImage
+              src={
+                task.lastStatusUpdatedBy.avatar ||
+                `https://api.dicebear.com/7.x/initials/svg?seed=${task.lastStatusUpdatedBy.name}`
+              }
+              alt={task.lastStatusUpdatedBy.name}
+            />
+            <AvatarFallback>{getInitials(task.lastStatusUpdatedBy.name)}</AvatarFallback>
+          </Avatar>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{task.lastStatusUpdatedBy.name}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+    
+    <span className="text-sm text-muted-foreground">
+      Last updated: {format(new Date(task.lastStatusUpdatedAt), "MMM d, h:mm a")}
+    </span>
+  </div>
+)}
 
               {/* Action buttons */}
               <div className="pt-4 space-y-3 border-t">

@@ -65,6 +65,16 @@ export async function GET(
             avatar: true,
           },
         },
+        // Add this to include the last status updater
+        lastStatusUpdatedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            avatar: true,
+          },
+        },
         assignees: {
           include: {
             user: {
@@ -194,6 +204,12 @@ export async function PATCH(
     const updatedTask = await prisma.$transaction(async (tx) => {
       // Extract assignedToIds from body and remove it
       const { assignedToIds, assignedToId, ...updateData } = body;
+
+      // If we're updating status, also update the lastStatusUpdatedBy fields
+    if (updateData.status && updateData.status !== task.status) {
+      updateData.lastStatusUpdatedById = currentUser.id;
+      updateData.lastStatusUpdatedAt = new Date();
+    }
       
       // Update the task without any assignment fields
       const updated = await tx.task.update({
