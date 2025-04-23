@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Send the password reset email
-    await sendPasswordResetEmail(user.email, user.name, resetToken);
+    await sendPasswordResetEmail(user.email, user.name, resetToken, user.id);
 
     return NextResponse.json(
       { message: "Password reset email sent if account exists" },

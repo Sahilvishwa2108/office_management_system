@@ -58,10 +58,11 @@ export async function sendEmail({
 export async function sendPasswordSetupEmail(
   email: string,
   name: string,
-  token: string
+  token: string,
+  userId: string
 ) {
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-  const setupUrl = `${baseUrl}/set-password?token=${token}`;
+  const setupUrl = `${baseUrl}/set-password?token=${token}&id=${userId}`;
   
   const html = getPasswordSetupTemplate(name, setupUrl);
 
@@ -75,10 +76,11 @@ export async function sendPasswordSetupEmail(
 export async function sendPasswordResetEmail(
   email: string,
   name: string,
-  token: string
+  token: string,
+  userId: string
 ) {
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-  const resetUrl = `${baseUrl}/set-password?token=${token}`;
+  const resetUrl = `${baseUrl}/set-password?token=${token}&id=${userId}`;
   
   const html = getPasswordResetTemplate(name, resetUrl);
 

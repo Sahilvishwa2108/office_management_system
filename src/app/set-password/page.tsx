@@ -13,14 +13,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Lock, Check, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Loader2, Lock, Check, Eye, EyeOff, AlertCircle, Phone, Building2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -31,6 +31,35 @@ const passwordSchema = z.object({
     .regex(/[a-z]/, "Password must contain at least one lowercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
+  phone: z.string()
+    .optional()
+    .transform(val => {
+      if (!val) return val;
+      
+      // Remove all spaces from the input
+      const cleaned = val.replace(/\s+/g, '');
+      
+      // Check if it's a 10-digit number without country code
+      if (/^[6-9]\d{9}$/.test(cleaned)) {
+        return `+91${cleaned}`;
+      }
+      
+      // If it has country code already, ensure format is correct
+      if (/^\+91\d{10}$/.test(cleaned)) {
+        return cleaned;
+      }
+      
+      // If it's in another format but has country code indicator, clean it
+      if (cleaned.includes('+91')) {
+        const digits = cleaned.match(/\d{10}$/)?.[0];
+        if (digits) return `+91${digits}`;
+      }
+      
+      return cleaned; // Return as is if it doesn't match known patterns
+    })
+    .refine(val => !val || /^\+91[6-9]\d{9}$/.test(val), {
+      message: "Phone number must be a valid Indian mobile number in format +91XXXXXXXXXX"
+    })
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -88,11 +117,13 @@ export default function SetPasswordPage() {
     }
   };
 
+  // Update form default values
   const form = useForm<z.infer<typeof passwordSchema>>({
     resolver: zodResolver(passwordSchema),
     defaultValues: {
       password: "",
       confirmPassword: "",
+      phone: "",
     },
   });
 
@@ -139,6 +170,7 @@ export default function SetPasswordPage() {
   const strengthText = getStrengthText(passwordStrength);
   const strengthColor = getStrengthColor(passwordStrength);
 
+  // Update onSubmit to include phone
   const onSubmit = async (data: z.infer<typeof passwordSchema>) => {
     if (!token || !userId) {
       toast.error("Missing token or user ID");
@@ -149,6 +181,7 @@ export default function SetPasswordPage() {
     try {
       await axios.post("/api/auth/set-password", {
         password: data.password,
+        phone: data.phone, // Include phone
         token,
         userId,
       });
@@ -176,7 +209,7 @@ export default function SetPasswordPage() {
         <Card className="w-full max-w-md mx-auto">
           <CardHeader className="space-y-1 text-center">
             <div className="flex justify-center mb-4">
-              <Image src="/logo.png" alt="Logo" width={48} height={48} />
+              <Building2 className="h-12 w-12 text-primary animate-pulse" />
             </div>
             <CardTitle className="text-2xl">Checking link...</CardTitle>
             <CardDescription>
@@ -197,7 +230,7 @@ export default function SetPasswordPage() {
         <Card className="w-full max-w-md mx-auto">
           <CardHeader className="space-y-1 text-center">
             <div className="flex justify-center mb-4">
-              <Image src="/logo.png" alt="Logo" width={48} height={48} />
+              <Building2 className="h-12 w-12 text-primary animate-pulse" />
             </div>
             <CardTitle className="text-2xl text-red-600">Invalid Link</CardTitle>
             <CardDescription>
@@ -223,7 +256,7 @@ export default function SetPasswordPage() {
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <Image src="/logo.png" alt="Logo" width={48} height={48} />
+            <Building2 className="h-12 w-12 text-primary animate-pulse" />
           </div>
           <CardTitle className="text-2xl">{passwordSet ? "Password Set!" : "Set Your Password"}</CardTitle>
           <CardDescription>
@@ -262,14 +295,14 @@ export default function SetPasswordPage() {
                           <Input 
                             type={showPassword ? "text" : "password"} 
                             placeholder="••••••••" 
-                            className="pl-9 pr-9"
+                            className="pl-10 pr-10"
                             {...field} 
                           />
                         </FormControl>
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <button 
                           type="button"
-                          className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                           onClick={() => setShowPassword(!showPassword)}
                           tabIndex={-1}
                         >
@@ -343,6 +376,28 @@ export default function SetPasswordPage() {
                             <Eye className="h-4 w-4" />
                           )}
                         </button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Add phone field to the form */}
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number (Optional)</FormLabel>
+                      <div className="relative">
+                        <FormControl>
+                          <Input 
+                            placeholder="Enter 10 digits or +91XXXXXXXXXX" 
+                            className="pl-10"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       </div>
                       <FormMessage />
                     </FormItem>

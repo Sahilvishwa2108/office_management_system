@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Send email with password setup link
-    await sendPasswordSetupEmail(normalizedEmail, name, passwordToken);
+    await sendPasswordSetupEmail(normalizedEmail, name, passwordToken, user.id);
 
     // Log the activity
     await logActivity(
