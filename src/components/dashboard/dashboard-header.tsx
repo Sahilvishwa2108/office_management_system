@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,13 +15,45 @@ import {
 import { signOut } from "next-auth/react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useRouter } from "next/navigation";
-import { SunIcon, MoonIcon, CloudSunIcon } from "lucide-react";
+import { SunIcon, MoonIcon, CloudSunIcon, Maximize, Minimize } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardHeader() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const isLoading = status === "loading";
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  // Handle fullscreen change events
+  useEffect(() => {
+    const handleFullScreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullScreenChange);
+    
+    // Initial check on mount
+    setIsFullScreen(!!document.fullscreenElement);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullScreenChange);
+    };
+  }, []);
+
+  // Toggle fullscreen
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      // Enter full screen
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
+    } else {
+      // Exit full screen
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
 
   // Get user initials for avatar fallback
   const getInitials = (name?: string | null) => {
@@ -97,6 +130,24 @@ export function DashboardHeader() {
 
       {/* Right section */}
       <div className="flex items-center justify-end gap-3">
+        {/* Full Screen Toggle Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full"
+          onClick={toggleFullScreen}
+          title={isFullScreen ? "Exit Full Screen" : "Enter Full Screen"}
+        >
+          {isFullScreen ? (
+            <Minimize className="h-4 w-4" />
+          ) : (
+            <Maximize className="h-4 w-4" />
+          )}
+          <span className="sr-only">
+            {isFullScreen ? "Exit Full Screen" : "Enter Full Screen"}
+          </span>
+        </Button>
+        
         <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
