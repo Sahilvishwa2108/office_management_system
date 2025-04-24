@@ -59,6 +59,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ClientListSkeleton } from "@/components/loading/client-skeleton";
 import { useDebounce } from "@/hooks/use-debounce";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Client {
   id: string;
@@ -245,6 +246,8 @@ const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
 // Add this function to fetch clients
 const fetchClients = useCallback(async () => {
+  // Change to just set a local loading state
+  const localLoading = true;
   setIsLoading(true);
   try {
     const response = await axios.get('/api/clients', {
@@ -252,7 +255,7 @@ const fetchClients = useCallback(async () => {
         page,
         limit: 10,
         isGuest: activeTab === "permanent" ? false : activeTab === "guest" ? true : undefined,
-        search: debouncedSearchTerm || undefined  // Changed from searchTerm to debouncedSearchTerm
+        search: debouncedSearchTerm || undefined
       }
     });
     setClientsResponse(response.data);
@@ -263,7 +266,7 @@ const fetchClients = useCallback(async () => {
   } finally {
     setIsLoading(false);
   }
-}, [page, activeTab, debouncedSearchTerm]);  // Changed dependency from searchTerm to debouncedSearchTerm
+}, [page, activeTab, debouncedSearchTerm]);
 
 // Create a refresh function that matches the one from useCachedFetch
 const refresh = useCallback(() => {
@@ -555,11 +558,6 @@ useEffect(() => {
     setSearchTerm(e.target.value);
   }, []);
 
-  // Handle loading state
-  if (isLoading) {
-    return <ClientListSkeleton />;
-  }
-
   // Handle error state
   if (error) {
     return (
@@ -695,6 +693,7 @@ const deleteClient = async () => {
               </div>
             </div>
 
+            {/* UPDATED SECTION: Only this part shows loading state */}
             {dataError ? (
               <div className="text-center py-12 border rounded-md bg-background">
                 <Users className="h-10 w-10 mx-auto text-muted-foreground opacity-20 mb-2" />
@@ -702,6 +701,84 @@ const deleteClient = async () => {
                 <p className="text-muted-foreground mb-6">{dataError}</p>
                 <Button onClick={() => refresh()}>Try Again</Button>
               </div>
+            ) : isLoading ? (
+              // Show the appropriate skeleton based on view mode
+              viewMode === "table" ? (
+                <div className="rounded-md border">
+                  <div className="h-12 px-4 border-b flex items-center bg-muted/50">
+                    <div className="flex-1 flex gap-4">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="p-4 border-b last:border-b-0 flex items-center">
+                      <div className="flex-1 flex gap-4">
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-5 w-40" />
+                        <Skeleton className="h-5 w-40" />
+                        <Skeleton className="h-5 w-24" />
+                        <Skeleton className="h-5 w-16" />
+                      </div>
+                      <Skeleton className="h-9 w-9 rounded-md" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                // Card view skeleton
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <Card key={i} className="overflow-hidden flex flex-col h-full">
+                      <CardHeader className="pb-2 bg-muted/30">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <Skeleton className="h-12 w-12 rounded-full" />
+                            <div>
+                              <Skeleton className="h-5 w-32 mb-1" />
+                              <Skeleton className="h-3 w-24" />
+                            </div>
+                          </div>
+                          <Skeleton className="h-5 w-20" />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pb-2 flex-grow">
+                        <div className="space-y-3 text-sm pt-1">
+                          <div className="space-y-2">
+                            <div className="flex items-center">
+                              <Skeleton className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
+                              <Skeleton className="h-4 w-32" />
+                            </div>
+                            <div className="flex items-center">
+                              <Skeleton className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
+                              <Skeleton className="h-4 w-24" />
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center pt-2 border-t border-border/50">
+                            <Skeleton className="h-3 w-12" />
+                            <div className="flex gap-2">
+                              <Skeleton className="h-5 w-16 rounded-full" />
+                              <Skeleton className="h-5 w-16 rounded-full" />
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="border-t pt-3 bg-muted/10">
+                        <div className="flex justify-between w-full">
+                          <Skeleton className="h-8 w-20" />
+                          <div className="flex gap-1">
+                            <Skeleton className="h-8 w-16" />
+                            <Skeleton className="h-8 w-20" />
+                          </div>
+                        </div>
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+              )
             ) : filteredClients.length === 0 ? (
               <div className="text-center py-12 border rounded-md bg-background">
                 <Users className="h-10 w-10 mx-auto text-muted-foreground opacity-20 mb-2" />
