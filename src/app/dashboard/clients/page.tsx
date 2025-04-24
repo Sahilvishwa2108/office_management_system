@@ -58,6 +58,7 @@ import { canModifyClient } from "@/lib/permissions";
 import { DataTable } from "@/components/ui/data-table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ClientListSkeleton } from "@/components/loading/client-skeleton";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface Client {
   id: string;
@@ -239,6 +240,9 @@ const [clientsResponse, setClientsResponse] = useState<ClientsResponse | null>(n
 const [isLoading, setIsLoading] = useState(true);
 const [error, setError] = useState<Error | null>(null);
 
+// Add this line after the searchTerm state declaration
+const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
 // Add this function to fetch clients
 const fetchClients = useCallback(async () => {
   setIsLoading(true);
@@ -248,7 +252,7 @@ const fetchClients = useCallback(async () => {
         page,
         limit: 10,
         isGuest: activeTab === "permanent" ? false : activeTab === "guest" ? true : undefined,
-        search: searchTerm || undefined
+        search: debouncedSearchTerm || undefined  // Changed from searchTerm to debouncedSearchTerm
       }
     });
     setClientsResponse(response.data);
@@ -259,7 +263,7 @@ const fetchClients = useCallback(async () => {
   } finally {
     setIsLoading(false);
   }
-}, [page, activeTab, searchTerm]);
+}, [page, activeTab, debouncedSearchTerm]);  // Changed dependency from searchTerm to debouncedSearchTerm
 
 // Create a refresh function that matches the one from useCachedFetch
 const refresh = useCallback(() => {
