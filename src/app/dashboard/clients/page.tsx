@@ -57,7 +57,6 @@ import {
 import { canModifyClient } from "@/lib/permissions";
 import { DataTable } from "@/components/ui/data-table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ClientListSkeleton } from "@/components/loading/client-skeleton";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -216,7 +215,7 @@ export default function ClientsPage() {
   console.log("ClientsPage rendering");
   const router = useRouter();
   const { data: session } = useSession();
-  const [loading, setLoading] = useState(false); // Change to false
+  const [loading, _setLoading] = useState(false); // Change to false
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
@@ -225,10 +224,10 @@ export default function ClientsPage() {
 
   // Pagination state
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalClients, setTotalClients] = useState(0);
+  const [totalPages, _setTotalPages] = useState(1);
+  const [totalClients, _setTotalClients] = useState(0);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [dataError, setDataError] = useState<string | null>(null);
+  const [dataError, _setDataError] = useState<string | null>(null);
   
   // ADD THIS BLOCK INSTEAD
 interface ClientsResponse {
@@ -247,7 +246,6 @@ const debouncedSearchTerm = useDebounce(searchTerm, 500);
 // Add this function to fetch clients
 const fetchClients = useCallback(async () => {
   // Change to just set a local loading state
-  const localLoading = true;
   setIsLoading(true);
   try {
     const response = await axios.get('/api/clients', {

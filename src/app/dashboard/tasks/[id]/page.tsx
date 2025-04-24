@@ -311,15 +311,7 @@ export default function TaskDetailPage({
     }
   };
 
-  // Update the existing canEditTask function call to include billing status check
-  const taskEditableStatus = useMemo(
-    () =>
-      task && session?.user
-        ? isTaskEditable(task, currentBillingStatus) &&
-          canEditTask(task, session.user as User)
-        : false,
-    [task, currentBillingStatus, session?.user]
-  );
+  
 
   if (loading) {
     return <TaskDetailSkeleton />;

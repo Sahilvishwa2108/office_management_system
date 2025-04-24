@@ -84,7 +84,7 @@ export class BrowserCache {
   clear(): void {
     try {
       const storage = this.getStorage();
-      const keysToRemove = [];
+      const keysToRemove: string[] = [];
       
       for (let i = 0; i < storage.length; i++) {
         const key = storage.key(i);
@@ -119,7 +119,7 @@ export class BrowserCache {
               // Otherwise, add to our array for sorting
               cacheItems.push([key, item, item.expiry || Infinity]);
             }
-          } catch (e) {
+          } catch (_e) {
             // Invalid JSON, remove the item
             storage.removeItem(key);
           }

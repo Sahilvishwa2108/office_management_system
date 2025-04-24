@@ -377,7 +377,7 @@ export default function TasksPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
-  const [searchMode, setSearchMode] = useState<"client" | "server">("client");
+  const [searchMode, _setSearchMode] = useState<"client" | "server">("client");
   // Add current page to state instead of getting from URL
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationMeta>({
@@ -609,12 +609,7 @@ export default function TasksPage() {
     setSearchTerm("");
   };
 
-  // Load more tasks function for infinite scrolling
-  const loadMoreTasks = useCallback(() => {
-    if (currentPage < pagination.pageCount) {
-      setCurrentPage(prev => prev + 1);
-    }
-  }, [currentPage, pagination.pageCount]);
+  
 
   // Loading state
   if (loading && !refreshing) {

@@ -50,7 +50,7 @@ export function AssignTaskButton({
   className,
   children,
 }: AssignTaskButtonProps) {
-  const { data: session } = useSession();
+  const {  } = useSession();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);

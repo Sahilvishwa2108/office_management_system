@@ -365,7 +365,7 @@ export function UnifiedHistoryTab({
       y += 5; // Minimal spacing
 
       // Second line - Company name and email on same line if possible
-      let secondLineText: string[] = [];
+      const secondLineText: string[] = [];
       if (client.companyName) secondLineText.push(client.companyName);
       if (client.email) secondLineText.push(client.email);
 

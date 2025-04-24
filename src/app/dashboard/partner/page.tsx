@@ -134,7 +134,7 @@ function PartnerDashboardContent() {
   const [dashboardData, setDashboardData] = useState<PartnerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statsLoaded, setStatsLoaded] = useState(false);
+  const [_, setStatsLoaded] = useState(false);
   const router = useRouter();
 
   // Add this function inside the component where state setters are accessible
