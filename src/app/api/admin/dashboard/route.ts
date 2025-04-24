@@ -289,7 +289,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(fullData);
   } catch (error) {
-    console.error("Error fetching admin dashboard data:", error);
+    console.error("Error in status route:", error);
     return NextResponse.json(
       { error: "Failed to fetch dashboard data" },
       { status: 500 }

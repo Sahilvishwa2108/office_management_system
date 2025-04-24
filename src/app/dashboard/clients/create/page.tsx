@@ -149,8 +149,16 @@ export default function ClientCreatePage() {
         router.push("/dashboard/clients");
         router.refresh();
       }, 2000);
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || "Failed to create client";
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(error.message);
+      } else {
+        console.error("Unknown error:", error);
+      }
+      
+      // Check if error is an Axios error with response property
+      const axiosError = error as { response?: { data?: { error?: string } } };
+      const errorMessage = axiosError.response?.data?.error || "Failed to create client";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);

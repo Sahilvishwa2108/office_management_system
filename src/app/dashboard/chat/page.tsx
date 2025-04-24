@@ -1819,6 +1819,7 @@ function ChatPageContent() {
               <Button
                 variant="outline"
                 size="sm"
+                className="h-8 w-8 p-0"
                 onClick={() => currentImage && handleDownload(currentImage.url, currentImage.filename, currentImage.senderName)}
               >
                 <Download className="h-4 w-4 mr-2" />

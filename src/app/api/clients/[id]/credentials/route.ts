@@ -29,12 +29,12 @@ export async function GET(
     });
 
     return NextResponse.json({ credentials });
-  } catch (error) {
-    console.error("Error fetching credentials:", error);
-    // If using a custom error object
+  } catch (error: Error | unknown) {
+    // Use type guard for safe access to error properties
     if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
+      console.error("Error fetching credentials:", error.message);
+    } else {
+      console.error("Unknown error fetching credentials:", error);
     }
     return NextResponse.json({ error: "Failed to fetch credentials" }, { status: 500 });
   }
@@ -86,8 +86,13 @@ export async function POST(
       createdAt: newCredential.createdAt,
       updatedAt: newCredential.updatedAt
     });
-  } catch (error) {
-    console.error("Error adding credential:", error);
+  } catch (error: Error | unknown) {
+    // Use type guard for safe access to error properties
+    if (error instanceof Error) {
+      console.error("Error adding credential:", error.message);
+    } else {
+      console.error("Unknown error adding credential:", error);
+    }
     return NextResponse.json({ error: "Failed to add credential" }, { status: 500 });
   }
 }

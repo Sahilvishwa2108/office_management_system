@@ -293,7 +293,6 @@ const ClientTableRow = ({
 
 // Main component with loading skeleton
 export default function ClientsPage() {
-  const router = useRouter();
   const { data: session } = useSession();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);

@@ -100,8 +100,14 @@ res.headers.set('Pragma', 'no-cache');
 res.headers.set('Expires', '0');
     
     return res;
-  } catch (error) {
-    console.error("Error fetching clients:", error);
+  } catch (error: Error | unknown) {
+    // If you need to access properties like error.message, use type guards:
+    if (error instanceof Error) {
+      // Now you can safely use error.message
+      console.error(error.message);
+    } else {
+      console.error("Unknown error occurred:", error);
+    }
     return NextResponse.json(
       { error: "Failed to fetch clients" },
       { status: 500 }

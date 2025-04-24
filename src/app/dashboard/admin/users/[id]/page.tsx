@@ -435,7 +435,7 @@ export default function UserDetailsPage({
             <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
             <h3 className="text-lg font-medium mb-1">No Tasks Assigned</h3>
             <p className="text-muted-foreground">
-              This user currently doesn't have any tasks assigned.
+              This user currently doesn&apos;t have any tasks assigned.
             </p>
           </div>
         )}

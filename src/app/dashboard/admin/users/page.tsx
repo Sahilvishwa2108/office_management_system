@@ -33,7 +33,6 @@ import {
   KeyIcon,
   FilterX,
   Trash,
-  Plus,
   ClipboardPlus, // Add this import
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";

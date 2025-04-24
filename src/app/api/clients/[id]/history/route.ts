@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -11,13 +10,14 @@ export async function GET(
   try {
     const resolvedParams = params instanceof Promise ? await params : params; // Await params if it's a Promise
     const clientId = resolvedParams.id;
-
-    // Check if client exists
-    const client = await prisma.client.findUnique({
+    
+    // Validate that the client exists (this would be using clientId)
+    const clientExists = await prisma.client.findUnique({
       where: { id: clientId },
+      select: { id: true }
     });
-
-    if (!client) {
+    
+    if (!clientExists) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
     }
 
