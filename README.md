@@ -1,36 +1,600 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Office Pilot: Comprehensive Office Management System
 
-## Getting Started
 
-First, run the development server:
+## 📋 Table of Contents
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- [Overview](#overview)
+- [Live Demo](#live-demo)
+- [Key Features](#key-features)
+- [Technology Stack](#technology-stack)
+- [System Architecture](#system-architecture)
+- [Project Structure](#project-structure)
+- [User Roles & Permissions](#user-roles--permissions)
+- [Installation & Setup](#installation--setup)
+- [Database Schema](#database-schema)
+- [API Reference](#api-reference)
+- [Performance Optimizations](#performance-optimizations)
+- [Security Measures](#security-measures)
+- [UI/UX Design](#uiux-design)
+- [Deployment & CI/CD](#deployment--cicd)
+- [Future Roadmap](#future-roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
+
+## 📝 Overview
+
+Office Pilot is a comprehensive office management system designed to streamline workflow, enhance team collaboration, and manage client relationships effectively. Built with scalability and security in mind, it provides a unified platform for task management, client engagement, team communication, and resource tracking.
+
+### 🎯 Objectives
+
+- Streamline office workflow and task management
+- Enhance team collaboration and communication
+- Maintain comprehensive client management
+- Provide role-based dashboards and access control
+- Ensure data security and privacy compliance
+- Enable real-time notifications and updates
+- Facilitate efficient resource allocation
+
+## 🚀 Live Demo
+
+Experience Office Pilot live: [https://officepilot.vercel.app/](https://officepilot.vercel.app/)
+
+## ✨ Key Features
+
+### 🧑‍💼 User Management
+- Multi-level user roles with granular permissions
+- Secure authentication using NextAuth with Google OAuth integration
+- Custom avatars using DiceBear API and Cloudinary
+- User profiles with activity tracking
+
+### 👥 Client Management
+- Client portfolio organization with detailed profiles
+- Segmentation between permanent and guest clients
+- Client history tracking with pinnable important notes
+- Secure credential storage for client systems
+- Access expiry management for guest clients
+
+### 📋 Task Management
+- Comprehensive task creation with priority levels
+- Multiple assignee support with task tracking
+- Status updates with change history
+- Deadline management with overdue detection
+- Billing status tracking for completed tasks
+
+### 💬 Communication System
+- Integrated team chat
+- Real-time notifications with keyboard shortcuts (alt+T)
+- Detailed task comments with attachment support
+- Client communication records
+
+### 📊 Dashboard Experience
+- Role-specific dashboards with relevant metrics
+- Responsive design for all device sizes
+- Collapsible sidebar for improved workspace
+- Dark/light mode support for visual comfort
+
+### 📂 Document & Resource Management
+- Attachment organization by client and task
+- Secure file upload via Cloudinary integration
+- MIME type verification for security
+- File size tracking and management
+
+### 📱 Responsive Design
+- Fully responsive mobile-first approach
+- Custom mobile navigation experience
+- Touch-friendly interface elements
+- Optimized layouts for different screen sizes
+
+### ⚙️ System Automation
+- Scheduled tasks via cron jobs
+- Automated cache warming for performance
+- Expiration management for guest client access
+- Intelligent data pruning and management
+
+### 🔍 Activity Tracking
+- Comprehensive audit logs for all system activities
+- User action tracking for accountability
+- Client interaction history
+- Time-based activity reporting
+
+## 🛠️ Technology Stack
+
+### Frontend
+- **Framework**: Next.js 15.2.4 with App Router
+- **UI Library**: React 19.0.0
+- **Styling**: TailwindCSS 4.x with custom UI components
+- **Component Library**: 
+  - Radix UI primitives
+  - Custom shadcn/ui styled components
+- **State Management**: React Hooks with Context API
+- **Form Handling**: React Hook Form with Zod validation
+- **Date Handling**: date-fns
+- **Icons**: Lucide React
+- **Toast Notifications**: Sonner
+- **PDF Generation**: jsPDF
+
+### Backend
+- **API Routes**: Next.js API routes with serverless functions
+- **Database ORM**: Prisma 6.6.0
+- **Authentication**: NextAuth.js 4.24.7
+- **Email Service**: Nodemailer with Gmail SMTP
+- **File Storage**: Cloudinary
+- **Caching**: Redis via Aiven (valkey)
+- **WebSockets**: Socket.io for real-time features
+- **Webhook Processing**: Svix
+
+### Database & Storage
+- **Primary Database**: PostgreSQL (hosted on Neon.tech)
+- **Caching Layer**: Redis
+- **File Storage**: Cloudinary CDN
+- **Schema Management**: Prisma Schema
+
+### DevOps & Infrastructure
+- **Hosting**: Vercel
+- **CI/CD**: Vercel GitHub Integration
+- **Monitoring**: Vercel Analytics
+- **Cron Jobs**: Vercel Cron
+- **Environment Management**: .env with strict validation
+
+### Development Tools
+- **Language**: TypeScript 5.x
+- **Linting**: ESLint 9.x
+- **Package Management**: npm
+- **Build Optimization**: 
+  - @next/bundle-analyzer
+  - Compression Webpack Plugin
+  - Next.js optimizePackageImports
+
+## 🏗️ System Architecture
+
+Office Pilot follows a modern architecture leveraging Next.js App Router and the latest React patterns:
+
+```
+Client (Browser/Mobile)
+    ↑↓
+Next.js App (Vercel Edge Network)
+    ↑↓
+API Layer (Next.js API Routes)
+    ↑↓
+Service Layer (Business Logic)
+    ↑↓
+Data Access Layer (Prisma ORM)
+    ↑↓
+PostgreSQL Database (Neon.tech)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Additional Services:**
+- Redis for caching and performance
+- Cloudinary for asset storage and optimization
+- Socket.io for real-time communications
+- Nodemailer for email notifications
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📁 Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+office_management_system/
+├── src/
+│   ├── app/
+│   │   ├── api/                  # API routes
+│   │   │   ├── auth/             # Authentication endpoints
+│   │   │   ├── users/            # User management
+│   │   │   ├── tasks/            # Task management
+│   │   │   ├── clients/          # Client management
+│   │   │   ├── cron/             # Cron job handlers
+│   │   │   └── ...
+│   │   ├── dashboard/            # Dashboard routes
+│   │   │   ├── admin/            # Admin-specific views
+│   │   │   ├── partner/          # Partner-specific views
+│   │   │   ├── client/           # Client-specific views
+│   │   │   ├── junior/           # Junior staff views
+│   │   │   ├── tasks/            # Task management views
+│   │   │   ├── chat/             # Communication views
+│   │   │   ├── settings/         # User settings
+│   │   │   └── layout.tsx        # Dashboard layout with navigation
+│   │   ├── login/                # Authentication pages
+│   │   ├── register/             # Registration flow
+│   │   ├── page.tsx              # Landing page
+│   │   └── layout.tsx            # Root layout
+│   ├── components/
+│   │   ├── ui/                   # Reusable UI components
+│   │   ├── dashboard/            # Dashboard-specific components
+│   │   ├── forms/                # Form components
+│   │   ├── notifications/        # Notification system
+│   │   └── ...                   # Other component categories
+│   ├── lib/
+│   │   ├── utils.ts              # Utility functions
+│   │   ├── prisma.ts             # Prisma client singleton
+│   │   ├── auth.ts               # Authentication utilities
+│   │   └── ...                   # Other utilities
+│   └── types/                    # TypeScript type definitions
+├── prisma/
+│   ├── schema.prisma             # Database schema
+│   ├── migrations/               # Database migrations
+│   └── seed.ts                   # Seed data for development
+├── public/
+│   ├── images/                   # Static images
+│   └── ...                       # Other static assets
+├── .env                          # Environment variables
+├── next.config.ts                # Next.js configuration
+├── package.json                  # Project dependencies
+├── tsconfig.json                 # TypeScript configuration
+├── vercel.json                   # Vercel deployment configuration
+└── README.md                     # Project documentation
+```
 
-## Learn More
+## 👥 User Roles & Permissions
 
-To learn more about Next.js, take a look at the following resources:
+Office Pilot implements a sophisticated role-based access control system:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### ADMIN
+- Full system access
+- User management
+- Client management
+- Task creation and assignment
+- Billing approval
+- System configuration
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### PARTNER
+- Client portfolio management
+- Team management for assigned clients
+- Task creation and oversight
+- Billing management
+- Report generation
 
-## Deploy on Vercel
+### BUSINESS_EXECUTIVE
+- Client relationship management
+- Task assignment to consultants
+- Progress tracking
+- Client communication
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### BUSINESS_CONSULTANT
+- Task execution
+- Detail documentation
+- Client support
+- Progress reporting
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### PERMANENT_CLIENT
+- Service request submission
+- Task progress viewing
+- Document access and management
+- Communication with assigned team
+
+### GUEST_CLIENT
+- Limited-time access
+- Specific service access
+- Basic communication features
+
+## 🚀 Installation & Setup
+
+### Prerequisites
+- Node.js (v18.x or higher)
+- npm or yarn
+- PostgreSQL database
+- Redis instance (optional but recommended)
+- Cloudinary account
+- Email provider credentials
+
+### Setup Steps
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/office_management_system.git
+   cd office_management_system
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   Create a `.env` file with the following variables:
+   ```
+   # Database connection
+   DATABASE_URL="postgresql://username:password@hostname:port/database"
+   
+   # NextAuth configuration
+   NEXTAUTH_SECRET="your-secure-secret"
+   NEXTAUTH_URL="http://localhost:3000"
+   
+   # Email service
+   EMAIL_USER="your-email@example.com"
+   EMAIL_PASSWORD="your-email-password"
+   EMAIL_FROM="your-email@example.com"
+   
+   # OAuth providers
+   GOOGLE_CLIENT_ID="your-google-client-id"
+   GOOGLE_CLIENT_SECRET="your-google-client-secret"
+   
+   # Storage services
+   CLOUDINARY_URL="cloudinary://key:secret@cloud-name"
+   CLOUDINARY_CLOUD_NAME="your-cloud-name"
+   CLOUDINARY_API_KEY="your-api-key"
+   CLOUDINARY_API_SECRET="your-api-secret"
+   
+   # Redis (optional)
+   REDIS_URL="redis://username:password@hostname:port"
+   REDIS_HOST="your-redis-host"
+   REDIS_PORT="your-redis-port"
+   REDIS_PASSWORD="your-redis-password"
+   
+   # Security
+   CRON_SECRET="your-cron-job-secret"
+   ```
+
+4. **Initialize the database**
+   ```bash
+   npx prisma migrate dev --name init
+   ```
+
+5. **Seed the database (optional)**
+   ```bash
+   npm run seed
+   ```
+
+6. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+7. **Build for production**
+   ```bash
+   npm run build
+   ```
+
+8. **Start production server**
+   ```bash
+   npm run start
+   ```
+
+## 🗄️ Database Schema
+
+Office Pilot uses a relational database schema with the following key entities:
+
+### User
+Stores user information with role-based access control:
+- Basic profile (name, email, phone)
+- Authentication details
+- Role assignment with versioning
+- Activity tracking
+
+### Client
+Manages client relationships:
+- Contact information
+- Company details
+- GSTIN for billing
+- Access management for guest clients
+- Staff assignments
+
+### Task
+Tracks work items:
+- Title and description
+- Priority and status management
+- Multi-user assignment capability
+- Due date tracking
+- Billing status monitoring
+
+### Other Core Entities
+- **TaskAssignee**: Many-to-many relationship for task assignments
+- **Attachment**: File storage and management
+- **Message**: Internal communication
+- **Notification**: User alerts and updates
+- **Activity**: System-wide audit trail
+- **TaskComment**: Communication on specific tasks
+- **ClientHistory**: Historical record of client interactions
+- **Credential**: Secure storage for client credentials
+
+## 📡 API Reference
+
+Office Pilot provides a comprehensive REST API via Next.js API routes:
+
+### Authentication
+- `POST /api/auth/register` - Create new user account
+- `POST /api/auth/login` - Authenticate user
+- `GET /api/auth/session` - Get current session
+- `POST /api/auth/reset-password` - Initiate password reset
+
+### Users
+- `GET /api/users` - List users (with filtering)
+- `GET /api/users/:id` - Get user details
+- `PUT /api/users/:id` - Update user
+- `DELETE /api/users/:id` - Deactivate user
+- `GET /api/users/me` - Get current user profile
+
+### Tasks
+- `GET /api/tasks` - List tasks (with filtering)
+- `POST /api/tasks` - Create new task
+- `GET /api/tasks/:id` - Get task details
+- `PUT /api/tasks/:id` - Update task
+- `DELETE /api/tasks/:id` - Delete task
+- `PUT /api/tasks/:id/status` - Update task status
+- `POST /api/tasks/:id/comments` - Add comment to task
+- `GET /api/tasks/:id/comments` - Get task comments
+
+### Clients
+- `GET /api/clients` - List clients
+- `POST /api/clients` - Create new client
+- `GET /api/clients/:id` - Get client details
+- `PUT /api/clients/:id` - Update client
+- `DELETE /api/clients/:id` - Remove client
+- `GET /api/clients/:id/tasks` - Get client tasks
+- `GET /api/clients/:id/history` - Get client history
+
+### Notifications
+- `GET /api/notifications` - Get user notifications
+- `PUT /api/notifications/:id` - Mark notification as read
+- `DELETE /api/notifications/:id` - Delete notification
+
+### Cron Jobs
+- `POST /api/cron/expired-clients` - Process expired client access
+- `POST /api/cron/cache-warmup` - Warm system caches
+
+## ⚡ Performance Optimizations
+
+Office Pilot incorporates several performance optimization techniques:
+
+### Code Optimization
+- **Package Import Optimization**: Selective imports from large packages
+- **Bundle Size Reduction**: Using `@next/bundle-analyzer` for optimization
+- **Code Splitting**: Lazy loading of non-critical components
+- **Tree Shaking**: Removing unused code
+
+### Rendering Strategies
+- **Server Components**: Using Next.js App Router capabilities
+- **Efficient Client Hydration**: Minimizing client-side JavaScript
+- **Suspense and Lazy Loading**: For better loading experiences
+- **Virtualization**: Using Tanstack Virtual for long lists
+
+### Data Management
+- **Redis Caching**: For frequently accessed data
+- **Optimistic Updates**: For better UI responsiveness
+- **Debouncing**: For input fields and search operations
+- **Selective Refetching**: Minimizing data transfer
+
+### Asset Optimization
+- **Image Optimization**: Via Next.js image component and Cloudinary
+- **SVG Optimization**: Clean SVGs with minimal paths
+- **Font Optimization**: Subset loading and display swap
+- **CSS Optimization**: TailwindCSS purging unused styles
+
+### Infrastructure
+- **Edge Caching**: Via Vercel's edge network
+- **CDN Usage**: For static assets delivery
+- **HTTP/2**: For parallel resource loading
+- **Compression**: Using Brotli/gzip for text resources
+
+## 🔒 Security Measures
+
+Security is a top priority in Office Pilot:
+
+### Authentication & Authorization
+- **Secure Password Storage**: Using bcrypt for password hashing
+- **JWT Implementation**: For secure session management
+- **OAuth Integration**: For social login security
+- **Role-Based Access Control**: Granular permissions
+- **Session Management**: Automatic timeout and refresh
+
+### Data Protection
+- **Input Validation**: Using Zod for all form inputs
+- **SQL Injection Prevention**: Using Prisma's parameterized queries
+- **XSS Protection**: Content Security Policy headers
+- **CSRF Protection**: Built into Next.js
+- **Sensitive Data Encryption**: For stored credentials
+
+### Infrastructure Security
+- **HTTPS Only**: Enforced secure connections
+- **Security Headers**: Implemented via Vercel.json
+- **Rate Limiting**: For API endpoints
+- **Environment Isolation**: Strict separation of environments
+- **Secret Management**: Using environment variables
+
+### Compliance Features
+- **Data Minimization**: Collecting only necessary information
+- **Audit Trails**: Comprehensive activity logging
+- **Data Retention Policies**: Automated data cleanup
+- **Privacy Controls**: User data management options
+- **Secure Deletion**: Complete removal of user data when requested
+
+## 🎨 UI/UX Design
+
+Office Pilot features a thoughtfully crafted user interface:
+
+### Design System
+- **Component Library**: Custom-built UI components based on Radix primitives
+- **Typography**: Consistent type scale with appropriate hierarchy
+- **Color System**: Accessible color palette with dark/light modes
+- **Spacing System**: Consistent spacing for visual harmony
+- **Animation**: Subtle animations for enhanced feedback
+
+### Accessibility
+- **Keyboard Navigation**: Full keyboard support
+- **Screen Reader Support**: Semantic HTML with ARIA attributes
+- **Focus Management**: Visible focus indicators
+- **Color Contrast**: WCAG 2.1 AA compliant
+- **Responsive Design**: Works on all screen sizes
+
+### User Experience
+- **Progressive Disclosure**: Complex features revealed as needed
+- **Contextual Help**: Tooltips and guided interactions
+- **Error Handling**: Clear error messages with recovery paths
+- **Loading States**: Skeletons and progress indicators
+- **Empty States**: Helpful guidance for new users
+
+### Navigation
+- **Responsive Sidebar**: Collapsible for space efficiency
+- **Breadcrumbs**: For complex navigation paths
+- **Search**: Quick access to system resources
+- **Keyboard Shortcuts**: For power users (alt+T for notifications)
+- **Context Preservation**: Maintaining state during navigation
+
+## 🚢 Deployment & CI/CD
+
+### Deployment Platform
+- **Hosting**: Vercel for serverless deployment
+- **Database**: Neon.tech for PostgreSQL
+- **Caching**: Aiven for Redis
+- **Storage**: Cloudinary for file storage
+
+### CI/CD Pipeline
+- **Source Control**: GitHub
+- **Automated Testing**: On push and pull requests
+- **Preview Deployments**: For pull request review
+- **Production Deployment**: On main branch updates
+- **Post-Deployment Verification**: Automated checks
+
+### Monitoring
+- **Error Tracking**: Vercel's built-in error monitoring
+- **Performance Metrics**: Core Web Vitals tracking
+- **Usage Analytics**: Anonymous user journey analysis
+- **Uptime Monitoring**: Regular health checks
+- **Log Management**: Structured logging for troubleshooting
+
+## 🔮 Future Roadmap
+
+Office Pilot is continuously evolving with plans for:
+
+### Short-term
+- Enhanced reporting capabilities
+- Advanced search functionality
+- File version control
+- Kanban view for task management
+- Email integration for task creation
+
+### Medium-term
+- Mobile application development
+- API expansion for third-party integration
+- Advanced analytics dashboard
+- Time tracking features
+- Service catalog management
+
+### Long-term
+- AI-assisted task prioritization
+- Automated document processing
+- Multi-language support
+- White-label client portal
+- Integration marketplace
+
+## 🤝 Contributing
+
+Contributions to Office Pilot are welcome! To contribute:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+Please ensure your code follows the project's coding standards and includes appropriate tests.
+
+
+## 📞 Contact
+
+### Project Creator
+
+- **Sahil Vishwakarma** - [GitHub](https://github.com/sahilvishwa2108) - [LinkedIn](https://linkedin.com/in/sahilvishwa2108)
+---
+
+<p align="center">
+  <i>Made with ❤️ by Sahil Vishwakarma</i>
+</p>
