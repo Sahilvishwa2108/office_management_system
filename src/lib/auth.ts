@@ -202,10 +202,13 @@ export const authOptions: NextAuthOptions = {
         sameSite: "lax",
         path: "/",
         secure: isProduction,
-        // This is the critical fix - use your actual domain, not .vercel.app
-        domain: getVercelDomain()
+        // Remove domain configuration for development
       },
     },
   },
   debug: process.env.NODE_ENV === "development",
+  jwt: {
+    secret: process.env.NEXTAUTH_SECRET,
+    // Make sure there's no hardcoded secret here
+  },
 };

@@ -33,10 +33,11 @@ const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   ExtendedAvatarImageProps
 >(({ className, src, alt = "", size = 40, priority = false, ...props }, ref) => {
-  // Check if src is a remote URL (starts with http or https)
-  const isRemoteUrl = src?.startsWith('http');
+  // Better validation for src
+  const isValidSrc = typeof src === 'string' && src.trim().length > 0;
+  const isRemoteUrl = isValidSrc && (src.startsWith('http') || src.startsWith('https'));
   
-  if (!src) {
+  if (!isValidSrc) {
     return null;
   }
   

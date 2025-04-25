@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -27,19 +27,21 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
   Search,
   Plus,
-  MoreVertical,
+  MoreHorizontal,
   Eye,
   Loader2,
   FilterX,
   ClipboardList,
+  ClipboardPlus,
+  Edit,
 } from "lucide-react";
 import Link from "next/link";
 import { UserCount } from "@/components/dashboard/user-count";
@@ -86,21 +88,24 @@ const getInitials = (name: string): string => {
     .substring(0, 2);
 };
 
-// UserCard component for card view (partner version, no admin/partner actions)
+// Format the role for display
+const formatRole = (role: string) => {
+  return role
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+// UserCard component for card view (aligned with admin version)
 const UserCard = ({
   user,
 }: {
   user: User;
 }) => {
   const router = useRouter();
+  
   const navigateToUser = () => {
     router.push(`/dashboard/partner/users/${user.id}`);
-  };
-  const formatRole = (role: string): React.ReactNode => {
-    return role
-      .replace(/_/g, " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
   return (
@@ -146,24 +151,24 @@ const UserCard = ({
             {user.assignedTaskCount} Tasks
           </Badge>
         </div>
+        <div className="mt-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <AssignTaskButton 
+            userId={user.id} 
+            userName={user.name} 
+            onAssigned={() => router.refresh()}
+          />
+        </div>
       </div>
       <div className="w-full flex justify-center mt-4">
         <span className="text-xs text-muted-foreground">
           Joined {format(new Date(user.createdAt), "PPP")}
         </span>
       </div>
-      <div className="mt-4" onClick={(e) => e.stopPropagation()}>
-        <AssignTaskButton
-          userId={user.id}
-          userName={user.name}
-          onAssigned={() => router.refresh()}
-        />
-      </div>
     </Card>
   );
 };
 
-// Simplified - no Suspense or separate components
+// Main component
 export default function PartnerUsersPage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -172,43 +177,28 @@ export default function PartnerUsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [pageLoading, setPageLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
-  const viewModeRef = useRef(viewMode);
 
-  // Update ref when viewMode changes
-useEffect(() => {
-  viewModeRef.current = viewMode;
-}, [viewMode]);
-
-useEffect(() => {
   // Check for mobile viewport on component mount
-  if (typeof window !== "undefined") {
-    const isMobileView = window.innerWidth < 768;
-    if (isMobileView) {
-      setViewMode("card");
-    }
-    
-    // Also handle window resize
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      if (isMobile && viewModeRef.current === "table") {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isMobileView = window.innerWidth < 768;
+      if (isMobileView) {
         setViewMode("card");
       }
-    };
-    
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }
-}, []); // Empty dependency array
-
-  // Format the role for display
-  const formatRole = (role: string) => {
-    return role
-      .replace(/_/g, " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-  };
+      
+      // Also handle window resize
+      const handleResize = () => {
+        const isMobile = window.innerWidth < 768;
+        if (isMobile && viewMode === "table") {
+          setViewMode("card");
+        }
+      };
+      
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }
+  }, [viewMode]);
 
   // Get URL parameters on mount
   useEffect(() => {
@@ -236,44 +226,17 @@ useEffect(() => {
         if (searchParam) {
           setSearchTerm(searchParam);
         }
+        
+        // Get view mode from URL
+        const view = url.searchParams.get("view");
+        if (view === "table" || view === "card") {
+          setViewMode(view);
+        }
       } catch (error) {
         console.error("Error parsing URL parameters:", error);
-      } finally {
-        setPageLoading(false);
       }
     }
   }, []);
-
-  // Update URL when filters change
-  useEffect(() => {
-    if (typeof window !== "undefined" && !pageLoading) {
-      const url = new URL(window.location.href);
-
-      // Update roles in URL
-      if (selectedRoles.length > 0) {
-        url.searchParams.set("roles", selectedRoles.join(","));
-      } else {
-        url.searchParams.delete("roles");
-      }
-
-      // Update status in URL
-      if (statusFilter !== "all") {
-        url.searchParams.set("status", statusFilter);
-      } else {
-        url.searchParams.delete("status");
-      }
-
-      // Update search in URL
-      if (searchTerm) {
-        url.searchParams.set("search", searchTerm);
-      } else {
-        url.searchParams.delete("search");
-      }
-
-      // Update URL without page reload
-      window.history.replaceState({}, "", url.toString());
-    }
-  }, [selectedRoles, statusFilter, searchTerm, pageLoading]);
 
   // Wrap loadUsers in useCallback
   const loadUsers = useCallback(async () => {
@@ -292,18 +255,11 @@ useEffect(() => {
       : response.data.users || response.data.data || [];  
 
       // Filter for junior staff only on the client side as well
-      interface FilteredUser extends User {
-        assignedTasksCount: number;
-      }
-
-      const filtered: FilteredUser[] = usersArray.filter(
+      const filtered = usersArray.filter(
         (user: User) =>
           user.role === "BUSINESS_EXECUTIVE" ||
           user.role === "BUSINESS_CONSULTANT"
-      ).map((user: User): FilteredUser => ({
-        ...user,
-        assignedTasksCount: user.assignedTaskCount || 0 
-      }));
+      );
 
       setUsers(filtered);
     } catch (error) {
@@ -316,29 +272,17 @@ useEffect(() => {
 
   // Initial load
   useEffect(() => {
-    if (!pageLoading) {
+    if (session) {
       loadUsers();
     }
-  }, [loadUsers, pageLoading]);
-
-  useEffect(() => {
-    if (!session) {
-      router.push("/login");
-    }
-  }, [router, session]);
+  }, [selectedRoles, statusFilter, session, loadUsers]);
 
   // Filter users based on search term
   const filteredUsers = users.filter(
     (user) =>
-      (user.role === "BUSINESS_EXECUTIVE" || user.role === "BUSINESS_CONSULTANT") &&
-      (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // Handle search input with URL update
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
 
   // Clear filters
   const clearFilters = () => {
@@ -354,28 +298,74 @@ useEffect(() => {
   ];
 
   // Show loading skeleton during initial page load
-  if (pageLoading) {
+  if (loading && users.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-4 w-64 mt-2" />
           </div>
           <Skeleton className="h-10 w-32" />
         </div>
+
         <Skeleton className="h-40 w-full" />
+
         <Card>
-          <CardHeader>
-            <Skeleton className="h-10 w-full" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <Skeleton className="h-7 w-28" />
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-8 w-72" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {Array(5)
-                .fill(0)
-                .map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
+            <div className="rounded-md border">
+              <ResponsiveTable>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Array(5)
+                      .fill(0)
+                      .map((_, i) => (
+                        <TableRow key={`skeleton-${i}`}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Skeleton className="h-8 w-8 rounded-full" />
+                              <div>
+                                <Skeleton className="h-4 w-32 mb-1" />
+                                <Skeleton className="h-3 w-24" />
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-36" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-5 w-24" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-5 w-16" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-20" />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Skeleton className="h-8 w-20 ml-auto" />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </ResponsiveTable>
             </div>
           </CardContent>
         </Card>
@@ -386,42 +376,43 @@ useEffect(() => {
   return (
     <div className="space-y-6">
       {/* Title Row with Button */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Junior Staff</h1>
-          <p className="text-muted-foreground">Manage your team members</p>
+          <p className="text-muted-foreground">
+            Manage team members and their access levels
+          </p>
         </div>
-
-        <Button asChild>
-          <Link href="/dashboard/partner/users/create">
-            <Plus className="h-4 w-4 mr-2" /> Add New Staff
-          </Link>
+        <Button onClick={() => router.push("/dashboard/partner/users/create")}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add New User
         </Button>
       </div>
 
-      <UserCount
-        users={users.map((user) => ({
-          ...user,
-          isActive: user.isActive !== false, // Ensures isActive is a boolean, defaulting to true if undefined
-        }))}
-        title="Team Members"
-        description="Your team distribution by role"
-        includeRoles={["BUSINESS_EXECUTIVE", "BUSINESS_CONSULTANT"]}
-        roleConfigs={partnerRoleConfigs}
-        showTotal={true}
-      />
+      {/* Role distribution chart */}
+      {users.length > 0 && (
+        <UserCount
+          users={users.map((user) => ({
+            ...user,
+            isActive: user.isActive !== false, // Ensures isActive is a boolean, defaulting to true if undefined
+          }))}
+          roleConfigs={partnerRoleConfigs}
+          showTotal={true}
+        />
+      )}
 
+      {/* Users list card with filters */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col md:flex-row gap-4 flex-1">
               <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or email..."
+                  placeholder="Search users..."
                   className="pl-8"
                   value={searchTerm}
-                  onChange={handleSearchChange}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <div className="flex gap-2">
@@ -430,9 +421,10 @@ useEffect(() => {
                   selectedRoles={selectedRoles}
                   onChange={setSelectedRoles}
                 />
+
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
@@ -440,13 +432,21 @@ useEffect(() => {
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
+
                 {(selectedRoles.length > 0 || statusFilter !== "all" || searchTerm) && (
-                  <Button variant="outline" onClick={clearFilters} size="icon">
-                    <FilterX className="h-4 w-4" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearFilters}
+                  >
+                    <FilterX className="h-4 w-4 mr-2" />
+                    Clear filters
                   </Button>
                 )}
               </div>
             </div>
+
+            {/* View toggle */}
             <Tabs
               value={viewMode}
               onValueChange={(v) => setViewMode(v as "table" | "card")}
@@ -464,22 +464,6 @@ useEffect(() => {
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="text-center py-12 border rounded-md bg-background">
-              <h3 className="text-lg font-medium mb-2">No staff found</h3>
-              <p className="text-muted-foreground mb-6">
-                {searchTerm || selectedRoles.length > 0 || statusFilter !== "all"
-                  ? "No results match your search criteria. Try adjusting your filters."
-                  : "No junior staff have been added yet."}
-              </p>
-              {!searchTerm && selectedRoles.length === 0 && statusFilter === "all" && (
-                <Button asChild>
-                  <Link href="/dashboard/partner/users/create">
-                    <Plus className="h-4 w-4 mr-2" /> Add New Staff
-                  </Link>
-                </Button>
-              )}
-            </div>
           ) : viewMode === "table" ? (
             <div className="border rounded-md overflow-x-auto">
               <ResponsiveTable>
@@ -489,90 +473,122 @@ useEffect(() => {
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Role</TableHead>
-                      <TableHead>Assigned Tasks</TableHead>
+                      <TableHead className="whitespace-nowrap">Tasks</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="w-[80px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredUsers.map((user) => (
-                      <TableRow
-                        key={user.id}
-                        className="cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => router.push(`/dashboard/partner/users/${user.id}`)}
-                        tabIndex={0}
-                        aria-label={`View details for ${user.name}`}
-                      >
-                        <TableCell className="font-medium">{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{formatRole(user.role)}</Badge>
-                        </TableCell>
-                        <TableCell>{user.assignedTaskCount}</TableCell>
-                        <TableCell>
-                          {user.isActive !== false ? (
-                            <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>
-                          ) : (
-                            <Badge variant="destructive">Blocked</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>{format(new Date(user.createdAt), "MMM d, yyyy")}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                tabIndex={-1}
+                    {filteredUsers.length > 0 ? (
+                      filteredUsers.map((user) => (
+                        <TableRow
+                          key={user.id}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => router.push(`/dashboard/partner/users/${user.id}`)}
+                          tabIndex={0}
+                          aria-label={`View details for ${user.name}`}
+                        >
+                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>{formatRole(user.role)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span>{user.assignedTaskCount}</span>
+                              <div 
+                                className="cursor-pointer hover:bg-muted rounded-full p-1"
+                                onClick={(e) => e.stopPropagation()}
                               >
-                                <MoreVertical className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/partner/users/${user.id}`}>
-                                  <Eye className="w-4 h-4 mr-2" />
-                                  View Details
-                                </Link>
-                              </DropdownMenuItem>
-                              {/* Add AssignTask option here */}
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                }}
+                                <AssignTaskButton
+                                  userId={user.id}
+                                  userName={user.name}
+                                  onAssigned={() => router.refresh()}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 rounded-full hover:bg-muted"
+                                >
+                                  <ClipboardPlus className="h-3.5 w-3.5" />
+                                </AssignTaskButton>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {user.isActive !== false ? (
+                              <Badge
+                                variant="outline"
+                                className="bg-green-100 text-green-800"
                               >
-                                <div className="w-full">
-                                  <AssignTaskButton
-                                    userId={user.id}
-                                    userName={user.name}
-                                    onAssigned={() => router.refresh()}
-                                    variant="ghost"
-                                    className="w-full justify-start p-0 h-auto"
+                                Active
+                              </Badge>
+                            ) : (
+                              <Badge variant="destructive">Blocked</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(user.createdAt), "PPP")}
+                          </TableCell>
+                          <TableCell
+                            onClick={(e) => e.stopPropagation()}
+                            className="!pr-0"
+                          >
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="data-[state=open]:bg-muted cursor-pointer"
+                                  tabIndex={-1}
+                                  aria-label="Open user actions"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Toggle menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-[160px]"
+                              >
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`/dashboard/partner/users/${user.id}`}
                                   >
-                                    <ClipboardList className="w-4 h-4 mr-2" />
-                                    Assign Task
-                                  </AssignTaskButton>
-                                </div>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    View Details
+                                  </Link>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="text-center py-6 text-muted-foreground"
+                        >
+                          No users found
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </ResponsiveTable>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredUsers.map((user) => (
-                <UserCard key={user.id} user={user} />
-              ))}
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
+                  <UserCard
+                    key={user.id}
+                    user={user}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-6 text-muted-foreground border rounded-md col-span-full">
+                  No users found
+                </div>
+              )}
             </div>
           )}
         </CardContent>

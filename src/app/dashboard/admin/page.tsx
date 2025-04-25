@@ -329,7 +329,7 @@ export default function AdminDashboard() {
                     </Link>
                   </CardContent>
                 </Card>
-                <div className="col-span-2 lg:col-span-3 h-[350px]">
+                <div className="col-span-2 lg:col-span-3 h-full max-h-[350px]">
                   <RecentNotificationsCard className="h-full" />
                 </div>
               </div>

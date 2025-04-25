@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { v4 as uuidv4 } from "uuid";
 import { logActivity } from "@/lib/activity-logger";
+import { hash } from "bcryptjs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -67,6 +68,10 @@ export async function POST(req: NextRequest) {
     const tokenExpiry = new Date();
     tokenExpiry.setHours(tokenExpiry.getHours() + 24); // 24 hour expiry
 
+    // Create default password - THIS IS THE KEY CHANGE
+    const defaultPassword = "12345678";
+    const hashedPassword = await hash(defaultPassword, 12);
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -74,6 +79,7 @@ export async function POST(req: NextRequest) {
         email: normalizedEmail,
         role: assignedRole,
         isActive: true, // Explicitly set this
+        password: hashedPassword,
         passwordResetToken: passwordToken,
         passwordResetTokenExpiry: tokenExpiry,
       },

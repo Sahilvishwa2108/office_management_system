@@ -604,16 +604,21 @@ export default function UsersPage() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <span>{user.assignedTaskCount}</span>
-                              <AssignTaskButton
-                                userId={user.id}
-                                userName={user.name}
-                                onAssigned={() => router.refresh()}
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 rounded-full hover:bg-muted"
+                              <div 
+                                className="cursor-pointer hover:bg-muted rounded-full p-1"
+                                onClick={(e) => e.stopPropagation()}
                               >
-                                <ClipboardPlus className="h-3.5 w-3.5" />
-                              </AssignTaskButton>
+                                <AssignTaskButton
+                                  userId={user.id}
+                                  userName={user.name}
+                                  onAssigned={() => router.refresh()}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 rounded-full hover:bg-muted"
+                                >
+                                  <ClipboardPlus className="h-3.5 w-3.5" />
+                                </AssignTaskButton>
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell>

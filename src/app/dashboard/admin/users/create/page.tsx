@@ -248,9 +248,10 @@ export default function CreateUserPage() {
           </Form>
         </CardContent>
         <CardFooter className="text-sm text-muted-foreground flex justify-center">
-          <p>
-            An email will be sent to the user with instructions to set up their password.
-          </p>
+        <p>
+          An email will be sent to the user with instructions to set up their password. 
+          The default password "12345678" is also set automatically.
+        </p>
         </CardFooter>
       </Card>
     </div>

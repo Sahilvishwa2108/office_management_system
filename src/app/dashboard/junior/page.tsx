@@ -274,7 +274,7 @@ function JuniorDashboardContent() {
                           <CheckCircle className="h-5 w-5" />
                         </div>
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-green-500"></div>
+                      <div className="azbsolute bottom-0 left-0 right-0 h-1 bg-green-500"></div>
                     </CardContent>
                   </Card>
 

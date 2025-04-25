@@ -285,7 +285,7 @@ export default function PartnerUserDetailsPage({
                 }}
               >
                 <Link 
-                  href={`/dashboard/partner/tasks/${assignment.task.id}`}
+                  href={`/dashboard/tasks/${assignment.task.id}`}
                   className="block h-full"
                 >
                   <Card className="h-full border transition-all duration-300 hover:shadow-md hover:border-primary/20 cursor-pointer">
@@ -328,7 +328,7 @@ export default function PartnerUserDetailsPage({
             <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
             <h3 className="text-lg font-medium mb-1">No Tasks Assigned</h3>
             <p className="text-muted-foreground">
-              This user currently doesn&apos;t have any tasks assigned.
+              This user currently doesn't have any tasks assigned.
             </p>
           </div>
         )}

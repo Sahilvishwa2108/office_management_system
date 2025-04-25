@@ -1192,7 +1192,7 @@ function ChatPageContent() {
       {/* Users sidebar */}
       <div
         className={cn(
-          "border-r bg-card flex flex-col transition-all duration-300 relative",
+          "border-r bg-card flex flex-col transition-all duration-300 relative h-full", // Added h-full to ensure full height
           "hidden md:flex", // Hide on mobile, show on md screens and up
           sidebarCollapsed ? "w-20" : "w-72"
         )}
@@ -1214,12 +1214,12 @@ function ChatPageContent() {
 
         {!sidebarCollapsed && (
           <>
-          <div className="flex flex-col p-4 border-b h-[60px]">
+          <div className="flex flex-col p-4 border-b h-[60px] flex-shrink-0">
           <div className="flex items-center justify-center">
             <h2 className="font-semibold text-lg">Team Members</h2>
           </div>
         </div>
-        <div className="mt-2 py-1 relative px-4">
+        <div className="mt-2 py-1 relative px-4 flex-shrink-0">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search users..."
@@ -1233,7 +1233,7 @@ function ChatPageContent() {
 
         {/* Sidebar content */}
         {sidebarCollapsed ? (
-          <div className="flex flex-col items-center pt-2 space-y-4 max-h-full overflow-y-auto p-2">
+          <div className="flex flex-col items-center pt-2 space-y-4 overflow-y-auto p-2 h-[calc(100%-20px)]">
             {/* Online users section with label */}
             {onlineUsersList.length > 0 && (
               <>
@@ -1334,7 +1334,7 @@ function ChatPageContent() {
             )}
           </div>
         ) : (
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 h-[calc(100%-120px)]">
             <Tabs defaultValue="online" className="w-full">
               <div className="px-4 pt-2">
                 <TabsList className="w-full">
@@ -1347,7 +1347,7 @@ function ChatPageContent() {
                 </TabsList>
               </div>
 
-              <TabsContent value="online" className="mt-0">
+              <TabsContent value="online" className="mt-0 h-[calc(100vh-220px)]">
                 <div className="px-2 pt-2 space-y-1">
                   {onlineUsersList.length > 0 ? (
                     onlineUsersList
@@ -1398,7 +1398,7 @@ function ChatPageContent() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="all" className="mt-0">
+              <TabsContent value="all" className="mt-0 h-[calc(100vh-220px)]">
                 <div className="px-2 pt-2 space-y-1">
                   {filteredUsers.length > 0 ? (
                     filteredUsers.map((user) => (

@@ -134,7 +134,7 @@ function PartnerDashboardContent() {
   const [dashboardData, setDashboardData] = useState<PartnerDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [_, setStatsLoaded] = useState(false);
+  const [statsLoaded, setStatsLoaded] = useState(false);
   const router = useRouter();
 
   // Add this function inside the component where state setters are accessible
@@ -157,7 +157,7 @@ function PartnerDashboardContent() {
       }
 
       const data = await response.json();
-      setDashboardData(data);
+      setDashboardData(normalizeApiResponse(data));
       setStatsLoaded(true);
     } catch (err) {
       console.error("Failed to fetch partner dashboard data:", err);
@@ -169,7 +169,7 @@ function PartnerDashboardContent() {
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [router]);
 
   // Check if the partner has billing approval permissions
   const canApproveBilling = session?.user?.role === "PARTNER" && (session.user as any)?.canApproveBilling;
@@ -344,7 +344,10 @@ function PartnerDashboardContent() {
                                   </p>
                                   <p className="text-sm text-muted-foreground truncate">
                                     {task.assignees && task.assignees.length > 0 
-                                      ? task.assignees[0].user.name 
+                                      ? (task.assignees[0].user?.name || 
+                                         (typeof task.assignees[0] === 'object' && 'name' in task.assignees[0] 
+                                          ? String((task.assignees[0] as any).name)
+                                          : "Unknown"))
                                       : "Unassigned"}
                                   </p>
                                 </div>
@@ -976,6 +979,52 @@ function PartnerDashboardContent() {
     </div>
   );
 }
+
+// Add this function to normalize API data
+const normalizeApiResponse = (data: any): PartnerDashboardData => {
+  // Ensure the tasks have the expected structure
+  const normalizedTasks = data.tasks?.map((task: any) => {
+    // Normalize assignees structure
+    let normalizedAssignees = [];
+    
+    if (Array.isArray(task.assignees)) {
+      normalizedAssignees = task.assignees.map((assignee: any) => {
+        // Check if the assignee already has the correct structure
+        if (assignee.user && typeof assignee.user === 'object') {
+          return assignee;
+        }
+        
+        // Otherwise, create the expected structure
+        return {
+          user: {
+            id: assignee.id || 'unknown-id',
+            name: assignee.name || 'Unknown User',
+            avatar: assignee.image || assignee.avatar || null
+          }
+        };
+      });
+    }
+    
+    return {
+      ...task,
+      assignees: normalizedAssignees
+    };
+  }) || [];
+  
+  return {
+    stats: data.stats || {
+      totalStaff: 0,
+      activeTasks: 0,
+      pendingTasks: 0,
+      completedTasks: 0,
+      taskCompletionRate: 0,
+      staffUtilization: 0
+    },
+    staff: data.staff || [],
+    tasks: normalizedTasks,
+    recentActivities: data.recentActivities || []
+  };
+};
 
 export default function PartnerDashboard() {
   return (
