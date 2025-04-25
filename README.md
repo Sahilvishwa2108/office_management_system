@@ -38,7 +38,7 @@ Office Pilot is a comprehensive office management system designed to streamline 
 
 ## 🚀 Live Demo
 
-Experience Office Pilot live: [https://officepilot.vercel.app/](https://officepilot.vercel.app/)
+Access the live demo: [https://officepilot.vercel.app/](https://officepilot.vercel.app/)
 
 ## ✨ Key Features
 
@@ -173,54 +173,111 @@ PostgreSQL Database (Neon.tech)
 ## 📁 Project Structure
 
 ```
-office_management_system/
-├── src/
-│   ├── app/
-│   │   ├── api/                  # API routes
-│   │   │   ├── auth/             # Authentication endpoints
-│   │   │   ├── users/            # User management
-│   │   │   ├── tasks/            # Task management
-│   │   │   ├── clients/          # Client management
-│   │   │   ├── cron/             # Cron job handlers
-│   │   │   └── ...
-│   │   ├── dashboard/            # Dashboard routes
-│   │   │   ├── admin/            # Admin-specific views
-│   │   │   ├── partner/          # Partner-specific views
-│   │   │   ├── client/           # Client-specific views
-│   │   │   ├── junior/           # Junior staff views
-│   │   │   ├── tasks/            # Task management views
-│   │   │   ├── chat/             # Communication views
-│   │   │   ├── settings/         # User settings
-│   │   │   └── layout.tsx        # Dashboard layout with navigation
-│   │   ├── login/                # Authentication pages
-│   │   ├── register/             # Registration flow
-│   │   ├── page.tsx              # Landing page
-│   │   └── layout.tsx            # Root layout
-│   ├── components/
-│   │   ├── ui/                   # Reusable UI components
-│   │   ├── dashboard/            # Dashboard-specific components
-│   │   ├── forms/                # Form components
-│   │   ├── notifications/        # Notification system
-│   │   └── ...                   # Other component categories
-│   ├── lib/
-│   │   ├── utils.ts              # Utility functions
-│   │   ├── prisma.ts             # Prisma client singleton
-│   │   ├── auth.ts               # Authentication utilities
-│   │   └── ...                   # Other utilities
-│   └── types/                    # TypeScript type definitions
-├── prisma/
-│   ├── schema.prisma             # Database schema
-│   ├── migrations/               # Database migrations
-│   └── seed.ts                   # Seed data for development
-├── public/
-│   ├── images/                   # Static images
-│   └── ...                       # Other static assets
-├── .env                          # Environment variables
-├── next.config.ts                # Next.js configuration
-├── package.json                  # Project dependencies
-├── tsconfig.json                 # TypeScript configuration
-├── vercel.json                   # Vercel deployment configuration
-└── README.md                     # Project documentation
+🏢 office_management_system/
+│
+├── 📂 src/
+│   ├── 📱 app/                           # Next.js App Router
+│   │   ├── 🔌 api/                       # API Routes
+│   │   │   ├── 📊 activities/            # Activity tracking
+│   │   │   ├── 👑 admin/                 # Admin operations
+│   │   │   ├── 🔐 auth/                  # Authentication
+│   │   │   ├── 💬 chat/                  # Messaging system
+│   │   │   ├── 🏢 clients/               # Client management 
+│   │   │   ├── ⏱️ cron/                  # Scheduled tasks
+│   │   │   ├── 👨‍💼 junior/               # Junior staff APIs
+│   │   │   ├── 🔔 notifications/         # Alert system
+│   │   │   ├── 🤝 partner/               # Partner dashboard
+│   │   │   ├── ✅ tasks/                 # Task operations
+│   │   │   └── 👤 users/                 # User management
+│   │   │
+│   │   ├── 📊 dashboard/                 # Protected routes
+│   │   │   ├── 👑 admin/                 # Admin interface
+│   │   │   ├── 💬 chat/                  # Messaging UI
+│   │   │   ├── 🏢 clients/               # Client management
+│   │   │   ├── 👨‍💼 junior/               # Junior dashboard
+│   │   │   ├── 🤝 partner/               # Partner interface
+│   │   │   ├── ⚙️ settings/              # User settings
+│   │   │   └── ✅ tasks/                 # Task management
+│   │   │
+│   │   ├── 🔑 forgot-password/          # Password recovery
+│   │   ├── 🎨 globals.css               # Global styles
+│   │   ├── 📄 layout.tsx                # Root layout
+│   │   ├── 🔒 login/                    # Authentication
+│   │   ├── ❓ not-found.tsx             # 404 page
+│   │   ├── 🏠 page.tsx                  # Landing page
+│   │   ├── 🔏 set-password/             # Password setup
+│   │   └── 🚪 signout/                  # Logout functionality
+│   │
+│   ├── 🧩 components/                    # Reusable UI components
+│   │   ├── 👑 admin/                     # Admin components
+│   │   ├── 🏢 clients/                   # Client components
+│   │   ├── ☁️ cloudinary/                # File upload
+│   │   ├── 📊 dashboard/                 # Dashboard UI
+│   │   ├── 📐 layouts/                   # Page templates
+│   │   ├── ⌛ loading/                   # Loading states
+│   │   ├── 🔔 notifications/             # Alert components
+│   │   ├── ✅ tasks/                     # Task components
+│   │   ├── 🌓 theme-provider.tsx         # Theme context
+│   │   └── 🎮 ui/                        # UI component library
+│   │       ├── 🚨 alert-dialog.tsx       # Confirmations
+│   │       ├── 👤 avatar.tsx             # User avatars
+│   │       ├── 🏷️ badge.tsx              # Status indicators
+│   │       ├── 🧭 breadcrumbs.tsx        # Navigation
+│   │       ├── 🔘 button.tsx             # Button styles
+│   │       ├── 📅 calendar.tsx           # Date picker
+│   │       ├── 🗂️ card.tsx               # Card containers
+│   │       └── ... (30+ UI components)    # Component library
+│   │
+│   ├── 🌐 context/                       # React context
+│   │   └── 🔐 auth-provider.tsx          # Auth state
+│   │
+│   ├── 🪝 hooks/                         # Custom React hooks
+│   │   ├── 💾 use-cached-fetch.tsx       # Data caching
+│   │   ├── ⏱️ use-debounce.tsx           # Input debouncing
+│   │   ├── 📱 use-media-query.tsx        # Responsive design
+│   │   ├── 📲 use-mobile.tsx             # Mobile detection
+│   │   └── 🔄 use-optimistic-mutation.tsx # Optimistic UI
+│   │
+│   ├── 🛠️ lib/                           # Utility functions
+│   │   ├── 📊 activity-logger.ts         # Activity tracking
+│   │   ├── ⚠️ api-error-handler.ts       # Error handling
+│   │   ├── 🔐 auth.ts                    # Authentication
+│   │   ├── 💾 cache.ts                   # Server caching
+│   │   ├── ☁️ cloudinary.ts              # File storage
+│   │   ├── 📧 email.ts                   # Email service
+│   │   ├── 🔔 notifications.ts           # Alert system
+│   │   ├── 🔍 permissions.ts             # Access control
+│   │   ├── 💽 prisma.ts                  # Database client
+│   │   ├── 🗄️ redis.ts                   # Redis connection
+│   │   └── ... (10+ utility modules)     # Helper functions
+│   │
+│   ├── 🎨 styles/                        # Additional styles
+│   │   └── 📅 day-picker.css             # Datepicker CSS
+│   │
+│   └── 📝 types/                         # TypeScript types
+│       └── 🔐 next-auth.d.ts             # Auth definitions
+│
+├── 📧 emails/                            # Email templates
+│   └── 📑 templates/                     # Message templates
+│
+├── 🗃️ prisma/                            # Database config
+│   ├── 📊 schema.prisma                  # Database schema
+│   └── 🌱 seed.ts                        # Seed data
+│
+├── 🖼️ public/                            # Static assets
+│   └── 📷 images/                        # Image files
+│
+├── 📄 .env                               # Environment variables
+├── 🙈 .gitignore                         # Git exclusions
+├── 🧩 components.json                    # UI component config
+├── 🧹 eslint.config.mjs                  # Linting rules
+├── 🔒 middleware.ts                      # Auth middleware
+├── ⚙️ next.config.ts                     # Next.js config
+├── 📦 package.json                       # Dependencies
+├── 🎨 postcss.config.mjs                 # CSS processing
+├── 📚 README.md                          # Documentation
+├── ⚙️ tsconfig.json                      # TypeScript config
+└── 🚀 vercel.json                        # Deployment config
 ```
 
 ## 👥 User Roles & Permissions
@@ -279,7 +336,7 @@ Office Pilot implements a sophisticated role-based access control system:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/office_management_system.git
+   git clone https://github.com/sahilvishwa2108/office_management_system.git
    cd office_management_system
    ```
 
