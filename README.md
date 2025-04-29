@@ -740,22 +740,6 @@ Please ensure your code follows the project's coding standards and includes appr
 
 ---
 
-## 📷 Screenshots
-
-<div align="center">
-
-### Dashboard View
-![Dashboard](/public/images/dashboard.png)
-
-| Light Mode | Dark Mode |
-|------------|-----------|
-| ![Light Mode UI](/public/images/light-mode.png) | ![Dark Mode UI](/public/images/dark-mode.png) |
-
-</div>
-
-> **Note:** If viewing on GitHub, use the deployed demo to see all images correctly.
-
----
 
 ## 📄 License
 
