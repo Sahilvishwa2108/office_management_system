@@ -274,10 +274,6 @@ Office Pilot is a comprehensive office management system designed to streamline 
 
 ## 🏗️ System Architecture
 
-<p align="center">
-  <img src="https://mermaid.ink/img/pako:eNp1kU1vgzAMhv-KlfMk9QcM7dDTpO7QabdFPRjwKFISR44zWMX_PkOhXdWRQ-znfW3HzlkNNmKZYNEZPJiPBjXCaAkPEqGS3diNQiNbUPT7NQ2YaJF6HhRYX5C8RO-RYAFPOzMhwg6ljQ9aDvS1DaO72u49WYnw8vwSslUZ8KtmIEHaOzgFLqbHOy3OYDz9OafiAn-Ux7KUVOiMB8r4eG3hT5-YBSuLc1TGDpE_wdnfvfI0ajnWJN3QE1S0ckL1mL0pMsVrv3fzRHbKzp5G9CivDfJm4kNXtGYQGbE5C3TlEA4ELRHOzpD2mtgmRjHITSiZ4Pm36CaUFXs0TsqIZb4frmW-4JvoVvh-GfB1VrCcB3xVF34RZnkQrIKN-Jn9ARylj4A" alt="System Architecture" width="100%" />
-</p>
-
 Office Pilot follows a modern architecture leveraging Next.js App Router and the latest React patterns:
 
 ```
@@ -595,10 +591,6 @@ Office Pilot implements a sophisticated role-based access control system:
 
 ## 🔒 Security Measures
 
-<p align="center">
-  <img src="https://via.placeholder.com/1200x300/f8fafc/0f172a?text=Security+Features" alt="Security Features" width="100%" />
-</p>
-
 ### Authentication & Authorization
 - **Secure Password Storage**: Using bcrypt for password hashing
 - **JWT Implementation**: For secure session management
@@ -675,10 +667,6 @@ Office Pilot implements a sophisticated role-based access control system:
 
 ## 🔮 Future Roadmap
 
-<p align="center">
-  <img src="https://mermaid.ink/img/pako:eNp1ksFugzAMhl_FyjlS-wJGe-hpy3roumN1SIKXWCQOmWHQivfeMKzrpvUQ2f_3O7aSMzfGEreER-OoN--GFNHbM91cIJcqtG4Uaqsrh-r3o7aUgQXuPRKJHx-Rl-w9E2zhcXAnR9ihDPFGy4m-j6FVF1u8J5AEby9vKZDlEX9UQ4BFgmMnvzM7PiA5gvP054yNA_yRnstSQGlgnpTx4bqGHz4wDUZayKgMHST_AvK_NehrNHKomXZTT1D5GpyXffSySK3fh9DNduxC2tmjiA7krUHeXPqxq1o1iYzbnoW6cgxHRkvE0Vnki7btyLpJZJaHWDLx-c90F8uCPVrPZeI2D-OtnBd8F90LPywzvs4LlvOEr-qSL9Is50nG0zLxn7X_BdhckoU" alt="Project Roadmap" width="100%" />
-</p>
-
 ### Short-term (Q2 2025)
 - Enhanced reporting capabilities
 - Advanced search functionality
@@ -704,10 +692,6 @@ Office Pilot implements a sophisticated role-based access control system:
 
 ## 🤝 Contributing
 
-<p align="center">
-  <img src="https://mermaid.ink/img/pako:eNptksFOwzAMhl_Fyo0JpW03aSduaOwAErDDxCFNvDaibVK5KaMVfXfcdF3HBIdI_v_vt-QcmXaWmYQZ19q6t1obdNQO28NwOOzVQTlsFLRaoEdtLEwuJQg4aoO9RlVjPcG0GEB9w-cU1TsX8J3XGTbIR9ZgUr80eMD7LnqhawzKBsMOHyDtEwbCWIL7_Dc-6qTRIXRdNyBc1HYO-eBp9BpxPJ7BSulFMDo44Bl8eCbQCx6CgdpS5FE4xgN86CZiKKfAWMF8KCM6lDIaIiZhfpVJWJDFliyXF9eZDOhkktnsVlwX4mK1vlwJsSbr291G3I4viqLMipzxZE0TnhdlUWYl40mZFsUq57woclaVi_xrsv8BVstpXg" alt="Contribution Workflow" width="100%" />
-</p>
-
 <div align="center">
   <h3>Contributions to Office Pilot are welcome!</h3>
 </div>
@@ -720,13 +704,6 @@ Office Pilot implements a sophisticated role-based access control system:
   </a>
 </p>
 
-### Commit Activity
-
-<p align="center">
-  <a href="https://github.com/sahilvishwa2108/office_management_system/graphs/commit-activity">
-    <img src="https://activity-graph.herokuapp.com/graph?username=sahilvishwa2108&bg_color=1F222E&color=F8D866&line=F85D7F&point=FFFFFF&hide_border=true" alt="GitHub contribution graph" />
-  </a>
-</p>
 
 To contribute:
 
@@ -740,6 +717,114 @@ Please ensure your code follows the project's coding standards and includes appr
 
 ---
 
+
+
+## 📸 Application Screenshots
+
+<details open>
+<summary><b>🔐 Authentication & Onboarding</b></summary>
+<p align="center">
+  <table>
+    <tr>
+      <td align="center"><img src="/public/images/login-page.png" alt="Login Page" width="280"/><br/><sub><b>Login Page</b></sub></td>
+      <td align="center"><img src="/public/images/change-password-page.png" alt="Change Password" width="280"/><br/><sub><b>Change Password</b></sub></td>
+      <td align="center"><img src="/public/images/reset-password-page.png" alt="Reset Password" width="280"/><br/><sub><b>Reset Password</b></sub></td>
+    </tr>
+  </table>
+</p>
+</details>
+
+<details>
+<summary><b>📊 Dashboards</b></summary>
+<p align="center">
+  <table>
+    <tr>
+      <td align="center"><img src="/public/images/dashboard.png" alt="Main Dashboard" width="280"/><br/><sub><b>Main Dashboard</b></sub></td>
+      <td align="center"><img src="/public/images/admin-dashboard.png" alt="Admin Dashboard" width="280"/><br/><sub><b>Admin Dashboard</b></sub></td>
+      <td align="center"><img src="/public/images/junior-dashboard.png" alt="Junior Dashboard" width="280"/><br/><sub><b>Junior Dashboard</b></sub></td>
+    </tr>
+    <tr>
+      <td align="center"><img src="/public/images/partner-dashboard.png" alt="Partner Dashboard" width="280"/><br/><sub><b>Partner Dashboard</b></sub></td>
+      <td align="center"><img src="/public/images/home-page.png" alt="Home Page" width="280"/><br/><sub><b>Home Page</b></sub></td>
+      <td align="center"><img src="/public/images/activity-feeds.png" alt="Activity Feeds" width="280"/><br/><sub><b>Activity Feeds</b></sub></td>
+    </tr>
+  </table>
+</p>
+</details>
+
+<details>
+<summary><b>👥 User Management</b></summary>
+<p align="center">
+  <table>
+    <tr>
+      <td align="center"><img src="/public/images/user-list-page.png" alt="User List" width="280"/><br/><sub><b>User List</b></sub></td>
+      <td align="center"><img src="/public/images/user-list-cards-view-page.png" alt="User Cards View" width="280"/><br/><sub><b>User Cards View</b></sub></td>
+      <td align="center"><img src="/public/images/user-details-page.png" alt="User Details" width="280"/><br/><sub><b>User Details</b></sub></td>
+    </tr>
+    <tr>
+      <td align="center"><img src="/public/images/create-user-page.png" alt="Create User" width="280"/><br/><sub><b>Create User</b></sub></td>
+      <td align="center"><img src="/public/images/user-profile-page.png" alt="User Profile" width="280"/><br/><sub><b>User Profile</b></sub></td>
+      <td align="center"><img src="/public/images/credential-management-page.png" alt="Credential Management" width="280"/><br/><sub><b>Credential Management</b></sub></td>
+    </tr>
+  </table>
+</p>
+</details>
+
+<details>
+<summary><b>🏢 Client Management</b></summary>
+<p align="center">
+  <table>
+    <tr>
+      <td align="center"><img src="/public/images/client-list-page.png" alt="Client List" width="280"/><br/><sub><b>Client List</b></sub></td>
+      <td align="center"><img src="/public/images/client-details-page.png" alt="Client Details" width="280"/><br/><sub><b>Client Details</b></sub></td>
+      <td align="center"><img src="/public/images/craete-client-page.png" alt="Create Client" width="280"/><br/><sub><b>Create Client</b></sub></td>
+    </tr>
+    <tr>
+      <td align="center"><img src="/public/images/client-history-page.png" alt="Client History" width="280"/><br/><sub><b>Client History</b></sub></td>
+      <td align="center"><img src="/public/images/create-guest-client-page.png" alt="Create Guest Client" width="280"/><br/><sub><b>Create Guest Client</b></sub></td>
+    </tr>
+  </table>
+</p>
+</details>
+
+<details>
+<summary><b>✅ Task Management</b></summary>
+<p align="center">
+  <table>
+    <tr>
+      <td align="center"><img src="/public/images/task-list-page.png" alt="Task List" width="280"/><br/><sub><b>Task List</b></sub></td>
+      <td align="center"><img src="/public/images/task-details-page.png" alt="Task Details" width="280"/><br/><sub><b>Task Details</b></sub></td>
+      <td align="center"><img src="/public/images/create-task-page.png" alt="Create Task" width="280"/><br/><sub><b>Create Task</b></sub></td>
+    </tr>
+    <tr>
+      <td align="center"><img src="/public/images/Task-analytics-page.png" alt="Task Analytics" width="280"/><br/><sub><b>Task Analytics</b></sub></td>
+    </tr>
+  </table>
+</p>
+</details>
+
+<details>
+<summary><b>💬 Communication</b></summary>
+<p align="center">
+  <table>
+    <tr>
+      <td align="center"><img src="/public/images/chatroom-page.png" alt="Chatroom" width="280"/><br/><sub><b>Chatroom</b></sub></td>
+    </tr>
+  </table>
+</p>
+</details>
+
+<details>
+<summary><b>🌓 Theme Options</b></summary>
+<p align="center">
+  <table>
+    <tr>
+      <td align="center"><img src="/public/images/light-mode.png" alt="Light Mode" width="380"/><br/><sub><b>Light Mode</b></sub></td>
+      <td align="center"><img src="/public/images/dark-mode.png" alt="Dark Mode" width="380"/><br/><sub><b>Dark Mode</b></sub></td>
+    </tr>
+  </table>
+</p>
+</details>
 
 ## 📄 License
 
