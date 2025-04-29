@@ -3,11 +3,11 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
-// import { SessionProvider } from "next-auth/react";
 import { NotificationProvider } from "@/components/notifications/notification-system";
 import { Toaster } from "sonner";
 import { GlobalLoading } from "@/components/ui/global-loading";
 import { AuthProvider } from "@/context/auth-provider";
+import { usePathname } from "next/navigation";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,6 +16,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -25,7 +27,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
             <NotificationProvider>
-                <GlobalLoading />
+                {pathname !== '/' && <GlobalLoading />}
                 {children}
                 <Toaster position="top-right" richColors closeButton />
             </NotificationProvider>

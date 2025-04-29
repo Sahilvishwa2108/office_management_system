@@ -3,8 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { cn } from "@/lib/utils";
 import { Building2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function GlobalLoading() {
   const [isLoading, setIsLoading] = useState(true);
@@ -20,16 +20,14 @@ export function GlobalLoading() {
     if (status === 'loading') {
       setIsLoading(true);
       
-      // Safety timeout - never show loading for more than 10 seconds
+      // Safety timeout - never show loading for more than 8 seconds
       const safetyTimeout = setTimeout(() => {
-        console.log('Safety timeout reached - forcing hide of loader');
         setIsLoading(false);
-      }, 10000);
+      }, 8000);
       
       return () => clearTimeout(safetyTimeout);
     } else {
-      // Once session status is determined (authenticated or unauthenticated), 
-      // give a short delay then hide the loader
+      // Once session status is determined, hide the loader with a short delay
       const timer = setTimeout(() => {
         setIsLoading(false);
       }, 300);
@@ -49,7 +47,7 @@ export function GlobalLoading() {
       
       const timer = setTimeout(() => {
         setIsLoading(false);
-      }, 800);
+      }, 600); // Reduced from 800ms for a snappier feel
       
       // Update the ref with current pathname
       previousPathRef.current = pathname;
@@ -59,61 +57,108 @@ export function GlobalLoading() {
   }, [pathname, status]);
 
   return (
-    <>
-      <style jsx>{`
-        @keyframes float {
-          0% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-          100% { transform: translateY(0px); }
-        }
-        .float-animation {
-          animation: float 3s ease-in-out infinite;
-        }
-        
-        @keyframes ripple {
-          0% { transform: scale(0.8); opacity: 0.8; }
-          50% { transform: scale(1.2); opacity: 0.2; }
-          100% { transform: scale(0.8); opacity: 0.8; }
-        }
-        .ripple-animation {
-          animation: ripple 2s ease-in-out infinite;
-        }
-      `}</style>
-      
-      <div 
-        className={cn(
-          "fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm transition-all duration-500",
-          isLoading ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}
-      >
-        <div className="relative h-24 w-24 flex items-center justify-center">
-          {/* Ripple effect circles */}
-          <div className="absolute inset-0 rounded-full bg-primary/10 ripple-animation"></div>
-          <div className="absolute inset-0 rounded-full bg-primary/5 ripple-animation" style={{ animationDelay: '0.5s' }}></div>
-          
-          {/* Building icon with floating animation */}
-          <div className="relative z-10 float-animation">
-            <Building2 className="h-16 w-16 text-primary drop-shadow-lg" />
-          </div>
-          
-          {/* Spinning ring around the icon */}
-          <div className="absolute -inset-4 rounded-full border-4 border-t-primary/80 border-r-primary/30 border-b-primary/10 border-l-primary/50 animate-spin" style={{ animationDuration: '3s' }}></div>
-        </div>
-        
-        {/* Progress dots */}
-        <div className="mt-4 flex space-x-3">
-          {[...Array(3)].map((_, i) => (
-            <div 
-              key={i}
-              className="h-3 w-3 rounded-full bg-primary animate-bounce shadow-sm"
-              style={{ 
-                animationDelay: `${i * 0.15}s`,
-                opacity: 0.6 + (i * 0.2)
+    <AnimatePresence>
+      {isLoading && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm"
+        >
+          <div className="relative flex flex-col items-center">
+            {/* Background decorative elements */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+              <motion.div 
+                className="absolute -right-32 -top-32 w-64 h-64 rounded-full bg-pink-500/5 dark:bg-pink-500/10 blur-3xl"
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  opacity: [0.3, 0.4, 0.3],
+                }}
+                transition={{ 
+                  duration: 4, 
+                  repeat: Infinity,
+                  repeatType: "reverse" 
+                }}
+              />
+              <motion.div 
+                className="absolute -left-32 -bottom-32 w-64 h-64 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 blur-3xl"
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  opacity: [0.2, 0.3, 0.2],
+                }}
+                transition={{ 
+                  duration: 5, 
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                  delay: 0.5
+                }}
+              />
+            </div>
+            
+            {/* Logo container */}
+            <motion.div
+              className="relative flex items-center justify-center"
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ 
+                type: "spring",
+                stiffness: 260,
+                damping: 20
               }}
-            />
-          ))}
-        </div>
-      </div>
-    </>
+            >
+              {/* Logo gradient background */}
+              <motion.div 
+                className="absolute inset-0 rounded-md bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 blur-lg opacity-30"
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                }}
+                transition={{ 
+                  duration: 2,
+                  repeat: Infinity,
+                  repeatType: "reverse"
+                }}
+              />
+              
+              {/* Icon with gradient background */}
+              <motion.div
+                className="relative z-10 h-16 w-16 rounded-md bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center"
+                animate={{ 
+                  rotate: [0, 5, 0, -5, 0],
+                }}
+                transition={{ 
+                  duration: 6, 
+                  repeat: Infinity,
+                  ease: "easeInOut" 
+                }}
+              >
+                <Building2 className="h-8 w-8 text-white" />
+              </motion.div>
+            </motion.div>
+            
+            {/* Progress indicators */}
+            <div className="mt-8 flex space-x-3">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="h-2 w-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                  initial={{ scale: 0.8, opacity: 0.4 }}
+                  animate={{
+                    scale: [1, 1.5, 1],
+                    opacity: [0.5, 1, 0.5]
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    delay: i * 0.2,
+                    ease: "easeInOut"
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
