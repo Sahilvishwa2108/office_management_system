@@ -1,28 +1,120 @@
-# Office Pilot: Comprehensive Office Management System
+<p align="center">
+  <img src="https://img.icons8.com/fluency/96/000000/dashboard.png" alt="Office Pilot Logo" width="80"/>
+</p>
 
+# <p align="center">🚀 Office Pilot</p>
+<p align="center"><b>Comprehensive Office Management SaaS</b></p>
+
+<p align="center">
+  <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-15.2.4-black?style=flat-square&logo=next.js" alt="Next.js"/></a>
+  <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-19.0.0-61DAFB?style=flat-square&logo=react" alt="React"/></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript" alt="TypeScript"/></a>
+  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/TailwindCSS-4.x-38B2AC?style=flat-square&logo=tailwind-css" alt="TailwindCSS"/></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-Latest-336791?style=flat-square&logo=postgresql" alt="PostgreSQL"/></a>
+  <a href="https://redis.io/"><img src="https://img.shields.io/badge/Redis-Latest-DC382D?style=flat-square&logo=redis" alt="Redis"/></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/sahilvishwa2108/office_management_system/stargazers"><img src="https://img.shields.io/github/stars/sahilvishwa2108/office_management_system?style=social" alt="Stars"/></a>
+  <a href="https://github.com/sahilvishwa2108/office_management_system/network/members"><img src="https://img.shields.io/github/forks/sahilvishwa2108/office_management_system?style=social" alt="Forks"/></a>
+  <a href="https://github.com/sahilvishwa2108/office_management_system/issues"><img src="https://img.shields.io/github/issues/sahilvishwa2108/office_management_system" alt="Issues"/></a>
+</p>
+
+<p align="center">
+  <a href="https://officepilot.vercel.app/">Live Demo</a> •
+  <a href="#-api-reference">Documentation</a> •
+  <a href="https://github.com/sahilvishwa2108/office_management_system/issues">Report Bug</a> •
+  <a href="https://github.com/sahilvishwa2108/office_management_system/issues">Request Feature</a>
+</p>
+
+<p align="center">
+  <a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=1000&color=3584E4&center=true&vCenter=true&width=1000&lines=Comprehensive+Office+Management+System;Task+Management+%7C+Client+Relations+%7C+Team+Collaboration;Built+with+Next.js%2C+React%2C+TypeScript%2C+and+TailwindCSS" alt="Typing SVG" /></a>
+</p>
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Live Demo](#live-demo)
-- [Key Features](#key-features)
-- [Technology Stack](#technology-stack)
-- [System Architecture](#system-architecture)
-- [Project Structure](#project-structure)
-- [User Roles & Permissions](#user-roles--permissions)
-- [Installation & Setup](#installation--setup)
-- [Database Schema](#database-schema)
-- [API Reference](#api-reference)
-- [Performance Optimizations](#performance-optimizations)
-- [Security Measures](#security-measures)
-- [UI/UX Design](#uiux-design)
-- [Deployment & CI/CD](#deployment--cicd)
-- [Future Roadmap](#future-roadmap)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+<div align="center" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; margin: 30px 0;">
+  <a href="#-overview" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">📝</span>
+    <span>Overview</span>
+  </a>
+  <a href="#-key-features" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">✨</span>
+    <span>Key Features</span>
+  </a>
+  <a href="#-quick-start" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">🚀</span>
+    <span>Quick Start</span>
+  </a>
+  <a href="#️-technology-stack" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">🛠️</span>
+    <span>Technology Stack</span>
+  </a>
+  <a href="#️-system-architecture" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">🏗️</span>
+    <span>System Architecture</span>
+  </a>
+  <a href="#-project-structure" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">📁</span>
+    <span>Project Structure</span>
+  </a>
+  <a href="#-user-roles--permissions" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">👥</span>
+    <span>User Roles & Permissions</span>
+  </a>
+  <a href="#-installation--setup" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">🚀</span>
+    <span>Installation & Setup</span>
+  </a>
+  <a href="#-database-schema" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">💾</span>
+    <span>Database Schema</span>
+  </a>
+  <a href="#-api-reference" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">📡</span>
+    <span>API Reference</span>
+  </a>
+  <a href="#-performance-optimizations" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">⚡</span>
+    <span>Performance Optimizations</span>
+  </a>
+  <a href="#-security-measures" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">🔒</span>
+    <span>Security Measures</span>
+  </a>
+  <a href="#-uiux-design" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">🎨</span>
+    <span>UI/UX Design</span>
+  </a>
+  <a href="#-deployment--cicd" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">🚢</span>
+    <span>Deployment & CI/CD</span>
+  </a>
+  <a href="#-future-roadmap" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">🔮</span>
+    <span>Future Roadmap</span>
+  </a>
+  <a href="#-contributing" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">🤝</span>
+    <span>Contributing</span>
+  </a>
+  <a href="#-license" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">📄</span>
+    <span>License</span>
+  </a>
+  <a href="#-contact" style="display: flex; align-items: center; padding: 10px; border-radius: 5px; background-color: #f8f9fa; text-decoration: none; color: #212529; transition: transform 0.2s;">
+    <span style="font-size: 24px; margin-right: 10px;">📞</span>
+    <span>Contact</span>
+  </a>
+</div>
+
+---
 
 ## 📝 Overview
+
+<p align="center">
+  <img src="/public/images/dashboard.png" alt="Office Pilot Dashboard" width="100%" />
+</p>
 
 Office Pilot is a comprehensive office management system designed to streamline workflow, enhance team collaboration, and manage client relationships effectively. Built with scalability and security in mind, it provides a unified platform for task management, client engagement, team communication, and resource tracking.
 
@@ -36,11 +128,26 @@ Office Pilot is a comprehensive office management system designed to streamline 
 - Enable real-time notifications and updates
 - Facilitate efficient resource allocation
 
-## 🚀 Live Demo
+<p align="center">
+  <a href="https://officepilot.vercel.app/" target="_blank">
+    <img src="https://img.shields.io/badge/VIEW_LIVE_DEMO-0A0A0A?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
+  </a>
+</p>
 
-Access the live demo: [https://officepilot.vercel.app/](https://officepilot.vercel.app/)
+---
 
 ## ✨ Key Features
+
+<div align="center">
+
+| 🧑‍💼 User Management | 👥 Client Management | 📋 Task Management |
+| ----------------- | ------------------- | ------------------ |
+| • Multi-level user roles<br>• Google OAuth integration<br>• Custom avatars with DiceBear<br>• Activity tracking | • Detailed client profiles<br>• Client history tracking<br>• Secure credential storage<br>• Access expiry management | • Priority levels & tracking<br>• Multiple assignee support<br>• Deadline management<br>• Billing status tracking |
+
+</div>
+
+<details>
+<summary><b>Click to view all features</b></summary>
 
 ### 🧑‍💼 User Management
 - Multi-level user roles with granular permissions
@@ -97,8 +204,19 @@ Access the live demo: [https://officepilot.vercel.app/](https://officepilot.verc
 - User action tracking for accountability
 - Client interaction history
 - Time-based activity reporting
+</details>
+
+
+---
 
 ## 🛠️ Technology Stack
+
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=nextjs,react,typescript,tailwind,postgres,redis,prisma,vercel&theme=light" alt="Tech Stack" />
+</p>
+
+<details>
+<summary><b>View Full Technology Stack</b></summary>
 
 ### Frontend
 - **Framework**: Next.js 15.2.4 with App Router
@@ -150,8 +268,15 @@ Access the live demo: [https://officepilot.vercel.app/](https://officepilot.verc
   - @next/bundle-analyzer
   - Compression Webpack Plugin
   - Next.js optimizePackageImports
+</details>
+
+---
 
 ## 🏗️ System Architecture
+
+<p align="center">
+  <img src="https://mermaid.ink/img/pako:eNp1kU1vgzAMhv-KlfMk9QcM7dDTpO7QabdFPRjwKFISR44zWMX_PkOhXdWRQ-znfW3HzlkNNmKZYNEZPJiPBjXCaAkPEqGS3diNQiNbUPT7NQ2YaJF6HhRYX5C8RO-RYAFPOzMhwg6ljQ9aDvS1DaO72u49WYnw8vwSslUZ8KtmIEHaOzgFLqbHOy3OYDz9OafiAn-Ux7KUVOiMB8r4eG3hT5-YBSuLc1TGDpE_wdnfvfI0ajnWJN3QE1S0ckL1mL0pMsVrv3fzRHbKzp5G9CivDfJm4kNXtGYQGbE5C3TlEA4ELRHOzpD2mtgmRjHITSiZ4Pm36CaUFXs0TsqIZb4frmW-4JvoVvh-GfB1VrCcB3xVF34RZnkQrIKN-Jn9ARylj4A" alt="System Architecture" width="100%" />
+</p>
 
 Office Pilot follows a modern architecture leveraging Next.js App Router and the latest React patterns:
 
@@ -175,7 +300,12 @@ PostgreSQL Database (Neon.tech)
 - Socket.io for real-time communications
 - Nodemailer for email notifications
 
+---
+
 ## 📁 Project Structure
+
+<details>
+<summary><b>View Complete Project Structure</b></summary>
 
 ```
 🏢 office_management_system/
@@ -284,45 +414,27 @@ PostgreSQL Database (Neon.tech)
 ├── ⚙️ tsconfig.json                      # TypeScript config
 └── 🚀 vercel.json                        # Deployment config
 ```
+</details>
+
+---
 
 ## 👥 User Roles & Permissions
 
+<div align="center">
+
 Office Pilot implements a sophisticated role-based access control system:
 
-### ADMIN
-- Full system access
-- User management
-- Client management
-- Task creation and assignment
-- Billing approval
-- System configuration
+| Role | Permissions |
+|------|-------------|
+| **ADMIN** | • Full system access<br>• User management<br>• Client management<br>• Task creation and assignment<br>• Billing approval<br>• System configuration |
+| **PARTNER** | • Client portfolio management<br>• Team management for assigned clients<br>• Task creation and oversight<br>• Billing management<br>• Report generation |
+| **Junior Staff** | • Client relationship management<br>• Progress tracking<br>• Client communication<br>• Task execution<br>• Detail documentation<br>• Workspace Analytics<br>• Progress reporting |
+| **PERMANENT_CLIENT** | • Service request submission<br>• Task History Management with Notes pinning support<br>• Credentials Management<br>• Communication with assigned team |
+| **GUEST_CLIENT** | • Limited-time access(will be deleted from database on selected expiry date)<br>• Specific service access<br>• Basic communication features |
 
-### PARTNER
-- Client portfolio management
-- Team management for assigned clients
-- Task creation and oversight
-- Billing management
-- Report generation
+</div>
 
-### Junior Staff
-- Client relationship management
-- Progress tracking
-- Client communication
-- Task execution
-- Detail documentation
-- Workspace Analytics
-- Progress reporting
-
-### PERMANENT_CLIENT
-- Service request submission
-- Task History Management with Notes pinning support
-- Credentials Management
-- Communication with assigned team
-
-### GUEST_CLIENT
-- Limited-time access(will be deleted from database on selected expiry date)
-- Specific service access
-- Basic communication features
+---
 
 ## 🚀 Installation & Setup
 
@@ -348,7 +460,7 @@ Office Pilot implements a sophisticated role-based access control system:
    ```
 
 3. **Set up environment variables**
-   Create a `.env` file with the used variables:
+   Create a `.env` file with the required variables
 
 4. **Initialize the database**
    ```bash
@@ -375,24 +487,36 @@ Office Pilot implements a sophisticated role-based access control system:
    npm run start
    ```
 
+---
+
 ## 📡 API Reference
 
-Office Pilot provides a comprehensive REST API via Next.js API routes:
+<div align="center">
+  <h3>Office Pilot provides a comprehensive REST API via Next.js API routes</h3>
+</div>
 
-### Authentication
+<details>
+<summary><b>Authentication</b></summary>
+
 - `POST /api/auth/register` - Create new user account
 - `POST /api/auth/login` - Authenticate user
 - `GET /api/auth/session` - Get current session
 - `POST /api/auth/reset-password` - Initiate password reset
+</details>
 
-### Users
+<details>
+<summary><b>Users</b></summary>
+
 - `GET /api/users` - List users (with filtering)
 - `GET /api/users/:id` - Get user details
 - `PUT /api/users/:id` - Update user
 - `DELETE /api/users/:id` - Deactivate user
 - `GET /api/users/me` - Get current user profile
+</details>
 
-### Tasks
+<details>
+<summary><b>Tasks</b></summary>
+
 - `GET /api/tasks` - List tasks (with filtering)
 - `POST /api/tasks` - Create new task
 - `GET /api/tasks/:id` - Get task details
@@ -401,8 +525,11 @@ Office Pilot provides a comprehensive REST API via Next.js API routes:
 - `PUT /api/tasks/:id/status` - Update task status
 - `POST /api/tasks/:id/comments` - Add comment to task
 - `GET /api/tasks/:id/comments` - Get task comments
+</details>
 
-### Clients
+<details>
+<summary><b>Clients</b></summary>
+
 - `GET /api/clients` - List clients
 - `POST /api/clients` - Create new client
 - `GET /api/clients/:id` - Get client details
@@ -410,19 +537,29 @@ Office Pilot provides a comprehensive REST API via Next.js API routes:
 - `DELETE /api/clients/:id` - Remove client
 - `GET /api/clients/:id/tasks` - Get client tasks
 - `GET /api/clients/:id/history` - Get client history
+</details>
 
-### Notifications
+<details>
+<summary><b>Notifications</b></summary>
+
 - `GET /api/notifications` - Get user notifications
 - `PUT /api/notifications/:id` - Mark notification as read
 - `DELETE /api/notifications/:id` - Delete notification
+</details>
 
-### Cron Jobs
+<details>
+<summary><b>Cron Jobs</b></summary>
+
 - `POST /api/cron/expired-clients` - Process expired client access
 - `POST /api/cron/cache-warmup` - Warm system caches
+</details>
+
+---
 
 ## ⚡ Performance Optimizations
-
-Office Pilot incorporates several performance optimization techniques:
+<div align="center">
+  <h3>Office Pilot incorporates several performance optimization techniques:</h3>
+</div>
 
 ### Code Optimization
 - **Package Import Optimization**: Selective imports from large packages
@@ -454,9 +591,13 @@ Office Pilot incorporates several performance optimization techniques:
 - **HTTP/2**: For parallel resource loading
 - **Compression**: Using Brotli/gzip for text resources
 
+---
+
 ## 🔒 Security Measures
 
-Security is a top priority in Office Pilot:
+<p align="center">
+  <img src="https://via.placeholder.com/1200x300/f8fafc/0f172a?text=Security+Features" alt="Security Features" width="100%" />
+</p>
 
 ### Authentication & Authorization
 - **Secure Password Storage**: Using bcrypt for password hashing
@@ -486,9 +627,21 @@ Security is a top priority in Office Pilot:
 - **Privacy Controls**: User data management options
 - **Secure Deletion**: Complete removal of user data when requested
 
+---
+
 ## 🎨 UI/UX Design
 
-Office Pilot features a thoughtfully crafted user interface:
+<div align="center">
+
+| Light Mode | Dark Mode |
+|------------|-----------|
+| ![Light Mode UI](/public/images/light-mode.png) | ![Dark Mode UI](/public/images/dark-mode.png) |
+
+</div>
+
+<div align="center">
+  <h3>Office Pilot features a thoughtfully crafted user interface:</h3>
+</div>
 
 ### Design System
 - **Component Library**: Custom-built UI components based on Radix primitives
@@ -518,56 +671,64 @@ Office Pilot features a thoughtfully crafted user interface:
 - **Keyboard Shortcuts**: For power users (alt+T for notifications)
 - **Context Preservation**: Maintaining state during navigation
 
-## 🚢 Deployment & CI/CD
-
-### Deployment Platform
-- **Hosting**: Vercel for serverless deployment
-- **Database**: Neon.tech for PostgreSQL
-- **Caching**: Aiven for Redis
-- **Storage**: Cloudinary for file storage
-
-### CI/CD Pipeline
-- **Source Control**: GitHub
-- **Automated Testing**: On push and pull requests
-- **Preview Deployments**: For pull request review
-- **Production Deployment**: On main branch updates
-- **Post-Deployment Verification**: Automated checks
-
-### Monitoring
-- **Error Tracking**: Vercel's built-in error monitoring
-- **Performance Metrics**: Core Web Vitals tracking
-- **Usage Analytics**: Anonymous user journey analysis
-- **Uptime Monitoring**: Regular health checks
-- **Log Management**: Structured logging for troubleshooting
+---
 
 ## 🔮 Future Roadmap
 
-Office Pilot is continuously evolving with plans for:
+<p align="center">
+  <img src="https://mermaid.ink/img/pako:eNp1ksFugzAMhl_FyjlS-wJGe-hpy3roumN1SIKXWCQOmWHQivfeMKzrpvUQ2f_3O7aSMzfGEreER-OoN--GFNHbM91cIJcqtG4Uaqsrh-r3o7aUgQXuPRKJHx-Rl-w9E2zhcXAnR9ihDPFGy4m-j6FVF1u8J5AEby9vKZDlEX9UQ4BFgmMnvzM7PiA5gvP054yNA_yRnstSQGlgnpTx4bqGHz4wDUZayKgMHST_AvK_NehrNHKomXZTT1D5GpyXffSySK3fh9DNduxC2tmjiA7krUHeXPqxq1o1iYzbnoW6cgxHRkvE0Vnki7btyLpJZJaHWDLx-c90F8uCPVrPZeI2D-OtnBd8F90LPywzvs4LlvOEr-qSL9Is50nG0zLxn7X_BdhckoU" alt="Project Roadmap" width="100%" />
+</p>
 
-### Short-term
+### Short-term (Q2 2025)
 - Enhanced reporting capabilities
 - Advanced search functionality
 - File version control
 - Kanban view for task management
 - Email integration for task creation
 
-### Medium-term
+### Medium-term (Q3-Q4 2025)
 - Mobile application development
 - API expansion for third-party integration
 - Advanced analytics dashboard
 - Time tracking features
 - Service catalog management
 
-### Long-term
+### Long-term (2026+)
 - AI-assisted task prioritization
 - Automated document processing
 - Multi-language support
 - White-label client portal
 - Integration marketplace
 
+---
+
 ## 🤝 Contributing
 
-Contributions to Office Pilot are welcome! To contribute:
+<p align="center">
+  <img src="https://mermaid.ink/img/pako:eNptksFOwzAMhl_Fyo0JpW03aSduaOwAErDDxCFNvDaibVK5KaMVfXfcdF3HBIdI_v_vt-QcmXaWmYQZ19q6t1obdNQO28NwOOzVQTlsFLRaoEdtLEwuJQg4aoO9RlVjPcG0GEB9w-cU1TsX8J3XGTbIR9ZgUr80eMD7LnqhawzKBsMOHyDtEwbCWIL7_Dc-6qTRIXRdNyBc1HYO-eBp9BpxPJ7BSulFMDo44Bl8eCbQCx6CgdpS5FE4xgN86CZiKKfAWMF8KCM6lDIaIiZhfpVJWJDFliyXF9eZDOhkktnsVlwX4mK1vlwJsSbr291G3I4viqLMipzxZE0TnhdlUWYl40mZFsUq57woclaVi_xrsv8BVstpXg" alt="Contribution Workflow" width="100%" />
+</p>
+
+<div align="center">
+  <h3>Contributions to Office Pilot are welcome!</h3>
+</div>
+
+### Recent Contributors
+
+<p align="center">
+  <a href="https://github.com/sahilvishwa2108/office_management_system/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=sahilvishwa2108/office_management_system" alt="Contributors" />
+  </a>
+</p>
+
+### Commit Activity
+
+<p align="center">
+  <a href="https://github.com/sahilvishwa2108/office_management_system/graphs/commit-activity">
+    <img src="https://activity-graph.herokuapp.com/graph?username=sahilvishwa2108&bg_color=1F222E&color=F8D866&line=F85D7F&point=FFFFFF&hide_border=true" alt="GitHub contribution graph" />
+  </a>
+</p>
+
+To contribute:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -577,14 +738,48 @@ Contributions to Office Pilot are welcome! To contribute:
 
 Please ensure your code follows the project's coding standards and includes appropriate tests.
 
+---
+
+## 📷 Screenshots
+
+<div align="center">
+
+### Dashboard View
+![Dashboard](/public/images/dashboard.png)
+
+| Light Mode | Dark Mode |
+|------------|-----------|
+| ![Light Mode UI](/public/images/light-mode.png) | ![Dark Mode UI](/public/images/dark-mode.png) |
+
+</div>
+
+> **Note:** If viewing on GitHub, use the deployed demo to see all images correctly.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+
+---
 
 ## 📞 Contact
 
-### Project Creator
+<p align="center">
+  <a href="https://github.com/sahilvishwa2108">
+    <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"/>
+  </a>
+  <a href="https://linkedin.com/in/sahilvishwa2108">
+    <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"/>
+  </a>
+  <a href="mailto:sahilvishwa2108@gmail.com">
+    <img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email"/>
+  </a>
+</p>
 
-- **Sahil Vishwakarma** - [GitHub](https://github.com/sahilvishwa2108) - [LinkedIn](https://linkedin.com/in/sahilvishwa2108)
----
 
 <p align="center">
+  <img src="https://img.icons8.com/fluency/48/000000/dashboard.png" alt="Office Pilot" width="40"/>
+  <br>
   <i>Made with ❤️ by Sahil Vishwakarma</i>
 </p>
