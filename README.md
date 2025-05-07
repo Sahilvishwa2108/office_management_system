@@ -657,7 +657,7 @@ Please ensure your code follows the project's coding standards and includes appr
 </p>
 </details>
 
-<details>
+<details open>
 <summary><b>📊 Dashboards</b></summary>
 <p align="center">
   <table>
@@ -675,7 +675,7 @@ Please ensure your code follows the project's coding standards and includes appr
 </p>
 </details>
 
-<details>
+<details open>
 <summary><b>👥 User Management</b></summary>
 <p align="center">
   <table>
@@ -693,7 +693,7 @@ Please ensure your code follows the project's coding standards and includes appr
 </p>
 </details>
 
-<details>
+<details open>
 <summary><b>🏢 Client Management</b></summary>
 <p align="center">
   <table>
@@ -710,7 +710,7 @@ Please ensure your code follows the project's coding standards and includes appr
 </p>
 </details>
 
-<details>
+<details open>
 <summary><b>✅ Task Management</b></summary>
 <p align="center">
   <table>
@@ -726,7 +726,7 @@ Please ensure your code follows the project's coding standards and includes appr
 </p>
 </details>
 
-<details>
+<details open>
 <summary><b>💬 Communication</b></summary>
 <p align="center">
   <table>
