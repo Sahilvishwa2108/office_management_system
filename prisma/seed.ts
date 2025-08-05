@@ -27,18 +27,20 @@ try {
   console.warn('Redis not available, skipping chat sync')
 }
 
-// Professional Indian profile images that we'll upload to Cloudinary
+// Professional Indian profile images with working URLs
 const profileImages = [
   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1494790108755-2616b612b647?w=150&h=150&fit=crop&crop=face',
   'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
   'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=150&h=150&fit=crop&crop=face',
   'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
   'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
   'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=face',
   'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face',
   'https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=150&h=150&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face'
+  'https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=150&h=150&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=150&h=150&fit=crop&crop=face'
 ]
 
 // Function to upload image to Cloudinary
@@ -189,6 +191,43 @@ async function createUsers() {
       role: UserRole.BUSINESS_CONSULTANT,
       phone: '+91-9876543221',
       canApproveBilling: false
+    },
+    // Additional users for more comprehensive coverage
+    {
+      id: uuidv4(),
+      name: 'Pooja Mehta',
+      email: 'consultant7@office-pilot.com',
+      password: 'Consultant@123',
+      role: UserRole.BUSINESS_CONSULTANT,
+      phone: '+91-9876543222',
+      canApproveBilling: false
+    },
+    {
+      id: uuidv4(),
+      name: 'Manish Jain',
+      email: 'consultant8@office-pilot.com',
+      password: 'Consultant@123',
+      role: UserRole.BUSINESS_CONSULTANT,
+      phone: '+91-9876543223',
+      canApproveBilling: false
+    },
+    {
+      id: uuidv4(),
+      name: 'Neha Agarwal',
+      email: 'executive5@office-pilot.com',
+      password: 'Executive@123',
+      role: UserRole.BUSINESS_EXECUTIVE,
+      phone: '+91-9876543224',
+      canApproveBilling: false
+    },
+    {
+      id: uuidv4(),
+      name: 'Sanjay Kumar',
+      email: 'partner2@office-pilot.com',
+      password: 'Partner@123',
+      role: UserRole.PARTNER,
+      phone: '+91-9876543225',
+      canApproveBilling: true
     }
   ]
   
@@ -369,6 +408,69 @@ async function createClients(users: any[]) {
       gstin: '19AABCR8901E1Z3',
       isGuest: false,
       managerId: managers[1].id
+    },
+    // Additional clients for more comprehensive testing
+    {
+      id: uuidv4(),
+      contactPerson: 'Ramesh Gupta',
+      companyName: 'Gupta Steel Industries',
+      email: 'ramesh@guptasteel.com',
+      phone: '+91-9334567890',
+      address: 'Industrial Area, Jamshedpur, Jharkhand 831007',
+      notes: 'Steel manufacturing and processing. ISO certified facility with export capabilities.',
+      gstin: '20AABCG5678F1Z4',
+      isGuest: false,
+      managerId: managers[2].id
+    },
+    {
+      id: uuidv4(),
+      contactPerson: 'Kavita Bansal',
+      companyName: 'Bansal Pharmaceuticals',
+      email: 'kavita@bansalpharma.in',
+      phone: '+91-9445678901',
+      address: 'Pharma City, Hyderabad, Telangana 500032',
+      notes: 'Generic drug manufacturing with WHO-GMP certification. Export to 15+ countries.',
+      gstin: '36AABCB7890G1Z2',
+      isGuest: false,
+      managerId: managers[0].id
+    },
+    {
+      id: uuidv4(),
+      contactPerson: 'Trial Client',
+      companyName: 'Demo Guest Client',
+      email: 'demo@guestclient.com',
+      phone: '+91-9556789012',
+      address: 'Test Address, Demo City, Test State 123456',
+      notes: 'This is a guest client for testing purposes. Will expire in 15 days.',
+      gstin: null,
+      isGuest: true,
+      accessExpiry: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days from now
+      managerId: managers[3].id
+    },
+    {
+      id: uuidv4(),
+      contactPerson: 'Anjali Sharma',
+      companyName: 'Sharma Logistics Pvt Ltd',
+      email: 'anjali@sharmalogistics.co.in',
+      phone: '+91-9667890123',
+      address: 'Transport Nagar, Nagpur, Maharashtra 440008',
+      notes: 'Pan-India logistics and supply chain solutions. 500+ vehicles fleet.',
+      gstin: '27AABCS9012H1Z6',
+      isGuest: false,
+      managerId: managers[1].id
+    },
+    {
+      id: uuidv4(),
+      contactPerson: 'Expired Guest',
+      companyName: 'Expired Guest Client',
+      email: 'expired@testclient.com',
+      phone: '+91-9778901234',
+      address: 'Expired Address, Test City, Test State 654321',
+      notes: 'This guest client has expired access for testing expired client scenarios.',
+      gstin: null,
+      isGuest: true,
+      accessExpiry: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago (expired)
+      managerId: managers[0].id
     }
   ]
   
@@ -657,6 +759,101 @@ async function createTasks(users: any[], clients: any[]) {
       assignedById: users[2].id, // Executive
       clientId: clients[10].id,
       lastStatusUpdatedAt: new Date('2025-01-06')
+    },
+    // Additional tasks for comprehensive status/priority coverage
+    {
+      id: uuidv4(),
+      title: 'Steel Quality Certification - ISO Standards',
+      description: 'Obtain ISO 9001:2015 certification for Gupta Steel Industries manufacturing processes.',
+      status: TaskStatus.pending,
+      priority: TaskPriority.high,
+      dueDate: new Date('2025-04-15'),
+      billingStatus: BillingStatus.pending_billing,
+      assignedById: users[1].id, // Partner
+      clientId: clients[13].id, // Gupta Steel
+      lastStatusUpdatedById: users[1].id,
+      lastStatusUpdatedAt: new Date('2025-01-05')
+    },
+    {
+      id: uuidv4(),
+      title: 'WHO-GMP Audit Preparation',
+      description: 'Prepare for WHO-GMP compliance audit for Bansal Pharmaceuticals export facility.',
+      status: TaskStatus.in_progress,
+      priority: TaskPriority.high,
+      dueDate: new Date('2025-02-28'),
+      billingStatus: BillingStatus.billed,
+      billingDate: new Date('2025-01-15'),
+      assignedById: users[0].id, // Admin
+      clientId: clients[14].id, // Bansal Pharma
+      lastStatusUpdatedById: users[10].id,
+      lastStatusUpdatedAt: new Date('2025-01-10')
+    },
+    {
+      id: uuidv4(),
+      title: 'Fleet Management System Implementation',
+      description: 'Implement GPS tracking and fleet management system for Sharma Logistics 500+ vehicles.',
+      status: TaskStatus.completed,
+      priority: TaskPriority.medium,
+      dueDate: new Date('2024-12-31'),
+      billingStatus: BillingStatus.paid,
+      billingDate: new Date('2025-01-05'),
+      assignedById: users[3].id, // Partner
+      clientId: clients[16].id, // Sharma Logistics
+      lastStatusUpdatedById: users[4].id,
+      lastStatusUpdatedAt: new Date('2024-12-28')
+    },
+    {
+      id: uuidv4(),
+      title: 'Guest Client Trial Setup',
+      description: 'Setup trial environment and basic compliance documentation for demo guest client.',
+      status: TaskStatus.cancelled,
+      priority: TaskPriority.low,
+      dueDate: new Date('2025-01-20'),
+      billingStatus: BillingStatus.pending_billing,
+      assignedById: users[9].id, // Executive
+      clientId: clients[15].id, // Demo Guest Client
+      lastStatusUpdatedById: users[9].id,
+      lastStatusUpdatedAt: new Date('2025-01-08')
+    },
+    {
+      id: uuidv4(),
+      title: 'Overdue Task - License Renewal',
+      description: 'This is an overdue task to test overdue scenarios in the system.',
+      status: TaskStatus.pending,
+      priority: TaskPriority.high,
+      dueDate: new Date('2024-12-15'), // Overdue
+      billingStatus: BillingStatus.pending_billing,
+      assignedById: users[0].id, // Admin
+      clientId: clients[16].id, // Expired Guest (index 16, not 17)
+      lastStatusUpdatedById: users[0].id,
+      lastStatusUpdatedAt: new Date('2024-12-10')
+    },
+    {
+      id: uuidv4(),
+      title: 'Low Priority Maintenance Task',
+      description: 'Routine maintenance and documentation update task with low priority.',
+      status: TaskStatus.in_progress,
+      priority: TaskPriority.low,
+      dueDate: new Date('2025-05-01'),
+      billingStatus: BillingStatus.pending_billing,
+      assignedById: users[11].id, // Consultant
+      clientId: clients[0].id,
+      lastStatusUpdatedById: users[11].id,
+      lastStatusUpdatedAt: new Date('2025-01-07')
+    },
+    {
+      id: uuidv4(),
+      title: 'Future Scheduled Task',
+      description: 'Task scheduled for future execution to test scheduling functionality.',
+      status: TaskStatus.pending,
+      priority: TaskPriority.medium,
+      dueDate: new Date('2025-08-15'), // Future date
+      billingStatus: BillingStatus.pending_billing,
+      assignedById: users[2].id, // Executive
+      clientId: clients[1].id,
+      lastStatusUpdatedById: users[2].id,
+      lastStatusUpdatedAt: new Date('2025-01-08'),
+      scheduledDeletionDate: new Date('2025-09-15') // Testing scheduled deletion
     }
   ]
   
@@ -710,6 +907,30 @@ async function createTaskAssignments(users: any[], tasks: any[]) {
     
     // Brand Identity Design
     { taskId: tasks[9].id, userId: users[6].id }, // Kavya Nair
+    
+    // New task assignments for comprehensive coverage
+    { taskId: tasks[23].id, userId: users[1].id }, // Steel Certification - Partner
+    { taskId: tasks[23].id, userId: users[10].id }, // Steel Certification - Consultant
+    { taskId: tasks[23].id, userId: users[14].id }, // Steel Certification - Consultant
+    
+    { taskId: tasks[24].id, userId: users[0].id }, // WHO-GMP Audit - Admin
+    { taskId: tasks[24].id, userId: users[10].id }, // WHO-GMP Audit - Consultant
+    { taskId: tasks[24].id, userId: users[15].id }, // WHO-GMP Audit - Consultant
+    
+    { taskId: tasks[25].id, userId: users[3].id }, // Fleet Management - Partner
+    { taskId: tasks[25].id, userId: users[4].id }, // Fleet Management - Executive
+    
+    { taskId: tasks[26].id, userId: users[9].id }, // Guest Client Trial - Executive
+    { taskId: tasks[26].id, userId: users[12].id }, // Guest Client Trial - Consultant
+    
+    { taskId: tasks[27].id, userId: users[0].id }, // Overdue Task - Admin
+    { taskId: tasks[27].id, userId: users[13].id }, // Overdue Task - Consultant
+    
+    { taskId: tasks[28].id, userId: users[11].id }, // Maintenance - Consultant
+    { taskId: tasks[28].id, userId: users[12].id }, // Maintenance - Consultant
+    
+    { taskId: tasks[22].id, userId: users[2].id }, // Use task 22 instead of non-existent 29
+    { taskId: tasks[22].id, userId: users[8].id } // Use task 22 instead of non-existent 29
   ]
   
   for (const assignment of assignments) {
@@ -1329,6 +1550,35 @@ async function createCredentials(clients: any[]) {
       username: 'quickfood_solutions',
       password: 'FSSAI@Quick2024',
       clientId: clients[7].id
+    },
+    // Additional credentials for comprehensive coverage
+    {
+      id: uuidv4(),
+      title: 'Steel Industry Portal',
+      username: 'gupta_steel_ind',
+      password: 'Steel@Gupta2024',
+      clientId: clients[13].id // Gupta Steel
+    },
+    {
+      id: uuidv4(),
+      title: 'WHO Pharma Portal',
+      username: 'bansal_pharma_who',
+      password: 'WHO@Bansal123',
+      clientId: clients[14].id // Bansal Pharmaceuticals
+    },
+    {
+      id: uuidv4(),
+      title: 'Transport Authority',
+      username: 'sharma_logistics_rto',
+      password: 'RTO@Sharma456',
+      clientId: clients[16].id // Sharma Logistics
+    },
+    {
+      id: uuidv4(),
+      title: 'Demo Portal Access',
+      username: 'demo_guest_user',
+      password: 'Demo@123456',
+      clientId: clients[15].id // Demo Guest Client
     }
   ]
   
@@ -1408,6 +1658,55 @@ async function createAttachments(clients: any[]) {
       mimetype: 'application/pdf',
       size: 98304, // 96 KB
       clientId: clients[7].id
+    },
+    // Additional attachments for comprehensive coverage
+    {
+      id: uuidv4(),
+      filename: 'ISO_9001_Certificate_Steel.pdf',
+      path: '/uploads/clients/gupta_steel/iso_certificate.pdf',
+      mimetype: 'application/pdf',
+      size: 423567, // 414 KB
+      clientId: clients[13].id // Gupta Steel
+    },
+    {
+      id: uuidv4(),
+      filename: 'WHO_GMP_Documentation.xlsx',
+      path: '/uploads/clients/bansal_pharma/who_gmp_docs.xlsx',
+      mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      size: 887234, // 866 KB
+      clientId: clients[14].id // Bansal Pharmaceuticals
+    },
+    {
+      id: uuidv4(),
+      filename: 'Fleet_Insurance_Policy.pdf',
+      path: '/uploads/clients/sharma_logistics/fleet_insurance.pdf',
+      mimetype: 'application/pdf',
+      size: 1234567, // 1.2 MB
+      clientId: clients[16].id // Sharma Logistics
+    },
+    {
+      id: uuidv4(),
+      filename: 'Demo_Contract.docx',
+      path: '/uploads/clients/demo_guest/demo_contract.docx',
+      mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 145678, // 142 KB
+      clientId: clients[15].id // Demo Guest Client
+    },
+    {
+      id: uuidv4(),
+      filename: 'Large_Technical_Spec.pdf',
+      path: '/uploads/clients/technosoft/technical_specs.pdf',
+      mimetype: 'application/pdf',
+      size: 5242880, // 5 MB - Testing large file
+      clientId: clients[0].id // TechnoSoft
+    },
+    {
+      id: uuidv4(),
+      filename: 'Small_Image.jpg',
+      path: '/uploads/clients/dmh/small_image.jpg',
+      mimetype: 'image/jpeg',
+      size: 25600, // 25 KB - Testing image file
+      clientId: clients[1].id // DMH India
     }
   ]
   
