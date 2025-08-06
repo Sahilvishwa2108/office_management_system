@@ -1672,7 +1672,7 @@ async function createAttachments(clients: any[]) {
       id: uuidv4(),
       filename: 'WHO_GMP_Documentation.xlsx',
       path: '/uploads/clients/bansal_pharma/who_gmp_docs.xlsx',
-      mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      mimetype: 'application/vnd.ms-excel',
       size: 887234, // 866 KB
       clientId: clients[14].id // Bansal Pharmaceuticals
     },
@@ -1688,7 +1688,7 @@ async function createAttachments(clients: any[]) {
       id: uuidv4(),
       filename: 'Demo_Contract.docx',
       path: '/uploads/clients/demo_guest/demo_contract.docx',
-      mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      mimetype: 'application/msword',
       size: 145678, // 142 KB
       clientId: clients[15].id // Demo Guest Client
     },
