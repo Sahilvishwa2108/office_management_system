@@ -23,6 +23,7 @@ import {
   Sparkles,
   Github,
   ChevronDown,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
@@ -30,57 +31,8 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-// Utility function to get color-specific classes
-const getColorClasses = (color) => {
-  const classes = {
-    indigo: {
-      bg: "bg-indigo-100 dark:bg-indigo-900/30",
-      text: "text-indigo-600 dark:text-indigo-400",
-      hover: "hover:border-indigo-200 dark:hover:border-indigo-800/40",
-      groupHoverText: "group-hover:text-indigo-600 group-hover:dark:text-indigo-400",
-      gradient: "from-indigo-600 to-indigo-400",
-    },
-    purple: {
-      bg: "bg-purple-100 dark:bg-purple-900/30",
-      text: "text-purple-600 dark:text-purple-400",
-      hover: "hover:border-purple-200 dark:hover:border-purple-800/40",
-      groupHoverText: "group-hover:text-purple-600 group-hover:dark:text-purple-400",
-      gradient: "from-purple-600 to-purple-400",
-    },
-    pink: {
-      bg: "bg-pink-100 dark:bg-pink-900/30",
-      text: "text-pink-600 dark:text-pink-400",
-      hover: "hover:border-pink-200 dark:hover:border-pink-800/40",
-      groupHoverText: "group-hover:text-pink-600 group-hover:dark:text-pink-400",
-      gradient: "from-pink-600 to-pink-400",
-    },
-    blue: {
-      bg: "bg-blue-100 dark:bg-blue-900/30",
-      text: "text-blue-600 dark:text-blue-400",
-      hover: "hover:border-blue-200 dark:hover:border-blue-800/40",
-      groupHoverText: "group-hover:text-blue-600 group-hover:dark:text-blue-400",
-      gradient: "from-blue-600 to-blue-400",
-    },
-    amber: {
-      bg: "bg-amber-100 dark:bg-amber-900/30",
-      text: "text-amber-600 dark:text-amber-400",
-      hover: "hover:border-amber-200 dark:hover:border-amber-800/40",
-      groupHoverText: "group-hover:text-amber-600 group-hover:dark:text-amber-400",
-      gradient: "from-amber-600 to-amber-400",
-    },
-    green: {
-      bg: "bg-green-100 dark:bg-green-900/30",
-      text: "text-green-600 dark:text-green-400",
-      hover: "hover:border-green-200 dark:hover:border-green-800/40",
-      groupHoverText: "group-hover:text-green-600 group-hover:dark:text-green-400",
-      gradient: "from-green-600 to-green-400",
-    },
-  };
-  return classes[color] || classes.indigo; // fallback to indigo
-};
-
 // Smooth scroll function
-const scrollToSection = (id) => {
+const scrollToSection = (id: string) => {
   const element = document.getElementById(id);
   if (element) {
     window.scrollTo({
@@ -92,6 +44,9 @@ const scrollToSection = (id) => {
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
+  const [prevScrollPos, setPrevScrollPos] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const [heroVisible, setHeroVisible] = useState(true);
   const { theme } = useTheme();
   const isMobile = useIsMobile();
   
@@ -99,6 +54,7 @@ export default function Home() {
   const featuresRef = useRef(null);
   const benefitsRef = useRef(null);
   const ctaRef = useRef(null);
+  const heroRef = useRef(null);
   
   // Parallax scroll effects
   const { scrollY } = useScroll();
@@ -112,77 +68,46 @@ export default function Home() {
     setMounted(true);
   }, []);
 
+  // Handle header visibility on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollPos = window.scrollY;
+      setVisible(prevScrollPos > currentScrollPos || currentScrollPos < 10);
+      setPrevScrollPos(currentScrollPos);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [prevScrollPos]);
+
+  // Handle hero background fade
+  useEffect(() => {
+    const handleScrollFade = () => {
+      const scrollPosition = window.scrollY;
+      const viewportHeight = window.innerHeight;
+      const fadeThreshold = viewportHeight * 0.3;
+
+      if (scrollPosition > fadeThreshold) {
+        setHeroVisible(false);
+      } else {
+        setHeroVisible(true);
+      }
+    };
+
+    handleScrollFade();
+    window.addEventListener("scroll", handleScrollFade);
+    return () => {
+      window.removeEventListener("scroll", handleScrollFade);
+    };
+  }, []);
+
   if (!mounted) return null;
-
-  // Animation variants for staggered animations
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-        delayChildren: 0.1
-      }
-    }
-  };
-  
-  // Feature card variants - slide in from left, right and top alternating
-  const featureVariants = {
-    hidden: index => {
-      // Alternating directions based on column position
-      const directions = [
-        { x: -50, y: 0 },    // left column
-        { x: 0, y: -50 },    // middle column
-        { x: 50, y: 0 }      // right column
-      ];
-      const position = index % 3;
-      return {
-        ...directions[position],
-        opacity: 0,
-        scale: 0.8,
-      };
-    },
-    visible: {
-      x: 0,
-      y: 0, 
-      opacity: 1,
-      scale: 1,
-      transition: {
-        type: "spring",
-        damping: 12,
-        stiffness: 200,
-        duration: 0.5
-      }
-    }
-  };
-
-  // Benefit card variants - slide in from edges to center
-  const benefitVariants = {
-    hidden: index => {
-      // Cards come from outside toward center
-      const isLeft = index % 3 === 0;
-      const isRight = index % 3 === 2;
-      const isCenter = !isLeft && !isRight;
-      
-      if (isLeft) return { x: -100, opacity: 0 };
-      if (isRight) return { x: 100, opacity: 0 };
-      return { y: 50, opacity: 0 }; // center column comes from bottom
-    },
-    visible: {
-      x: 0,
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        damping: 12,
-        stiffness: 200
-      }
-    }
-  };
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Animated decorative elements - reduced for better performance */}
+      {/* Animated decorative elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         <motion.div 
           className="absolute top-20 right-[10%] w-64 h-64 rounded-full bg-pink-500/10 blur-3xl"
@@ -211,51 +136,68 @@ export default function Home() {
           }}
           style={{ y: y2 }}
         ></motion.div>
+
+        {/* Grid paper background */}
+        <div
+          className={`fixed inset-0 transition-opacity duration-1000 ${
+            heroVisible ? "opacity-30" : "opacity-0"
+          }`}
+          style={{
+            backgroundImage: `
+              linear-gradient(0deg, transparent 24%, rgba(156, 163, 175, 0.3) 25%, rgba(156, 163, 175, 0.3) 26%, transparent 27%, transparent 74%, rgba(156, 163, 175, 0.3) 75%, rgba(156, 163, 175, 0.3) 76%, transparent 77%, transparent),
+              linear-gradient(90deg, transparent 24%, rgba(156, 163, 175, 0.3) 25%, rgba(156, 163, 175, 0.3) 26%, transparent 27%, transparent 74%, rgba(156, 163, 175, 0.3) 75%, rgba(156, 163, 175, 0.3) 76%, transparent 77%, transparent)
+            `,
+            backgroundSize: "40px 40px",
+          }}
+        ></div>
       </div>
 
-      {/* Header/Navigation */}
+      {/* Header/Navigation - Floating Design */}
       <motion.header 
-        className="border-b sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+        className={`fixed w-full z-[100] transition-all duration-300 ${
+          visible ? "top-4" : "-top-28"
+        }`}
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
-        <div className="container mx-auto px-4 sm:px-6 flex h-16 items-center justify-between">
-          <motion.div 
-            className="flex items-center gap-2"
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-          >
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="bg-background/90 backdrop-blur-md rounded-full shadow-lg border border-border/50 px-6 py-3 flex h-16 items-center justify-between">
             <motion.div 
-              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-1.5 rounded-md"
-              animate={{ 
-                rotate: [0, 5, 0, -5, 0],
-              }}
-              transition={{ 
-                duration: 5, 
-                repeat: Infinity,
-                repeatType: "loop",
-                ease: "easeInOut", 
-              }}
+              className="flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
             >
-              <Building2 className="h-5 w-5 text-white" />
+              <motion.div 
+                className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-1.5 rounded-md"
+                animate={{ 
+                  rotate: [0, 5, 0, -5, 0],
+                }}
+                transition={{ 
+                  duration: 5, 
+                  repeat: Infinity,
+                  repeatType: "loop",
+                  ease: "easeInOut", 
+                }}
+              >
+                <Building2 className="h-5 w-5 text-white" />
+              </motion.div>
+              <span className="font-semibold text-xl">Office Pilot</span>
             </motion.div>
-            <span className="font-semibold text-xl">Office Pilot</span>
-          </motion.div>
-          <div className="flex items-center gap-6">
-            <nav className="hidden md:flex gap-6">
+            
+            <nav className="hidden md:flex gap-8">
               <motion.button
                 onClick={() => scrollToSection("features")}
-                className="text-muted-foreground transition-colors hover:text-indigo-500"
-                whileHover={{ scale: 1.1, color: "#6366f1" }}
+                className="nav-link text-muted-foreground transition-colors hover:text-indigo-500"
+                whileHover={{ scale: 1.1 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
                 Features
               </motion.button>
               <motion.button
                 onClick={() => scrollToSection("benefits")}
-                className="text-muted-foreground transition-colors hover:text-indigo-500"
-                whileHover={{ scale: 1.1, color: "#6366f1" }}
+                className="nav-link text-muted-foreground transition-colors hover:text-indigo-500"
+                whileHover={{ scale: 1.1 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
                 Benefits
@@ -264,14 +206,15 @@ export default function Home() {
                 href="https://github.com/sahilvishwa2108/office_management_system"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-muted-foreground transition-colors hover:text-indigo-500 flex items-center gap-1.5"
-                whileHover={{ scale: 1.1, color: "#6366f1" }}
+                className="nav-link text-muted-foreground transition-colors hover:text-indigo-500 flex items-center gap-1.5"
+                whileHover={{ scale: 1.1 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
                 <Github className="h-4 w-4" />
                 GitHub
               </motion.a>
             </nav>
+            
             <div className="flex items-center gap-3">
               <motion.div whileHover={{ rotate: 15 }}>
                 <ThemeToggle />
@@ -280,49 +223,106 @@ export default function Home() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Button variant="outline" asChild className="hover:border-indigo-500 hover:text-indigo-500 transition-all">
+                <Button 
+                  variant="outline" 
+                  asChild 
+                  className="fancy-btn hover:border-indigo-500 hover:text-indigo-500 transition-all"
+                >
                   <Link href="/login">Log In</Link>
                 </Button>
               </motion.div>
             </div>
           </div>
         </div>
+
+        <style jsx>{`
+          .nav-link {
+            position: relative;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+          }
+
+          .nav-link:after {
+            content: "";
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            width: 0%;
+            height: 2px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform: translateX(-50%);
+          }
+
+          .nav-link:hover:after {
+            width: 100%;
+          }
+
+          .fancy-btn {
+            background: linear-gradient(45deg, transparent, transparent);
+            border: 2px solid;
+            border-image: linear-gradient(45deg, #6366f1, #8b5cf6, #ec4899) 1;
+            transition: all 0.3s ease;
+          }
+
+          .fancy-btn:hover {
+            background: linear-gradient(45deg, #6366f1, #8b5cf6, #ec4899);
+            color: white !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+          }
+        `}</style>
       </motion.header>
 
-      {/* Hero Section */}
-      <section className="py-20 md:py-28 relative z-10">
-        <div className="container mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center gap-8 md:gap-16">
-          <div className="flex-1 space-y-6">
+      {/* Hero Section - Enhanced with Better Animations */}
+      <section ref={heroRef} className="min-h-screen flex items-center justify-center relative overflow-hidden">
+        {/* Floating geometric elements */}
+        <div className="absolute top-[20%] right-[10%] w-64 h-64 rounded-full bg-blue-200/20 opacity-60 animate-float"></div>
+        <div className="absolute bottom-[15%] left-[5%] w-48 h-48 rounded-full bg-purple-200/20 opacity-60 animate-float-delay"></div>
+        <div className="absolute top-[60%] right-[20%] w-32 h-32 rounded-lg bg-pink-200/20 opacity-40 rotate-45 animate-float"></div>
+        <div className="absolute top-[10%] left-[15%] w-24 h-24 rounded-lg bg-indigo-200/20 opacity-40 -rotate-12 animate-float-delay"></div>
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          <div className="w-full max-w-5xl mx-auto text-center">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 mb-2"
+              className="inline-block px-4 py-2 text-sm font-medium rounded-full bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-800 dark:from-indigo-900/30 dark:to-purple-900/30 dark:text-indigo-300 mb-6"
             >
-              <span className="flex items-center gap-1">
-                <Sparkles className="h-3.5 w-3.5" />
-                Revolutionize your workplace
+              <span className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                Transform Your Workplace Today
               </span>
             </motion.div>
+            
             <motion.h1 
-              className="text-4xl md:text-5xl font-bold tracking-tight"
+              className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight mb-6 leading-none"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              Welcome to <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">Office Pilot</span>
+              Run Your Business
+              <br />
+              <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                Like a Pro!!
+              </span>
             </motion.h1>
+            
             <motion.p 
-              className="text-xl text-muted-foreground max-w-[600px]"
+              className="text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto mb-8 leading-relaxed"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
             >
-              Streamline your office operations with our comprehensive management solution. 
-              Handle clients, tasks, team communication, and documentation in one secure platform.
+              From managing teams to tracking tasks and clients, Office Pilot keeps everything—and everyone—in perfect sync.
             </motion.p>
+            
             <motion.div 
-              className="flex flex-col sm:flex-row gap-3 pt-4"
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
@@ -331,315 +331,495 @@ export default function Home() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Button size="lg" className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 border-0 shadow-md hover:shadow-lg transition-all group" asChild>
+                <Button 
+                  size="lg" 
+                  className="hero-cta-btn bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 border-0 shadow-lg hover:shadow-xl transition-all text-lg px-8 py-4 h-auto group" 
+                  asChild
+                >
                   <Link href="/login">
-                    Get Started 
+                    <span className="relative z-10">Get Started Free</span>
                     <motion.span
+                      className="relative z-10 ml-2"
                       animate={{ x: [0, 5, 0] }}
                       transition={{ duration: 1.5, repeat: Infinity, repeatType: "loop", ease: "easeInOut" }}
                     >
-                      <ArrowRight className="h-4 w-4" />
+                      <ArrowRight className="h-5 w-5" />
                     </motion.span>
+                    
+                    {/* Shine effect */}
+                    <motion.div
+                      className="absolute inset-0 bg-white opacity-0 group-hover:animate-shine"
+                      initial={{ left: "-100%" }}
+                      animate={{
+                        left: ["-100%", "200%"],
+                        opacity: [0, 0.3, 0],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        repeatDelay: 3
+                      }}
+                      style={{
+                        width: "30%",
+                        transform: "skewX(-20deg)"
+                      }}
+                    />
                   </Link>
                 </Button>
               </motion.div>
+              
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Button size="lg" variant="outline" className="border-indigo-200 dark:border-indigo-800/40 hover:border-indigo-500 transition-all">
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="secondary-btn border-2 border-indigo-200 dark:border-indigo-800/40 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-all text-lg px-8 py-4 h-auto"
+                  onClick={() => scrollToSection("mission")}
+                >
                   Learn More
                 </Button>
               </motion.div>
             </motion.div>
             
-            {/* Scroll down indicator */}
+            {/* Scroll indicator */}
             <motion.div 
-              className="absolute bottom-5 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 text-muted-foreground"
+              className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 text-muted-foreground"
               animate={{ y: [0, 10, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              <span className="text-xs">Scroll Down</span>
-              <ChevronDown className="h-4 w-4" />
+              <span className="text-sm font-medium">Discover More</span>
+              <ChevronDown className="h-5 w-5" />
             </motion.div>
           </div>
+        </div>
+
+        <style jsx>{`
+          @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+          }
+
+          @keyframes float-delay {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(-5deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+          }
+
+          @keyframes shine {
+            0% { left: -100%; opacity: 0; }
+            50% { opacity: 0.3; }
+            100% { left: 200%; opacity: 0; }
+          }
+
+          .animate-float {
+            animation: float 6s ease-in-out infinite;
+          }
+
+          .animate-float-delay {
+            animation: float-delay 7s ease-in-out infinite;
+            animation-delay: 1s;
+          }
+
+          .hero-cta-btn {
+            position: relative;
+            overflow: hidden;
+          }
+
+          .animate-shine {
+            animation: shine 2s ease-out;
+          }
+
+          .secondary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
+          }
+        `}</style>
+      </section>
+
+      {/* Mission Section */}
+      <section id="mission" className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-blue-50/80 to-white dark:from-blue-950/20 dark:to-background">
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <svg width="100%" height="100%" className="absolute inset-0">
+            <pattern
+              id="wave-pattern"
+              width="100"
+              height="20"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M0,10 C30,0 70,0 100,10 C130,20 170,20 200,10"
+                fill="none"
+                stroke="#4F46E5"
+                strokeWidth="2"
+              />
+            </pattern>
+            <rect width="100%" height="100%" fill="url(#wave-pattern)" />
+          </svg>
+        </div>
+
+        {/* Floating elements */}
+        <div className="absolute top-[30%] left-[20%] w-32 h-32 rounded-lg bg-blue-200/20 opacity-60 rotate-12 animate-float"></div>
+        <div className="absolute bottom-[20%] right-[15%] w-20 h-20 rounded-lg bg-blue-300/20 opacity-60 -rotate-12 animate-float-delay"></div>
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <motion.div 
-            className="flex-1 relative min-h-[300px] md:min-h-[400px] w-full"
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            style={{ opacity }}
+            className="w-full max-w-4xl mx-auto text-center"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: false, amount: 0.3 }}
           >
             <motion.div 
-              className="absolute top-0 right-0 h-full w-full bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-pink-500/20 rounded-lg overflow-hidden shadow-xl border border-indigo-100 dark:border-indigo-900/50"
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              className="mb-10 transform transition-transform duration-500 hover:scale-105"
+              whileHover={{ scale: 1.1 }}
             >
-              <motion.div 
-                className="absolute -right-20 -bottom-20 h-60 w-60 bg-purple-500/20 rounded-full filter blur-3xl"
-                animate={{ 
-                  scale: [1, 1.2, 1],
-                  opacity: [0.5, 0.8, 0.5],
-                }}
-                transition={{ 
-                  duration: 8, 
-                  repeat: Infinity,
-                  repeatType: "reverse" 
-                }}
-              ></motion.div>
-              <div className="absolute left-10 top-10 right-10 bottom-10">
-                <motion.div 
-                  className="bg-card/80 backdrop-blur-sm border border-white/10 h-full w-full rounded-md shadow-sm overflow-hidden"
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.6, duration: 0.5 }}
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl">
+                <motion.div
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                 >
-                  <div className="border-b px-4 py-3 flex items-center gap-2 bg-muted/50">
-                    <LayoutDashboard className="h-4 w-4 text-indigo-500" />
-                    <span className="font-medium text-sm">Dashboard Preview</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 p-4">
-                    <motion.div 
-                      className="bg-background rounded-md border p-3 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-800/40 transition-all"
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.7, duration: 0.5 }}
-                      whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium">Active Tasks</span>
-                        <span className="text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 px-2 py-1 rounded-full">
-                          12
-                        </span>
-                      </div>
-                    </motion.div>
-                    <motion.div 
-                      className="bg-background rounded-md border p-3 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-800/40 transition-all"
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.8, duration: 0.5 }}
-                      whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium">Clients</span>
-                        <span className="text-xs bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300 px-2 py-1 rounded-full">
-                          24
-                        </span>
-                      </div>
-                    </motion.div>
-                    <motion.div 
-                      className="col-span-2 bg-background rounded-md border p-3 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-800/40 transition-all"
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.9, duration: 0.5 }}
-                      whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-medium">Recent Activity</span>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="text-xs text-muted-foreground flex items-center gap-2">
-                          <motion.div 
-                            className="h-1.5 w-1.5 rounded-full bg-green-500"
-                            animate={{ scale: [1, 1.5, 1] }}
-                            transition={{ duration: 2, repeat: Infinity, repeatType: "loop" }}
-                          ></motion.div>
-                          Task completed: Client onboarding
-                        </div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-2">
-                          <motion.div 
-                            className="h-1.5 w-1.5 rounded-full bg-blue-500"
-                            animate={{ scale: [1, 1.5, 1] }}
-                            transition={{ duration: 2, delay: 1, repeat: Infinity, repeatType: "loop" }}
-                          ></motion.div>
-                          New client added: Acme Inc.
-                        </div>
-                      </div>
-                    </motion.div>
-                  </div>
+                  <Building2 className="h-12 w-12 text-indigo-600 dark:text-indigo-400" />
                 </motion.div>
               </div>
             </motion.div>
+            
+            <motion.h3 
+              className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 md:mb-8"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: false }}
+            >
+              Our Mission
+            </motion.h3>
+            
+            <motion.p 
+              className="text-lg md:text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-3xl mx-auto"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              viewport={{ once: false }}
+            >
+              At Office Pilot, we help business owners easily manage their teams, tasks, and clients—all in one place.
+              <br />
+              <br />
+              <span className="font-semibold text-foreground">
+                With simple tools for communication, task tracking, and client management, we make running your business smoother and more efficient.
+              </span>
+            </motion.p>
           </motion.div>
         </div>
       </section>
 
-      {/* Features Section with Optimized Animations */}
-      <section id="features" className="py-20 relative z-10" ref={featuresRef}>
+      {/* Features Section with Sticky Scrolling */}
+      <div id="features" className="relative">
+        {/* Feature Section: User & Role Management */}
+        <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden bg-gradient-to-tr from-blue-50/80 to-blue-100/80 dark:from-blue-950/20 dark:to-blue-900/20 rounded-tl-[4rem] rounded-tr-[4rem]">
+          {/* Background pattern */}
+          <div className="absolute inset-0 opacity-5">
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%234F46E5' fill-opacity='1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E\")",
+                backgroundSize: "24px 24px",
+              }}
+            ></div>
+          </div>
+
+          {/* Abstract user silhouettes */}
+          <div className="absolute top-[10%] right-[5%] opacity-10">
+            <Users className="h-32 w-32 text-indigo-500" />
+          </div>
+          <div className="absolute bottom-[15%] left-[10%] opacity-10">
+            <Users className="h-24 w-24 text-indigo-500" />
+          </div>
+
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <motion.div 
+              className="flex flex-col md:flex-row items-stretch max-w-7xl mx-auto gap-8"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: false, amount: 0.3 }}
+            >
+              {/* Left side - Image placeholder */}
+              <motion.div 
+                className="w-full md:w-3/5 mb-6 md:mb-0"
+                initial={{ x: -50, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                viewport={{ once: false }}
+              >
+                <div className="bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-lg w-full h-[400px] shadow-xl transform transition duration-500 hover:scale-105 overflow-hidden flex items-center justify-center border-2 border-indigo-200/50 dark:border-indigo-800/50">
+                  <div className="text-center">
+                    <Users className="h-24 w-24 text-indigo-500 mx-auto mb-4" />
+                    <p className="text-indigo-600 dark:text-indigo-400 font-semibold">User Management Dashboard</p>
+                    <p className="text-sm text-muted-foreground mt-2">Role-based access control visualization</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Right side - Content */}
+              <motion.div 
+                className="w-full md:w-2/5 md:pl-10 flex flex-col justify-center"
+                initial={{ x: 50, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                viewport={{ once: false }}
+              >
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6">
+                  User & Role Management
+                </h3>
+                <h4 className="text-lg md:text-xl lg:text-2xl font-semibold text-blue-600 dark:text-blue-400 mb-3 md:mb-4">
+                  Put the Right People in the Right Seats
+                </h4>
+                <p className="text-base md:text-lg text-muted-foreground mb-4 md:mb-6">
+                  No more access chaos. Create and manage users with laser-precise Role-Based Access Control.
+                </p>
+                
+                <ul className="space-y-3 md:space-y-4 mb-6 md:mb-8">
+                  {[
+                    { role: "Admins", desc: "Full control of your business backend" },
+                    { role: "Partners", desc: "High-level collaborators" },
+                    { role: "Business Executives", desc: "Manage, assign, monitor" },
+                    { role: "Consultants", desc: "Strategic advisors with curated access" }
+                  ].map((item, index) => (
+                    <motion.li 
+                      key={index}
+                      className="flex items-start transform transition duration-300 hover:translate-x-2 text-foreground"
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.6 + index * 0.1 }}
+                      viewport={{ once: false }}
+                    >
+                      <span className="font-medium mr-2 text-blue-500">•</span>
+                      <span>
+                        <span className="font-semibold">{item.role}</span> – {item.desc}
+                      </span>
+                    </motion.li>
+                  ))}
+                </ul>
+                
+                <motion.p 
+                  className="text-base md:text-lg font-medium text-gray-800 dark:text-gray-200"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 1 }}
+                  viewport={{ once: false }}
+                >
+                  You decide who sees what—nothing more, nothing less.
+                </motion.p>
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Feature Section: Task Management */}
+        <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-green-50/80 to-white dark:from-green-950/20 dark:to-background rounded-tl-[4rem] rounded-tr-[4rem]">
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <motion.div 
+              className="flex flex-col md:flex-row-reverse items-stretch max-w-7xl mx-auto gap-8"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: false, amount: 0.3 }}
+            >
+              {/* Right side - Image */}
+              <motion.div 
+                className="w-full md:w-3/5 mb-6 md:mb-0"
+                initial={{ x: 50, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                viewport={{ once: false }}
+              >
+                <div className="bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-lg w-full h-[400px] shadow-xl transform transition duration-500 hover:scale-105 overflow-hidden flex items-center justify-center border-2 border-green-200/50 dark:border-green-800/50">
+                  <div className="text-center">
+                    <ClipboardList className="h-24 w-24 text-green-500 mx-auto mb-4" />
+                    <p className="text-green-600 dark:text-green-400 font-semibold">Task Management Dashboard</p>
+                    <p className="text-sm text-muted-foreground mt-2">Complete task workflow visualization</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Left side - Content */}
+              <motion.div 
+                className="w-full md:w-2/5 md:pr-10 flex flex-col justify-center"
+                initial={{ x: -50, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                viewport={{ once: false }}
+              >
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6">
+                  Task Management
+                </h3>
+                <h4 className="text-lg md:text-xl lg:text-2xl font-semibold text-green-600 dark:text-green-400 mb-3 md:mb-4">
+                  Make Work Flow Like Clockwork
+                </h4>
+                <p className="text-base md:text-lg text-muted-foreground mb-4 md:mb-6">
+                  Stop wasting time in endless status meetings. With Office Pilot, seniors can assign tasks directly to their juniors, track progress, and hit deadlines without chasing.
+                </p>
+                
+                <ul className="space-y-3 md:space-y-4 mb-6 md:mb-8">
+                  {[
+                    "Assign & track tasks with real-time updates",
+                    "Set priorities and deadlines effortlessly", 
+                    "Monitor team productivity from your dashboard",
+                    "Automated notifications and reminders"
+                  ].map((item, index) => (
+                    <motion.li 
+                      key={index}
+                      className="flex items-start transform transition duration-300 hover:translate-x-2 text-foreground"
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.6 + index * 0.1 }}
+                      viewport={{ once: false }}
+                    >
+                      <span className="font-medium mr-2 text-green-500">•</span>
+                      <span>{item}</span>
+                    </motion.li>
+                  ))}
+                </ul>
+                
+                <motion.p 
+                  className="text-base md:text-lg font-medium text-gray-800 dark:text-gray-200"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 1 }}
+                  viewport={{ once: false }}
+                >
+                  Your team's day just got 10x more productive.
+                </motion.p>
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Feature Section: Communication */}
+        <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-yellow-50/80 to-white dark:from-yellow-950/20 dark:to-background rounded-tl-[4rem] rounded-tr-[4rem]">
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <motion.div 
+              className="flex flex-col md:flex-row items-stretch max-w-7xl mx-auto gap-8"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: false, amount: 0.3 }}
+            >
+              {/* Left side - Image */}
+              <motion.div 
+                className="w-full md:w-3/5 mb-6 md:mb-0"
+                initial={{ x: -50, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                viewport={{ once: false }}
+              >
+                <div className="bg-gradient-to-br from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30 rounded-lg w-full h-[400px] shadow-xl transform transition duration-500 hover:scale-105 overflow-hidden flex items-center justify-center border-2 border-yellow-200/50 dark:border-yellow-800/50">
+                  <div className="text-center">
+                    <MessageSquare className="h-24 w-24 text-yellow-500 mx-auto mb-4" />
+                    <p className="text-yellow-600 dark:text-yellow-400 font-semibold">Real-time Communication</p>
+                    <p className="text-sm text-muted-foreground mt-2">Team collaboration and chat interface</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Right side - Content */}
+              <motion.div 
+                className="w-full md:w-2/5 md:pl-10 flex flex-col justify-center"
+                initial={{ x: 50, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                viewport={{ once: false }}
+              >
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6">
+                  Team Communication
+                </h3>
+                <h4 className="text-lg md:text-xl lg:text-2xl font-semibold text-yellow-600 dark:text-yellow-400 mb-3 md:mb-4">
+                  One Team. One Thread.
+                </h4>
+                <p className="text-base md:text-lg text-muted-foreground mb-4 md:mb-6">
+                  Bring your whole team together. Discuss tasks, brainstorm ideas, or make quick decisions in real-time with our built-in group chat.
+                </p>
+                
+                <ul className="space-y-3 md:space-y-4 mb-6 md:mb-8">
+                  {[
+                    "Fast internal communication",
+                    "Task-specific discussions",
+                    "File sharing and collaboration",
+                    "Available on all devices"
+                  ].map((item, index) => (
+                    <motion.li 
+                      key={index}
+                      className="flex items-start transform transition duration-300 hover:translate-x-2 text-foreground"
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.6 + index * 0.1 }}
+                      viewport={{ once: false }}
+                    >
+                      <span className="font-medium mr-2 text-yellow-500">•</span>
+                      <span>{item}</span>
+                    </motion.li>
+                  ))}
+                </ul>
+                
+                <motion.p 
+                  className="text-base md:text-lg font-medium text-gray-800 dark:text-gray-200"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 1 }}
+                  viewport={{ once: false }}
+                >
+                  Communication has never been this seamless.
+                </motion.p>
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
+      {/* Benefits Section */}
+      <section id="benefits" className="py-20 relative z-10 bg-gradient-to-br from-purple-50/80 to-white dark:from-purple-950/20 dark:to-background">
         <div className="container mx-auto px-4 sm:px-6">
           <motion.div 
             className="text-center max-w-[800px] mx-auto mb-16"
             initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
+            viewport={{ once: false, amount: 0.3 }}
           >
             <div className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 mb-4">
-              <span>Powerful Tools</span>
-            </div>
-            {/* Text reveal animation */}
-            <div className="overflow-hidden">
-              <motion.h2 
-                className="text-3xl md:text-4xl font-bold tracking-tight mb-4"
-                initial={{ y: 50 }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-              >
-                Comprehensive Office Management
-              </motion.h2>
-            </div>
-            <div className="overflow-hidden">
-              <motion.p 
-                className="text-muted-foreground text-lg"
-                initial={{ y: 30 }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-              >
-                Office Pilot offers a complete suite of features designed to streamline
-                your workflow and boost productivity.
-              </motion.p>
-            </div>
-          </motion.div>
-
-          {/* Feature cards with improved animations */}
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: false, amount: 0.1 }}
-          >
-            {[
-              {
-                icon: <ClipboardList className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />,
-                title: "Task Management",
-                description: "Create, assign and track tasks with priority levels, due dates, and status updates. Generate reports and monitor team productivity.",
-                color: "indigo"
-              },
-              {
-                icon: <Users className="h-6 w-6 text-purple-600 dark:text-purple-400" />,
-                title: "Client Management",
-                description: "Manage permanent and guest clients with contact details, notes, and company information. Track client history and set access expiry for guests.",
-                color: "purple"
-              },
-              {
-                icon: <MessageSquare className="h-6 w-6 text-pink-600 dark:text-pink-400" />,
-                title: "Team Communication",
-                description: "Chat with team members in real-time, discuss tasks, and share files. Keep all project communication in one centralized location.",
-                color: "pink"
-              },
-              {
-                icon: <Lock className="h-6 w-6 text-blue-600 dark:text-blue-400" />,
-                title: "Role-Based Access",
-                description: "Control system access with custom roles for admins, partners, executives, and consultants. Ensure data security with permission-based views.",
-                color: "blue"
-              },
-              {
-                icon: <Bell className="h-6 w-6 text-amber-600 dark:text-amber-400" />,
-                title: "Notification System",
-                description: "Stay informed with real-time notifications for task assignments, updates, and important deadlines via in-app alerts and email.",
-                color: "amber"
-              },
-              {
-                icon: <FileText className="h-6 w-6 text-green-600 dark:text-green-400" />,
-                title: "Document Management",
-                description: "Upload, store, and share client documents securely. Track document versions and manage access permissions.",
-                color: "green"
-              },
-              {
-                icon: <History className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />,
-                title: "Activity Tracking",
-                description: "Monitor all system activities with detailed logs. Track changes to clients, tasks, and documents for complete accountability.",
-                color: "indigo"
-              },
-              {
-                icon: <Key className="h-6 w-6 text-purple-600 dark:text-purple-400" />,
-                title: "Credential Management",
-                description: "Store client credentials securely. Manage usernames and passwords with encrypted storage and controlled access.",
-                color: "purple"
-              },
-              {
-                icon: <Smartphone className="h-6 w-6 text-pink-600 dark:text-pink-400" />,
-                title: "Mobile Responsive",
-                description: "Access your office management system from any device. Fully responsive design works on desktops, tablets, and smartphones.",
-                color: "pink"
-              }
-            ].map((feature, index) => (
-              <motion.div 
-                key={index}
-                custom={index}
-                variants={featureVariants}
-                className={`bg-card rounded-lg border p-6 transition-all group hover:border-${feature.color}-200 dark:hover:border-${feature.color}-800/40 hover:shadow-lg`}
-                whileHover={{ 
-                  y: -8,
-                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                  transition: { duration: 0.2 }
-                }}
-              >
-                <div className={`h-12 w-12 rounded-lg ${getColorClasses(feature.color).bg} flex items-center justify-center mb-6`}>
-                  <motion.div
-                    whileHover={{ scale: 1.2, rotate: 5 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                  >
-                    {feature.icon}
-                  </motion.div>
-                </div>
-                
-                <h3 className={`text-xl font-semibold mb-2 transition-colors ${getColorClasses(feature.color).groupHoverText}`}>
-                  {feature.title}
-                </h3>
-                
-                <p className="text-muted-foreground group-hover:text-foreground/80 transition-colors">
-                  {feature.description}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Benefits Section with Simplified Animations */}
-      <section id="benefits" className="py-20 relative z-10" ref={benefitsRef}>
-        <div className="absolute inset-0 bg-gradient-to-b from-indigo-50/50 to-purple-50/50 dark:from-indigo-950/20 dark:to-purple-950/20 z-0"></div>
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <motion.div 
-            className="text-center max-w-[800px] mx-auto mb-16"
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-          >
-            <div className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300 mb-4">
               <span>Why Choose Us</span>
             </div>
             
-            {/* Text reveal animation */}
-            <div className="overflow-hidden">
-              <motion.h2 
-                className="text-3xl md:text-4xl font-bold tracking-tight mb-4"
-                initial={{ y: 50 }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-              >
-                Benefits of Using Office Pilot
-              </motion.h2>
-            </div>
-            <div className="overflow-hidden">
-              <motion.p 
-                className="text-muted-foreground text-lg"
-                initial={{ y: 30 }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-              >
-                Discover how our platform can transform your business operations
-              </motion.p>
-            </div>
+            <motion.h2 
+              className="text-3xl md:text-4xl font-bold tracking-tight mb-4"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: false }}
+            >
+              Benefits of Using Office Pilot
+            </motion.h2>
+            
+            <motion.p 
+              className="text-muted-foreground text-lg"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              viewport={{ once: false }}
+            >
+              Discover how our platform can transform your business operations
+            </motion.p>
           </motion.div>
 
-          {/* Benefits cards with edge-to-center animations */}
           <motion.div 
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.8 }}
             viewport={{ once: false, amount: 0.1 }}
           >
             {[
@@ -668,31 +848,29 @@ export default function Home() {
                 color: "blue"
               },
               {
-                icon: <Calendar className="h-5 w-5 text-amber-600 dark:text-amber-400" />,
+                icon: <Calendar className="h-5 w-5 text-green-600 dark:text-green-400" />,
                 title: "Improved Planning",
                 description: "Plan effectively with visibility into team capacity, deadlines, and client priorities.",
-                color: "amber"
+                color: "green"
               },
               {
-                icon: <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />,
+                icon: <CheckCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />,
                 title: "Seamless Integration",
-                description: "Integrate with popular tools and platforms for a unified experience. Sync data and streamline processes across your organization.",
-                color: "green"
+                description: "Integrate with popular tools and platforms for a unified experience.",
+                color: "orange"
               }
             ].map((benefit, index) => (
               <motion.div 
                 key={index}
-                custom={index}
-                variants={benefitVariants}
-                className={`bg-card/80 backdrop-blur-sm rounded-lg border border-${benefit.color}-100/10 dark:border-${benefit.color}-900/10 p-6 shadow-sm hover:shadow-lg transition-all`}
-                whileHover={{ 
-                  y: -8,
-                  x: 0,
-                  transition: { duration: 0.2 }
-                }}
+                className="bg-card/80 backdrop-blur-sm rounded-lg border p-6 shadow-sm hover:shadow-lg transition-all group"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: false }}
+                whileHover={{ y: -8 }}
               >
                 <div className="flex items-start gap-4">
-                  <div className={`h-12 w-12 rounded-full ${getColorClasses(benefit.color).bg} flex items-center justify-center flex-shrink-0`}>
+                  <div className={`h-12 w-12 rounded-full bg-${benefit.color}-100 dark:bg-${benefit.color}-900/30 flex items-center justify-center flex-shrink-0`}>
                     <motion.div
                       whileHover={{ scale: 1.2, rotate: 10 }}
                       transition={{ type: "spring", stiffness: 400, damping: 10 }}
@@ -702,7 +880,7 @@ export default function Home() {
                   </div>
                   
                   <div>
-                    <h3 className={`text-lg font-semibold mb-2 ${getColorClasses(benefit.color).text}`}>
+                    <h3 className={`text-lg font-semibold mb-2 text-${benefit.color}-600 dark:text-${benefit.color}-400`}>
                       {benefit.title}
                     </h3>
                     <p className="text-muted-foreground">
@@ -710,176 +888,243 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
-                
-                {/* Subtle accent line */}
-                <div className={`h-0.5 w-1/4 mt-4 bg-gradient-to-r ${getColorClasses(benefit.color).gradient} rounded opacity-60`}></div>
               </motion.div>
             ))}
           </motion.div>
         </div>
       </section>
 
-      {/* CTA Section with Optimized animations */}
-      <section className="py-20 relative z-10" ref={ctaRef}>
-        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 z-0"></div>
-        <div className="container mx-auto px-4 sm:px-6 text-center relative z-10">
-          <motion.div 
-            className="max-w-[800px] mx-auto bg-card/80 backdrop-blur-sm rounded-xl border border-white/20 p-10 shadow-xl relative overflow-hidden"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ 
-              opacity: 1, 
-              scale: 1,
-              transition: {
-                duration: 0.8,
-                type: "spring",
-                stiffness: 200,
-                damping: 20
-              }
+      {/* CTA Section with Star Button */}
+      <section className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-black to-blue-800 text-white">
+        {/* Radial highlight */}
+        <div
+          className="absolute inset-0 bg-no-repeat bg-center"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)",
+          }}
+        ></div>
+
+        {/* Floating star elements */}
+        {Array.from({ length: 6 }).map((_, i) => (
+          <motion.div
+            key={i}
+            className={`absolute w-${[16, 20, 24, 16, 12, 20][i]} h-${[16, 20, 24, 16, 12, 20][i]} opacity-15 animate-float${i % 2 === 0 ? '' : '-delay'}`}
+            style={{
+              top: `${[15, 25, 25, 15, 10, 20][i]}%`,
+              left: `${[10, 15, 20, 85, 80, 90][i]}%`,
+              right: i > 2 ? `${[15, 10, 10][i - 3]}%` : 'auto',
             }}
-            whileHover={{ 
-              boxShadow: "0 30px 60px -15px rgba(0, 0, 0, 0.3)"
+            animate={{
+              rotate: [0, 360],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 15 + i * 2,
+              repeat: Infinity,
+              ease: "linear",
             }}
           >
-            {/* Reduced number of particles for better performance */}
-            {!isMobile && Array.from({ length: 10 }).map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-1 h-1 bg-indigo-500/30 rounded-full"
-                style={{
-                  top: `${Math.random() * 100}%`,
-                  left: `${Math.random() * 100}%`,
-                }}
-                animate={{
-                  y: [0, -20, 0],
-                  opacity: [0, 1, 0],
-                }}
-                transition={{
-                  duration: 3 + Math.random() * 5,
-                  repeat: Infinity,
-                  delay: Math.random() * 5,
-                }}
-              />
-            ))}
-            
-            {/* Simplified background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 via-purple-500/5 to-pink-500/5"></div>
-            
-            {/* Text with simplified animation */}
-            <motion.h2 
-              className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent relative"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-            >
-              Ready to Transform Your Office Management?
-            </motion.h2>
-            
-            <motion.p 
-              className="text-xl text-muted-foreground mb-8 relative"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-            >
-              Start streamlining your operations today with Office Pilot.
-            </motion.p>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7, duration: 0.5 }}
-              className="relative z-10"
-            >
-              <motion.div
-                whileHover={{ 
-                  scale: 1.05
-                }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button 
-                  size="lg" 
-                  className="gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 border-0 shadow-md hover:shadow-lg transition-all relative overflow-hidden group"
-                  asChild
-                >
-                  <Link href="/login">
-                    <motion.span 
-                      className="absolute inset-0 rounded-md"
-                      initial={{ opacity: 0 }}
-                      whileHover={{ 
-                        opacity: 1, 
-                        boxShadow: "0 0 20px 5px rgba(99, 102, 241, 0.5)"
-                      }}
-                      transition={{ duration: 0.3 }}
-                    />
-                    <span className="relative z-10">Get Started</span>
-                    <motion.span
-                      className="relative z-10"
-                      animate={{ x: [0, 5, 0] }}
-                      transition={{ duration: 1.5, repeat: Infinity, repeatType: "loop", ease: "easeInOut" }}
-                    >
-                      <ArrowRight className="h-4 w-4" />
-                    </motion.span>
-                    
-                    {/* Improved button shine effect */}
-                    <motion.div
-                      className="absolute inset-0 bg-white opacity-0"
-                      animate={{
-                        left: ["-100%", "200%"],
-                        opacity: [0, 0.2, 0],
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        repeatDelay: 5
-                      }}
-                      style={{
-                        width: "30%",
-                        transform: "skewX(-20deg)"
-                      }}
-                    />
-                  </Link>
-                </Button>
-              </motion.div>
-            </motion.div>
+            <Star className="h-full w-full text-white fill-current" />
+          </motion.div>
+        ))}
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10 text-center">
+          <motion.h2 
+            className="text-3xl md:text-5xl font-bold mb-6 md:mb-8"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: false }}
+          >
+            Ready to Take Control of Your Business?
+          </motion.h2>
+          
+          <motion.p 
+            className="text-lg md:text-2xl mb-8 md:mb-12 max-w-3xl mx-auto"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            viewport={{ once: false }}
+          >
+            Start your journey with Office Pilot today. Get a free walkthrough and see how effortless business management can be.
+          </motion.p>
+
+          {/* Star Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            viewport={{ once: false }}
+          >
+            <Link href="/login">
+              <button className="star-button relative">
+                Create Your Free Account
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className={`star-${i + 1}`}>
+                    <Star className="h-full w-full fill-current" />
+                  </div>
+                ))}
+              </button>
+            </Link>
           </motion.div>
         </div>
+
+        <style jsx>{`
+          .star-button {
+            position: relative;
+            padding: 12px 35px;
+            background: #000000;
+            font-size: 18px;
+            font-weight: 500;
+            color: #fff;
+            border: 3px solid #fec195;
+            border-radius: 8px;
+            box-shadow: 0 0 0 #fec1958c;
+            transition: all 0.3s ease-in-out;
+            cursor: pointer;
+          }
+
+          .star-1, .star-2, .star-3, .star-4, .star-5, .star-6 {
+            position: absolute;
+            filter: drop-shadow(0 0 0 #fffdef);
+            z-index: -5;
+            transition: all 1s cubic-bezier(0.05, 0.83, 0.43, 0.96);
+          }
+
+          .star-1 {
+            top: 20%;
+            left: 20%;
+            width: 25px;
+            height: 25px;
+          }
+
+          .star-2 {
+            top: 45%;
+            left: 45%;
+            width: 15px;
+            height: 15px;
+          }
+
+          .star-3 {
+            top: 40%;
+            left: 40%;
+            width: 5px;
+            height: 5px;
+          }
+
+          .star-4 {
+            top: 20%;
+            left: 40%;
+            width: 8px;
+            height: 8px;
+          }
+
+          .star-5 {
+            top: 25%;
+            left: 45%;
+            width: 15px;
+            height: 15px;
+          }
+
+          .star-6 {
+            top: 5%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+          }
+
+          .star-button:hover {
+            background: transparent;
+            color: #fec195;
+            box-shadow: 0 0 25px #fec1958c;
+          }
+
+          .star-button:hover .star-1 {
+            top: -80%;
+            left: -30%;
+            filter: drop-shadow(0 0 10px #fffdef);
+            z-index: 2;
+          }
+
+          .star-button:hover .star-2 {
+            top: -25%;
+            left: 10%;
+            filter: drop-shadow(0 0 10px #fffdef);
+            z-index: 2;
+          }
+
+          .star-button:hover .star-3 {
+            top: 55%;
+            left: 25%;
+            filter: drop-shadow(0 0 10px #fffdef);
+            z-index: 2;
+          }
+
+          .star-button:hover .star-4 {
+            top: 30%;
+            left: 80%;
+            filter: drop-shadow(0 0 10px #fffdef);
+            z-index: 2;
+          }
+
+          .star-button:hover .star-5 {
+            top: 25%;
+            left: 115%;
+            filter: drop-shadow(0 0 10px #fffdef);
+            z-index: 2;
+          }
+
+          .star-button:hover .star-6 {
+            top: 5%;
+            left: 60%;
+            filter: drop-shadow(0 0 10px #fffdef);
+            z-index: 2;
+          }
+        `}</style>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t relative z-10">
+      <footer className="py-16 bg-gradient-to-r from-gray-900 to-gray-800 text-white">
         <div className="container mx-auto px-4 sm:px-6 text-center">
-          <motion.div 
-            className="flex justify-center items-center mb-4"
-            whileHover={{ scale: 1.2, rotate: 360 }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-1.5 rounded-md">
-              <Building2 className="h-5 w-5 text-white" />
-            </div>
-          </motion.div>
-          <p className="text-muted-foreground text-sm mb-4">
-            © {new Date().getFullYear()} Office Pilot. All rights reserved.
-          </p>
-          
-          {/* Developer Credits */}
-          <div className="mt-6 pt-6 border-t border-border/40">
-            <motion.p 
-              className="text-sm font-medium mb-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              transition={{ duration: 1.5 }}
+          <div className="mb-8">
+            <motion.div 
+              className="flex justify-center items-center mb-4"
+              whileHover={{ scale: 1.2, rotate: 360 }}
+              transition={{ duration: 0.8 }}
             >
-              Designed & Developed by
-            </motion.p>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
+              <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-1.5 rounded-md">
+                <Building2 className="h-5 w-5 text-white" />
+              </div>
+            </motion.div>
+            <h3 className="text-3xl font-bold text-white mb-4">
+              Office Pilot
+            </h3>
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed">
+              Streamline your business operations and boost productivity with Office Pilot. 
+              The all-in-one solution for modern teams.
+            </p>
+          </div>
+          
+          <div className="border-t border-gray-700 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+              <p className="text-gray-400">
+                © {new Date().getFullYear()} Office Pilot. All rights reserved.
+              </p>
               <motion.div 
                 className="flex flex-col items-center"
                 whileHover={{ y: -5 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
-                <p className="font-medium">Sahil Vishwakarma</p>
+                <p className="text-gray-400 flex items-center">
+                  Designed & Developed with 
+                  <span className="text-red-500 mx-1 animate-pulse">♥</span>
+                  by 
+                  <span className="text-indigo-400 ml-1 font-semibold">Sahil Vishwakarma</span>
+                </p>
                 <a 
                   href="mailto:sahilvishwa2108@gmail.com" 
-                  className="text-sm text-muted-foreground hover:text-indigo-500 transition-colors"
+                  className="text-sm text-gray-500 hover:text-indigo-400 transition-colors"
                 >
                   sahilvishwa2108@gmail.com
                 </a>
