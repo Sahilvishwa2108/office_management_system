@@ -82,10 +82,10 @@ export function RecentNotificationsCard({
 
   // Get icon based on notification type
   const getNotificationIcon = (notification: any, type?: string) => {
-  
-      if (isRoleChangeNotification(notification)) {
-        return <ShieldAlert className="h-4 w-4 text-red-600" />;
-      }
+
+    if (isRoleChangeNotification(notification)) {
+      return <ShieldAlert className="h-4 w-4 text-red-600" />;
+    }
 
 
     switch (type) {
@@ -119,10 +119,23 @@ export function RecentNotificationsCard({
       notification.title.endsWith("profile")
     ) {
       router.push("/dashboard/settings/profile");
+    } else if (notification.title === "Billing Approved") {
+      // Try to extract clientId from content if available
+      const clientIdMatch = notification.content.match(/\[clientId:\s*([a-f0-9-]+)\]/);
+      const clientId = clientIdMatch && clientIdMatch[1];
+
+      if (clientId) {
+        router.push(`/dashboard/clients/${clientId}`);
+      } else {
+        // If no specific client, redirect to clients list
+        router.push('/dashboard/clients');
+      }
     } else if (
       notification.title === "New Task Assigned" ||
       notification.title === "Task Status Updated" ||
-      notification.title === "New Comment on Task" // Add this condition
+      notification.title === "New Comment on Task" ||
+      notification.title === "New Task Created" ||
+      notification.title === "Task Updated"
     ) {
       console.log("Processing task notification");
 
@@ -177,12 +190,13 @@ export function RecentNotificationsCard({
 
   // Add this function before your return statement
   const stripTaskIdFromContent = (content: string): string => {
-    // Replace all taskId patterns with empty string
+    // Replace all taskId and clientId patterns with empty string
     return content
       .replace(/\[taskId:\s*[a-f0-9-]+\]/g, "")
       .replace(/taskId:\s*[a-f0-9-]+/g, "")
       .replace(/\(taskId:\s*[a-f0-9-]+\)/g, "")
       .replace(/Task ID:\s*[a-f0-9-]+/gi, "")
+      .replace(/\[clientId:\s*[a-f0-9-]+\]/g, "")
       .trim();
   };
 
@@ -196,7 +210,7 @@ export function RecentNotificationsCard({
           await markAsRead(notification.id);
         }
       }
-      
+
       // Store the cleared notification IDs in localStorage
       const newClearedIds = [
         ...clearedIds,
@@ -204,7 +218,7 @@ export function RecentNotificationsCard({
       ];
       localStorage.setItem('clearedNotificationIds', JSON.stringify(newClearedIds));
       setClearedIds(newClearedIds);
-      
+
       // Clear them from view
       setVisibleNotifications([]);
       toast.success("Notifications cleared");
@@ -219,16 +233,6 @@ export function RecentNotificationsCard({
       <CardHeader className="flex flex-row items-center justify-between pt-4 pb-0 px-4 flex-shrink-0">
         <CardTitle className="text-md">Recent Notifications</CardTitle>
         <div className="flex items-center space-x-2">
-          <Link href="/dashboard/settings/notifications">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="h-7 text-xs flex items-center bg-blue-50 hover:bg-blue-100 text-blue-600"
-            >
-              <span>View all</span>
-              <ExternalLink className="ml-1 h-3 w-3" />
-            </Button>
-          </Link>
           <Button
             variant="outline"
             size="icon"
@@ -270,12 +274,11 @@ export function RecentNotificationsCard({
           <>
             <ScrollArea className="flex-1 max-h-[calc(100%-36px)]">
               <div className="space-y-2 px-4 py-1">
-                {visibleNotifications.slice(0, 5).map((notification) => (
+                {visibleNotifications.slice(0, 20).map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors ${
-                      !notification.isRead ? "bg-muted/30" : ""
-                    }`}
+                    className={`p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors ${!notification.isRead ? "bg-muted/30" : ""
+                      }`}
                     onClick={() =>
                       handleNotificationClick({
                         ...notification,
@@ -301,8 +304,11 @@ export function RecentNotificationsCard({
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-2">
                           {notification.title === "New Task Assigned" ||
-                          notification.title === "Task Status Updated" ||
-                          notification.title === "New Comment on Task" // Add this condition
+                            notification.title === "Task Status Updated" ||
+                            notification.title === "New Comment on Task" ||
+                            notification.title === "New Task Created" ||
+                            notification.title === "Task Updated" ||
+                            notification.title === "Billing Approved"  // Add this new condition
                             ? stripTaskIdFromContent(notification.content)
                             : notification.content}
                         </p>

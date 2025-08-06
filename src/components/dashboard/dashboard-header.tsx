@@ -15,7 +15,7 @@ import {
 import { signOut } from "next-auth/react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useRouter } from "next/navigation";
-import { SunIcon, MoonIcon, CloudSunIcon, Maximize, Minimize } from "lucide-react";
+import { SunIcon, MoonIcon, CloudSunIcon, Maximize, Minimize, RefreshCw, Bell } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardHeader() {
@@ -31,10 +31,10 @@ export function DashboardHeader() {
     };
 
     document.addEventListener('fullscreenchange', handleFullScreenChange);
-    
+
     // Initial check on mount
     setIsFullScreen(!!document.fullscreenElement);
-    
+
     return () => {
       document.removeEventListener('fullscreenchange', handleFullScreenChange);
     };
@@ -79,13 +79,13 @@ export function DashboardHeader() {
   const getGreeting = () => {
     // Get current UTC time
     const now = new Date();
-    
+
     // Calculate IST hour (UTC+5:30)
     let istHour = (now.getUTCHours() + 5) % 24;
     if (now.getUTCMinutes() + 30 >= 60) {
       istHour = (istHour + 1) % 24;
     }
-    
+
     if (istHour < 12) return "Good morning";
     if (istHour < 17) return "Good afternoon";
     return "Good evening";
@@ -95,16 +95,21 @@ export function DashboardHeader() {
   const getGreetingIcon = () => {
     // Get current UTC time
     const now = new Date();
-    
+
     // Calculate IST hour (UTC+5:30)
     let istHour = (now.getUTCHours() + 5) % 24;
     if (now.getUTCMinutes() + 30 >= 60) {
       istHour = (istHour + 1) % 24;
     }
-    
+
     if (istHour < 12) return <SunIcon className="h-4 w-4 mr-2 text-amber-400" />;
     if (istHour < 17) return <CloudSunIcon className="h-4 w-4 mr-2 text-blue-400" />;
     return <MoonIcon className="h-4 w-4 mr-2 text-indigo-400" />;
+  };
+
+  // Function to refresh the page
+  const refreshPage = () => {
+    window.location.reload();
   };
 
   return (
@@ -130,25 +135,57 @@ export function DashboardHeader() {
 
       {/* Right section */}
       <div className="flex items-center justify-end gap-3">
-        {/* Full Screen Toggle Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-full"
-          onClick={toggleFullScreen}
-          title={isFullScreen ? "Exit Full Screen" : "Enter Full Screen"}
-        >
-          {isFullScreen ? (
-            <Minimize className="h-4 w-4" />
-          ) : (
-            <Maximize className="h-4 w-4" />
-          )}
-          <span className="sr-only">
-            {isFullScreen ? "Exit Full Screen" : "Enter Full Screen"}
-          </span>
-        </Button>
-        
-        <ThemeToggle />
+        {/* macOS-like dock for controls */}
+        <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm border rounded-full px-2 py-1 shadow-sm">
+          {/* Notification Bell */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full transition-all hover:bg-muted hover:scale-110"
+            onClick={() => router.push("/dashboard/settings/notifications")}
+            title="All Notifications"
+          >
+            <Bell className="h-4 w-4" />
+            <span className="sr-only">Notifications</span>
+          </Button>
+
+          {/* Refresh Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full transition-all hover:bg-muted hover:scale-110"
+            onClick={refreshPage}
+            title="Reload Page"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span className="sr-only">Refresh Page</span>
+          </Button>
+
+          {/* Full Screen Toggle Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full transition-all hover:bg-muted hover:scale-110"
+            onClick={toggleFullScreen}
+            title={isFullScreen ? "Exit Full Screen" : "Enter Full Screen"}
+          >
+            {isFullScreen ? (
+              <Minimize className="h-4 w-4" />
+            ) : (
+              <Maximize className="h-4 w-4" />
+            )}
+            <span className="sr-only">
+              {isFullScreen ? "Exit Full Screen" : "Enter Full Screen"}
+            </span>
+          </Button>
+
+          {/* Theme Toggle with improved styling */}
+          <div className="overflow-hidden rounded-full">
+            <ThemeToggle />
+          </div>
+        </div>
+
+        {/* User Avatar Dropdown (keep as is, outside the dock) */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">

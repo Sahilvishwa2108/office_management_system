@@ -438,3 +438,43 @@ div:has(> .animate-spin)::before {
 .hide-default-close-btn .absolute.top-4.right-4 {
   display: none !important;
 }
+
+/* Add this at the end of your globals.css file */
+
+/* Fix Theme Toggle button styling */
+.theme-toggle-wrapper button,
+.theme-toggle-wrapper [data-theme-toggle] {
+  height: 2rem !important;
+  width: 2rem !important;
+  border-radius: 9999px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.theme-toggle-wrapper button:hover,
+.theme-toggle-wrapper [data-theme-toggle]:hover {
+  transform: scale(1.1) !important;
+  background-color: hsl(var(--muted)) !important;
+}
+
+/* Enhance theme toggle icons for better visual appeal */
+.theme-toggle-wrapper svg {
+  height: 1rem !important;
+  width: 1rem !important;
+  opacity: 0.9 !important;
+}
+
+/* Add subtle glow effect to light mode icon */
+.theme-toggle-wrapper [data-theme="light"] svg {
+  filter: drop-shadow(0 0 0.5px hsl(47, 95%, 60%)) !important;
+  color: hsl(47, 95%, 60%) !important;
+}
+
+/* Add subtle glow effect to dark mode icon */
+.theme-toggle-wrapper [data-theme="dark"] svg {
+  filter: drop-shadow(0 0 0.5px hsl(217, 91%, 60%)) !important;
+  color: hsl(217, 91%, 60%) !important;
+}
