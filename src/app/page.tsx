@@ -547,7 +547,7 @@ export default function Home() {
               transition={{ duration: 0.8 }}
               viewport={{ once: false, amount: 0.3 }}
             >
-              {/* Left side - Image placeholder */}
+              {/* Left side - User Management Screenshots */}
               <motion.div 
                 className="w-full md:w-3/5 mb-6 md:mb-0"
                 initial={{ x: -50, opacity: 0 }}
@@ -555,11 +555,23 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 viewport={{ once: false }}
               >
-                <div className="bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-lg w-full h-[400px] shadow-xl transform transition duration-500 hover:scale-105 overflow-hidden flex items-center justify-center border-2 border-indigo-200/50 dark:border-indigo-800/50">
-                  <div className="text-center">
-                    <Users className="h-24 w-24 text-indigo-500 mx-auto mb-4" />
-                    <p className="text-indigo-600 dark:text-indigo-400 font-semibold">User Management Dashboard</p>
-                    <p className="text-sm text-muted-foreground mt-2">Role-based access control visualization</p>
+                <div className="space-y-4">
+                  {/* Main User Management Dashboard */}
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl transform transition duration-500 hover:scale-105 overflow-hidden border-2 border-indigo-200/50 dark:border-indigo-800/50">
+                    <img 
+                      src="/images/user-list-page.png" 
+                      alt="User Management Dashboard - Table View" 
+                      className="w-full h-[200px] object-cover object-top"
+                    />
+                  </div>
+                  
+                  {/* Cards View */}
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl transform transition duration-500 hover:scale-105 overflow-hidden border-2 border-indigo-200/50 dark:border-indigo-800/50">
+                    <img 
+                      src="/images/user-list-cards-view-page.png" 
+                      alt="User Management Dashboard - Cards View" 
+                      className="w-full h-[180px] object-cover object-top"
+                    />
                   </div>
                 </div>
               </motion.div>
@@ -629,7 +641,7 @@ export default function Home() {
               transition={{ duration: 0.8 }}
               viewport={{ once: false, amount: 0.3 }}
             >
-              {/* Right side - Image */}
+              {/* Right side - Task Management Screenshots */}
               <motion.div 
                 className="w-full md:w-3/5 mb-6 md:mb-0"
                 initial={{ x: 50, opacity: 0 }}
@@ -637,11 +649,23 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 viewport={{ once: false }}
               >
-                <div className="bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-lg w-full h-[400px] shadow-xl transform transition duration-500 hover:scale-105 overflow-hidden flex items-center justify-center border-2 border-green-200/50 dark:border-green-800/50">
-                  <div className="text-center">
-                    <ClipboardList className="h-24 w-24 text-green-500 mx-auto mb-4" />
-                    <p className="text-green-600 dark:text-green-400 font-semibold">Task Management Dashboard</p>
-                    <p className="text-sm text-muted-foreground mt-2">Complete task workflow visualization</p>
+                <div className="space-y-4">
+                  {/* Task List Dashboard */}
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl transform transition duration-500 hover:scale-105 overflow-hidden border-2 border-green-200/50 dark:border-green-800/50">
+                    <img 
+                      src="/images/task-list-page.png" 
+                      alt="Task Management Dashboard - List View" 
+                      className="w-full h-[200px] object-cover object-top"
+                    />
+                  </div>
+                  
+                  {/* Task Details View */}
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl transform transition duration-500 hover:scale-105 overflow-hidden border-2 border-green-200/50 dark:border-green-800/50">
+                    <img 
+                      src="/images/task-details-page.png" 
+                      alt="Task Details and Discussion" 
+                      className="w-full h-[180px] object-cover object-top"
+                    />
                   </div>
                 </div>
               </motion.div>
@@ -709,7 +733,7 @@ export default function Home() {
               transition={{ duration: 0.8 }}
               viewport={{ once: false, amount: 0.3 }}
             >
-              {/* Left side - Image */}
+              {/* Left side - Communication Screenshots */}
               <motion.div 
                 className="w-full md:w-3/5 mb-6 md:mb-0"
                 initial={{ x: -50, opacity: 0 }}
@@ -717,11 +741,23 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 viewport={{ once: false }}
               >
-                <div className="bg-gradient-to-br from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30 rounded-lg w-full h-[400px] shadow-xl transform transition duration-500 hover:scale-105 overflow-hidden flex items-center justify-center border-2 border-yellow-200/50 dark:border-yellow-800/50">
-                  <div className="text-center">
-                    <MessageSquare className="h-24 w-24 text-yellow-500 mx-auto mb-4" />
-                    <p className="text-yellow-600 dark:text-yellow-400 font-semibold">Real-time Communication</p>
-                    <p className="text-sm text-muted-foreground mt-2">Team collaboration and chat interface</p>
+                <div className="space-y-4">
+                  {/* Chat/Communication Interface */}
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl transform transition duration-500 hover:scale-105 overflow-hidden border-2 border-yellow-200/50 dark:border-yellow-800/50">
+                    <img 
+                      src="/images/chatroom-page.png" 
+                      alt="Team Communication - Chat Interface" 
+                      className="w-full h-[250px] object-cover object-top"
+                    />
+                  </div>
+                  
+                  {/* Activity Feeds */}
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl transform transition duration-500 hover:scale-105 overflow-hidden border-2 border-yellow-200/50 dark:border-yellow-800/50">
+                    <img 
+                      src="/images/activity-feeds.png" 
+                      alt="Activity Feeds and Notifications" 
+                      className="w-full h-[130px] object-cover object-top"
+                    />
                   </div>
                 </div>
               </motion.div>
@@ -774,6 +810,243 @@ export default function Home() {
                 >
                   Communication has never been this seamless.
                 </motion.p>
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Dashboard Showcase Section */}
+        <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50/80 to-white dark:from-slate-950/20 dark:to-background rounded-tl-[4rem] rounded-tr-[4rem]">
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <motion.div 
+              className="text-center max-w-4xl mx-auto mb-12"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: false, amount: 0.3 }}
+            >
+              <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6">
+                Role-Based Dashboards
+              </h3>
+              <h4 className="text-lg md:text-xl lg:text-2xl font-semibold text-slate-600 dark:text-slate-400 mb-3 md:mb-4">
+                Tailored Experience for Every Team Member
+              </h4>
+              <p className="text-base md:text-lg text-muted-foreground mb-6">
+                Each role gets a personalized dashboard with the tools and information they need to excel.
+              </p>
+            </motion.div>
+
+            {/* Dashboard Grid */}
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              viewport={{ once: false, amount: 0.1 }}
+            >
+              {/* Admin Dashboard */}
+              <motion.div 
+                className="bg-white dark:bg-gray-900 rounded-lg shadow-xl overflow-hidden border-2 border-red-200/50 dark:border-red-800/50 group"
+                initial={{ y: 30, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                viewport={{ once: false }}
+                whileHover={{ y: -8, scale: 1.02 }}
+              >
+                <div className="p-4 bg-red-50 dark:bg-red-950/30">
+                  <h5 className="font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Admin Dashboard
+                  </h5>
+                  <p className="text-sm text-red-500 dark:text-red-300">Complete system control</p>
+                </div>
+                <img 
+                  src="/images/admin-dashboard.png" 
+                  alt="Admin Dashboard - Full Control Interface" 
+                  className="w-full h-[180px] object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                />
+              </motion.div>
+
+              {/* Partner Dashboard */}
+              <motion.div 
+                className="bg-white dark:bg-gray-900 rounded-lg shadow-xl overflow-hidden border-2 border-purple-200/50 dark:border-purple-800/50 group"
+                initial={{ y: 30, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                viewport={{ once: false }}
+                whileHover={{ y: -8, scale: 1.02 }}
+              >
+                <div className="p-4 bg-purple-50 dark:bg-purple-950/30">
+                  <h5 className="font-semibold text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Partner Dashboard
+                  </h5>
+                  <p className="text-sm text-purple-500 dark:text-purple-300">Team management focused</p>
+                </div>
+                <img 
+                  src="/images/partner-dashboard.png" 
+                  alt="Partner Dashboard - Team Management Interface" 
+                  className="w-full h-[180px] object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                />
+              </motion.div>
+
+              {/* Junior Dashboard */}
+              <motion.div 
+                className="bg-white dark:bg-gray-900 rounded-lg shadow-xl overflow-hidden border-2 border-blue-200/50 dark:border-blue-800/50 group"
+                initial={{ y: 30, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                viewport={{ once: false }}
+                whileHover={{ y: -8, scale: 1.02 }}
+              >
+                <div className="p-4 bg-blue-50 dark:bg-blue-950/30">
+                  <h5 className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4" />
+                    Junior Dashboard
+                  </h5>
+                  <p className="text-sm text-blue-500 dark:text-blue-300">Task-focused interface</p>
+                </div>
+                <img 
+                  src="/images/junior-dashboard.png" 
+                  alt="Junior Dashboard - Task Management Interface" 
+                  className="w-full h-[180px] object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                />
+              </motion.div>
+            </motion.div>
+
+            {/* Client Management Section */}
+            <motion.div 
+              className="mt-12 max-w-5xl mx-auto"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              viewport={{ once: false }}
+            >
+              <div className="text-center mb-8">
+                <h4 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Client Management Suite
+                </h4>
+                <p className="text-muted-foreground">
+                  Comprehensive client relationship management tools
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Client List */}
+                <motion.div 
+                  className="bg-white dark:bg-gray-900 rounded-lg shadow-xl overflow-hidden border-2 border-green-200/50 dark:border-green-800/50 group"
+                  whileHover={{ y: -5, scale: 1.02 }}
+                >
+                  <div className="p-4 bg-green-50 dark:bg-green-950/30">
+                    <h5 className="font-semibold text-green-600 dark:text-green-400 flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      Client Directory
+                    </h5>
+                  </div>
+                  <img 
+                    src="/images/client-list-page.png" 
+                    alt="Client Management - Directory View" 
+                    className="w-full h-[160px] object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                  />
+                </motion.div>
+
+                {/* Client Details */}
+                <motion.div 
+                  className="bg-white dark:bg-gray-900 rounded-lg shadow-xl overflow-hidden border-2 border-green-200/50 dark:border-green-800/50 group"
+                  whileHover={{ y: -5, scale: 1.02 }}
+                >
+                  <div className="p-4 bg-green-50 dark:bg-green-950/30">
+                    <h5 className="font-semibold text-green-600 dark:text-green-400 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Client Profiles
+                    </h5>
+                  </div>
+                  <img 
+                    src="/images/client-details-page.png" 
+                    alt="Client Management - Detailed Profiles" 
+                    className="w-full h-[160px] object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                  />
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Analytics & Reporting Section */}
+        <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-orange-50/80 to-white dark:from-orange-950/20 dark:to-background rounded-tl-[4rem] rounded-tr-[4rem]">
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <motion.div 
+              className="flex flex-col md:flex-row items-stretch max-w-7xl mx-auto gap-8"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: false, amount: 0.3 }}
+            >
+              {/* Left side - Content */}
+              <motion.div 
+                className="w-full md:w-2/5 md:pr-10 flex flex-col justify-center"
+                initial={{ x: -50, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                viewport={{ once: false }}
+              >
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6">
+                  Analytics & Insights
+                </h3>
+                <h4 className="text-lg md:text-xl lg:text-2xl font-semibold text-orange-600 dark:text-orange-400 mb-3 md:mb-4">
+                  Data-Driven Decision Making
+                </h4>
+                <p className="text-base md:text-lg text-muted-foreground mb-4 md:mb-6">
+                  Get comprehensive insights into your team's performance, task progress, and business metrics with powerful analytics tools.
+                </p>
+                
+                <ul className="space-y-3 md:space-y-4 mb-6 md:mb-8">
+                  {[
+                    "Task completion analytics and trends",
+                    "Team productivity metrics", 
+                    "Client engagement tracking",
+                    "Custom reports and dashboards"
+                  ].map((item, index) => (
+                    <motion.li 
+                      key={index}
+                      className="flex items-start transform transition duration-300 hover:translate-x-2 text-foreground"
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
+                      viewport={{ once: false }}
+                    >
+                      <span className="font-medium mr-2 text-orange-500">•</span>
+                      <span>{item}</span>
+                    </motion.li>
+                  ))}
+                </ul>
+                
+                <motion.p 
+                  className="text-base md:text-lg font-medium text-gray-800 dark:text-gray-200"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 0.8 }}
+                  viewport={{ once: false }}
+                >
+                  Turn your data into actionable insights.
+                </motion.p>
+              </motion.div>
+
+              {/* Right side - Analytics Screenshot */}
+              <motion.div 
+                className="w-full md:w-3/5 mb-6 md:mb-0"
+                initial={{ x: 50, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                viewport={{ once: false }}
+              >
+                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl transform transition duration-500 hover:scale-105 overflow-hidden border-2 border-orange-200/50 dark:border-orange-800/50">
+                  <img 
+                    src="/images/Task-analytics-page.png" 
+                    alt="Task Analytics Dashboard - Performance Insights" 
+                    className="w-full h-[400px] object-cover object-top"
+                  />
+                </div>
               </motion.div>
             </motion.div>
           </div>
